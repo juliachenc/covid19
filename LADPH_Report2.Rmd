@@ -30,6 +30,9 @@ library(EasyABC)
 library(dplyr)
 library(gridExtra)
 library(kableExtra)
+library(here)
+library(fs)
+library(dde)
 
 lang_output <- function(x, lang) {
   cat(c(sprintf("```%s", lang), x, "```"), sep = "\n")
@@ -76,9 +79,6 @@ What a stochastic model allows:
 ## (2.2) Model overview
 
 ### Flow diagram
-![Compartmental model flow diagram](/Users/abigailhorn/Dropbox/0 2019/COVID-19/LACounty_modeling/report2.0/flow_diagram.png)
-
-
 
 ### System of Equations
 $$
@@ -169,12 +169,7 @@ In this section we focus on parameter estimates for key epidemic and model quant
 
 ```{r calc-risk-probs, include=FALSE}
 
-
-code.dir="/Users/abigailhorn/Dropbox/0 2019/COVID-19/LACounty_modeling/report2.0/"
-calc_risk_probs_code <- paste0(code.dir, "calc_risk_probs_update.R")
-r_output(readLines(calc_risk_probs_code))
-
-source(calc_risk_probs_code)
+source(here("code/calc_risk_probs_update.R"))
 
 
 Alpha.prior.mean <- risk.probs.SPAs[9,1]
@@ -187,8 +182,8 @@ Delta.prior.mean <- risk.probs.SPAs[9,3]
 
 ###################################################################################################
 ## READ IN EPIDEMIC MODEL CODE
-code.dir="/Users/abigailhorn/Dropbox/0 2019/COVID-19/LACounty_modeling/code/Stochastic/"
-path_seihqdr_model <- paste0(code.dir, "stochastic_SEIHQDR_A.R")
+code.dir=here("/code/")
+path_seihqdr_model <- path(code.dir, "stochastic_SEIHQDR_A.R")
 r_output(readLines(path_seihqdr_model))
 
 ## Compile the model
@@ -199,8 +194,8 @@ seihqdr_generator <- odin::odin(path_seihqdr_model)
 # obs_cum_new_counts: cumulative counts for "Htotcum","D","Vcum","Idetectcum","H_new","D_new"
 # no_obs: number of observation days
 ## Read and process the data
-data.dir="/Users/abigailhorn/Dropbox/0 2019/COVID-19/LACounty_modeling/code/ABC/"
-obs_cum_new_counts = t(read.csv(paste0(data.dir, "cum_counts_040920.csv"), sep=",",stringsAsFactors = FALSE)) 
+
+obs_cum_new_counts = t(read.csv(here("data", "cum_counts_040920.csv"), sep=",",stringsAsFactors = FALSE)) 
 colnames<-c("Htotcum","D","Vcum","Idetectcum","H_new","D_new","H_capacity","Q_capacity")
 colnames(obs_cum_new_counts) <- colnames
 obs_cum_new_counts <- as.data.frame(obs_cum_new_counts)
@@ -259,7 +254,7 @@ summarydata
 ## It must take as arguments a vector of model parameter values par
 ## and it must return a vector of summary statistics
 
-model.1sim.stats <- function(par){ 
+model.1sim.stats <- function(par){
   
   R0 <- par[1]
   r <- par[2]
@@ -419,7 +414,7 @@ grid.arrange(p2,p,ncol=2,nrow=1)
 
 **Information informing this parameter's prior distribution:**
 - Reduction in mobility observed in LA County:
-![Mobility reduction](/Users/abigailhorn/Dropbox/0 2019/COVID-19/LACounty_modeling/report2.0/mobility_redux.png)
+
 **Source**: [Assessing changes in commuting and individual mobility
 in major metropolitan areas in the United States during
 the COVID-19 outbreak](https://www.mobs-lab.org/uploads/6/7/8/7/6787877/assessing_mobility_changes_in_the_united_states_during_the_covid_19_outbreak.pdf)
@@ -1181,8 +1176,7 @@ A2. Specification of stochastic model
 ### Key risk profiles
 ```{r risk-prof-table, echo=FALSE}
 
-data.dir="/Users/abigailhorn/Dropbox/0 2019/COVID-19/LACounty_modeling/data/corrmats/Ordinal.Age.Binary.Comb_2020_04_03/"
-Pr.D.FULL = read.table(paste0(data.dir, "Ordinal.Age.RiskProfile.Death.txt"), sep=" ", header=TRUE )
+Pr.D.FULL = read.table(here("data", "Ordinal.Age.DummyRiskProfile.Death.txt"), sep=" ", header=TRUE )
 
 risk_profiles_FULL <- Pr.D.FULL[,-1]
 
@@ -1194,6 +1188,7 @@ kable(risk_profiles_FULL) %>%
 
 ### Population risk factor prevalences for LA County 
 Data coming from [Los Angeles County Health Survey](http://www.publichealth.lacounty.gov/ha/hasurveyintro.htm) 
+
 ```{r readin2, echo=FALSE}
 
 ### Display table
