@@ -2,7 +2,9 @@
 title: "Predictive Epidemic Model for LA County"
 author: "Abigail Horn, Lai Jiang, Wendy Cozen, David Conti, Department of Preventive Medicine, USC"
 date: "4/17/2020"
-output: html_document
+output: 
+  html_document:
+     css: styles.css
 ---
 
 ```{r setup, include=FALSE}
