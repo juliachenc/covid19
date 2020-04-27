@@ -9,7 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, 
-                      cache = TRUE,
+                      cache = FALSE,
                       out.width = "100%",
                       fig.asp = 0.619, fig.width = 10,
                       dpi = 100)
@@ -248,7 +248,8 @@ traj.0 <- model.output.to.plot(ABC_out$param,
 ## Generate plots
 ##################################################################
 
-forecast_plotting_function <- function(scenario,
+forecast_plotting_function <- function(traj.CI,
+                                       scenario,
                                        var.to.plot,
                                        intervention_date = NULL,
                                        sd.redux = NULL,
@@ -256,18 +257,18 @@ forecast_plotting_function <- function(scenario,
                                        plot.capacity=TRUE,
                                        ymax=NULL,
                                        time.steps.4plot = 350) {
- plot.model.single(traj.CI = traj.0, 
-                           data.in = data.in.tmp, 
-                           init.date.data = "2020-03-01", 
-                           date.offset.4plot = 15, 
-                           time.steps.4plot = time.steps.4plot, 
-                           ymax = ymax, 
-                           plot.capacity = plot.capacity, 
-                           var.to.plot = var.to.plot,
-                           use.title = use.title,
-                           scenario = scenario, 
-                           intervention_date = intervention_date, 
-                           sd.redux = sd.redux) 
+ plot.model.single(traj.CI = traj.CI, 
+                   data.in = data.in.tmp, 
+                   init.date.data = "2020-03-01", 
+                   date.offset.4plot = 15, 
+                   time.steps.4plot = time.steps.4plot, 
+                   ymax = ymax, 
+                   plot.capacity = plot.capacity, 
+                   var.to.plot = var.to.plot,
+                   use.title = use.title,
+                   scenario = scenario, 
+                   intervention_date = intervention_date, 
+                   sd.redux = sd.redux) 
 }
 
 ```
@@ -306,7 +307,7 @@ forecast_plotting_function <- function(scenario,
 <div class="tab-content">
 <div id="paramtab1" class="tab-pane active">
 ```{r}
-forecast_plotting_function(0, "Htot") + 
+forecast_plotting_function(traj.0, 0, "Htot") + 
   plot_annotation(title = "Hospitalizations By Time, Against Capacity", 
                   theme = theme(plot.title = element_text(hjust = .5, face = "bold")))
 ```
@@ -314,7 +315,7 @@ forecast_plotting_function(0, "Htot") +
 
 <div id="paramtab2" class="tab-pane">
 ```{r}
-forecast_plotting_function(0, "Q") + 
+forecast_plotting_function(traj.0, 0, "Q") + 
   plot_annotation(title = "ICU Admittances By Time, Against Capacity", 
                   theme = theme(plot.title = element_text(hjust = .5, face = "bold")))
 ```
@@ -322,7 +323,7 @@ forecast_plotting_function(0, "Q") +
 
 <div id="paramtab3" class="tab-pane">
 ```{r}
-forecast_plotting_function(0, "V") + 
+forecast_plotting_function(traj.0, 0, "V") + 
   plot_annotation(title = "Ventilations By Time, Against Capacity", 
                   theme = theme(plot.title = element_text(hjust = .5, face = "bold")))
 ```
@@ -330,7 +331,7 @@ forecast_plotting_function(0, "V") +
 
 <div id="paramtab4" class="tab-pane">
 ```{r}
-forecast_plotting_function(0, "D", plot.capacity = NULL) + 
+forecast_plotting_function(traj.0, 0, "D", plot.capacity = NULL) + 
   plot_annotation(title = "Cumulative Deaths", 
                   caption = "L.A. data plotted as black dots", 
                   theme = theme(plot.title = element_text(hjust = .5, face = "bold")))
@@ -339,7 +340,7 @@ forecast_plotting_function(0, "D", plot.capacity = NULL) +
 
 <div id="paramtab5" class="tab-pane">
 ```{r}
-forecast_plotting_function(0, "I", plot.capacity = NULL) + 
+forecast_plotting_function(traj.0, 0, "I", plot.capacity = NULL) + 
   plot_annotation(title = "*Observed* Illnesses By Time", 
                   theme = theme(plot.title = element_text(hjust = .5, face = "bold")))
 ```
@@ -347,7 +348,7 @@ forecast_plotting_function(0, "I", plot.capacity = NULL) +
 
 <div id="paramtab6" class="tab-pane">
 ```{r}
-forecast_plotting_function(0, "Itot", plot.capacity = NULL) + 
+forecast_plotting_function(traj.0, 0, "Itot", plot.capacity = NULL) + 
   plot_annotation(title = "*Total* Illnesses By Time (Observed + Undetected)", 
                   theme = theme(plot.title = element_text(hjust = .5, face = "bold")))
 ```
@@ -475,6 +476,361 @@ plot.only.vars.with.data.current.scenario.150days
 
 </div>
 </div>
+
+# Comparing Social Distancing Mitigation Strategies 
+
+- Model projections forecast that, if everything continutes as is, LA is not going to see a sharp peak in illnesses in the near future, and rather will see a long, shallow, *manageable* epidemic curve over the next number of months.
+- What can we do to maintain this manageable epidemic curve while sustaining a functioning society?
+- Here we evaluate the effect of scenarios relating to social distancing on the ultimate epidemic trajectory 
+
+## Scenario Comparison
+
+```{r, include=FALSE}
+## GET MODEL OUTPUT AND CALCULATE CI
+## Specify scenario through:
+## scenario.selection
+## 0 = no scenario
+## 1 = scenario
+## intervention_date
+## sd.redux: % reduction in contact rate due to social distancing 
+## Output:
+## Summary statistics by date and state.name (i.e. variable)
+
+##################################################################
+## Generate trajectory data
+##################################################################
+
+number.pars.to.use = 100
+iter = 50
+time.steps = 400
+
+### SCENARIO: WHAT IF SOCIAL DISTANCING NEVER IMPLEMENTED
+scenario = 1
+intervention_date = NULL
+sd.redux = NULL
+
+traj.1 <- model.output.to.plot(ABC_out$param, 
+                               par.vec.length = number.pars.to.use, 
+                               iter = iter, 
+                               time.steps = time.steps, 
+                               vars.to.plot = all.variables, 
+                               init.date.data = "2020-03-01", 
+                               all = TRUE, 
+                               scenario.selection = scenario,
+                               intervention_date = intervention_date,
+                               sd.redux = sd.redux)
+
+### SCENARIO: DECREASE SOCIAL DISTANCING TO 25% ON MAY 1ST
+scenario = 2
+intervention_date = "2020-05-01"
+sd.redux = 0.25
+traj.2.May1.25 <- model.output.to.plot(ABC_out$param, 
+                                       par.vec.length = number.pars.to.use, 
+                                       iter = iter, 
+                                       time.steps = time.steps, 
+                                       vars.to.plot = all.variables, 
+                                       init.date.data = "2020-03-01", 
+                                       all = TRUE, 
+                                       scenario.selection = scenario,
+                                       intervention_date = intervention_date,
+                                       sd.redux = sd.redux)
+
+### SCENARIO: DECREASE SOCIAL DISTANCING TO 25% ON JUNE 1ST
+scenario = 2
+intervention_date = "2020-06-01"
+sd.redux = 0.25
+traj.2.June1.25 <- model.output.to.plot(ABC_out$param, 
+                                        par.vec.length = number.pars.to.use,
+                                        iter = iter, 
+                                        time.steps = time.steps, 
+                                        vars.to.plot = all.variables, 
+                                        init.date.data = "2020-03-01",
+                                        all = TRUE, 
+                                        scenario.selection = scenario,
+                                        intervention_date = intervention_date,
+                                        sd.redux = sd.redux)
+
+### SCENARIO: DECREASE SOCIAL DISTANCING TO 25% ON JULY 1ST
+scenario = 2
+intervention_date = "2020-07-01"
+sd.redux = 0.25
+traj.2.July1.25 <- model.output.to.plot(ABC_out$param, 
+                                        par.vec.length = number.pars.to.use, 
+                                        iter = iter, 
+                                        time.steps = time.steps, 
+                                        vars.to.plot = all.variables, 
+                                        init.date.data = "2020-03-01", 
+                                        all = TRUE, 
+                                        scenario.selection = scenario,
+                                        intervention_date = intervention_date,
+                                        sd.redux = sd.redux)
+
+
+### SCENARIO: DECREASE SOCIAL DISTANCING TO 0% ON MAY 1ST
+scenario = 2
+intervention_date = "2020-06-01"
+sd.redux = 0
+traj.2.June1.0 <- model.output.to.plot(ABC_out$param, 
+                                       par.vec.length = number.pars.to.use, 
+                                       iter = iter, 
+                                       time.steps = time.steps, 
+                                       vars.to.plot = all.variables, 
+                                       init.date.data = "2020-03-01", 
+                                       all = TRUE, 
+                                       scenario.selection = scenario,
+                                       intervention_date = intervention_date,
+                                       sd.redux = sd.redux)
+
+### SCENARIO: GRADUAL EASING OF SOCIAL DISTANCING BEGINNING JUNE 1ST
+scenario = 3
+intervention_date = "2020-06-01"
+sd.redux = 0
+traj.3.June1 <- model.output.to.plot(ABC_out$param, 
+                                     par.vec.length = number.pars.to.use, 
+                                     iter = iter, 
+                                     time.steps = time.steps, 
+                                     vars.to.plot = all.variables, 
+                                     init.date.data = "2020-03-01", 
+                                     all = TRUE, 
+                                     scenario.selection = scenario,
+                                     intervention_date = intervention_date,
+                                     sd.redux = sd.redux)
+```
+
+```{r}
+##################################################################
+## Scenarios: generate plots
+##################################################################
+
+ymax.H <- 100000
+ymax.D <- 200000
+
+##################################################################
+### SCENARIO 0 
+p.H.0 <- forecast_plotting_function(traj.CI = traj.0, 
+                                    scenario = 0, 
+                                    var.to.plot = "Htot", 
+                                    use.title = TRUE,
+                                    ymax = ymax.H)
+
+p.D.0 <- forecast_plotting_function(traj.CI = traj.0, 
+                                    scenario = 0, 
+                                    var.to.plot = "D", 
+                                    use.title = TRUE, 
+                                    ymax = ymax.D, 
+                                    plot.capacity = NULL)
+
+##################################################################
+### SCENARIO 1: WHAT IF SOCIAL DISTANCING NEVER IMPLEMENTED
+p.H.1 <-forecast_plotting_function(traj.CI = traj.1, 
+                                   scenario = 1, 
+                                   var.to.plot = "Htot", 
+                                   use.title = TRUE, 
+                                   ymax = ymax.H)
+
+p.D.1 <- forecast_plotting_function(traj.CI = traj.1, 
+                                    scenario = 1, 
+                                    var.to.plot = "D", 
+                                    use.title = TRUE, 
+                                    ymax = ymax.D, 
+                                    plot.capacity = NULL)
+
+##################################################################
+### SCENARIO 2: DECREASE SOCIAL DISTANCING TO 25% ON MAY 1ST
+p.H.2.May1.25 <- forecast_plotting_function(traj.CI = traj.2.May1.25, 
+                                            scenario = 2, 
+                                            var.to.plot = "Htot", 
+                                            intervention_date = "2020-05-01", 
+                                            sd.redux = 0.25,
+                                            use.title = TRUE, 
+                                            ymax = ymax.H)
+
+p.D.2.May1.25 <- forecast_plotting_function(traj.CI = traj.2.May1.25, 
+                                            scenario = 2, 
+                                            var.to.plot = "D", 
+                                            intervention_date = "2020-05-01", 
+                                            sd.redux = 0.25,
+                                            use.title = TRUE, 
+                                            plot.capacity = NULL,
+                                            ymax = ymax.D)
+
+##################################################################
+### SCENARIO 2: DECREASE SOCIAL DISTANCING TO 25% ON JUNE 1ST
+p.H.2.June1.25 <- forecast_plotting_function(traj.CI = traj.2.June1.25, 
+                                             scenario = 2, 
+                                             var.to.plot = "Htot", 
+                                             intervention_date = "2020-06-01", 
+                                             sd.redux = 0.25, 
+                                             use.title = TRUE, 
+                                             ymax = ymax.H)
+
+p.D.2.June1.25 <- forecast_plotting_function(traj.CI = traj.2.June1.25, 
+                                             scenario = 2, 
+                                             var.to.plot = "D", 
+                                             intervention_date = "2020-06-01", 
+                                             sd.redux = 0.25, 
+                                             use.title = TRUE, 
+                                             plot.capacity = NULL,
+                                             ymax = ymax.D)
+
+##################################################################
+### SCENARIO 2: DECREASE SOCIAL DISTANCING TO 25% ON JULY 1ST
+p.H.2.July1.25 <- forecast_plotting_function(traj.CI = traj.2.July1.25, 
+                                             scenario = 2, 
+                                             var.to.plot = "Htot", 
+                                             intervention_date = "2020-07-01", 
+                                             sd.redux = 0.25, 
+                                             use.title = TRUE, 
+                                             ymax = ymax.H)
+
+p.D.2.July1.25 <- forecast_plotting_function(traj.CI = traj.2.July1.25, 
+                                             scenario = 2, 
+                                             var.to.plot = "D", 
+                                             intervention_date = "2020-07-01", 
+                                             sd.redux = 0.25, 
+                                             use.title = TRUE, 
+                                             plot.capacity = NULL,
+                                             ymax = ymax.D)
+
+##################################################################
+### SCENARIO 2: DECREASE SOCIAL DISTANCING TO 0% ON JUNE 1ST
+p.H.2.June1.0 <- forecast_plotting_function(traj.CI = traj.2.June1.0, 
+                                            scenario = 2, 
+                                            var.to.plot = "Htot", 
+                                            intervention_date = "2020-06-01", 
+                                            sd.redux = 0, 
+                                            use.title = TRUE, 
+                                            ymax = ymax.H)
+
+p.D.2.June1.0 <- forecast_plotting_function(traj.CI = traj.2.June1.0, 
+                                            scenario = 2, 
+                                            var.to.plot = "D", 
+                                            intervention_date = "2020-06-01", 
+                                            sd.redux = 0, 
+                                            use.title = TRUE, 
+                                            plot.capacity = NULL,
+                                            ymax = ymax.D)
+
+##################################################################
+### SCENARIO 3: GRADUAL EASING OF SOCIAL DISTANCING
+p.H.3.June1 <- forecast_plotting_function(traj.CI = traj.3.June1, 
+                                            scenario = 3, 
+                                            var.to.plot = "Htot", 
+                                            intervention_date = "2020-06-01", 
+                                            use.title = TRUE, 
+                                            ymax = ymax.H)
+
+p.D.3.June1 <- forecast_plotting_function(traj.CI = traj.3.June1, 
+                                            scenario = 3, 
+                                            var.to.plot = "D", 
+                                            intervention_date = "2020-06-01", 
+                                            use.title = TRUE, 
+                                            plot.capacity = NULL,
+                                            ymax = ymax.D)
+```
+
+
+<div>
+<!-- Nav tabs -->
+<ul class="nav nav-tabs" role="tablist">
+
+<li class="nav-item active" style ="width:50%">
+<a class="nav-link active" data-toggle="tab" href="#Scenariotab1"><b>Counterfactual: No social distancing implemented</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#Scenariotab2"><b>Easing of social distancing from 50% to 25% on May 1st</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#Scenariotab3"><b>Easing of social distancing from 50% to 25% on June 1st</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#Scenariotab4"><b>Easing of social distancing from 50% to 25% on July 1st</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#Scenariotab5"><b>Removal of social distancing on June 1st</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#Scenariotab6"><b>Gradual easing of social distancing beginning on June 1st</b></a>
+</li>
+
+</ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+<div id="Scenariotab1" class="tab-pane active">
+**Comparison between current level of social distancing of ~50% beginning March 15, 2020 and counterfactual: if social distancing had never been implemented**
+```{r}
+(p.H.0 + p.H.1) / (p.D.0 + p.D.1)
+```
+</div>
+
+<div id="Scenariotab2" class="tab-pane">
+**Comparison between current level of social distancing of ~50% beginning March 15, 2020 and easing of social distancing from 50% to 25% on May 1, 2020**
+```{r}
+(p.H.0 + p.H.2.May1.25) / (p.D.0 + p.D.2.May1.25)
+```
+</div>
+
+<div id="Scenariotab3" class="tab-pane">
+**Comparison between current level of social distancing of ~50% beginning March 15, 2020 and easing of social distancing from 50% to 25% on June 1, 2020**
+```{r}
+(p.H.0 + p.H.2.June1.25) / (p.D.0 + p.D.2.June1.25)
+```
+</div>
+
+<div id="Scenariotab4" class="tab-pane">
+**Comparison between current level of social distancing of ~50% beginning March 15, 2020 and easing of social distancing from 50% to 25% on July 1, 2020**
+```{r}
+(p.H.0 + p.H.2.July1.25) / (p.D.0 + p.D.2.July1.25)
+```
+</div>
+
+<div id="Scenariotab5" class="tab-pane">
+**Comparison between current level of social distancing of ~50% beginning March 15, 2020 and removal of social distancing on June 1, 2020**
+```{r}
+(p.H.0 + p.H.2.June1.0) / (p.D.0 + p.D.2.June1.0)
+```
+</div>
+
+<div id="Scenariotab6" class="tab-pane">
+**Comparison between policy of easing of social distancing from 50% to 25% on June 1, 2020 and gradual easing beginning June 1, 2020 of social distancing from 50% to no social distancing**
+```{r}
+(p.H.2.June1.0 + p.H.3.June1) / (p.D.2.June1.0 + p.D.3.June1)
+```
+</div>
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Peak hospitalization, ICU, ventilation vs. capacity
 
