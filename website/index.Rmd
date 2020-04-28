@@ -1791,6 +1791,197 @@ p8 + p
 </div>
 </div>
 
+# Summary
+- Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19.
+LA County is succeeding in mitigating the epidemic curve due to strong adherence to social distancing (model-estimated reduction in infection rate of >60%).
+- Our model suggests that social distancing may need to be continued for a longer period of time to retain these mitigation effects.
+- Our model predicts that higher risk groups -- characterized not only by advanced age but also combinations of existing health conditions -- will make up the majority of those afflicted with severe disease. This model estimates how disparities in prevalences of risk factors across neighborhoods within LA will impact severe disease outcomes.
+- Model estimates can and will change as new data comes in.
 
+# Methods and data
+
+## Data
+
+### Illness case data
+
+- We use current numbers of **infected (observed)**, **hospitalized**, **ICU**, **ventilated**, and **deaths**, as well as the capacity (total number of resouces available) at hospitals, ICUs, and ventilators in L.A. County from the Los Angeles County Department of Public Health, updated daily by Faith Washburn (shared privately)
+- The data used in this version of the report (April 24th, 2020) includes counts up through **April 22th, 2020**
+
+## Model overview
+
+### Stochastic differential equation model: 
+
+- Deterministic model: for given values of parameters, dynamics across compartments will be fixed. 
+- Stochastic model: Appropriate probability distributions are used model the transfer of individuals across
+compartments.
+
+What a stochastic model allows:
+
+- Looking back: Provides a better framework for parameter estimation, based on observed data 
+- Looking forward: Enables forecasts with confidence bounds that account for variability in parameters
+
+### Approximate Bayesian Computation (ABC) for parameter estimation: 
+
+- Allows us to incorporate the uncertainty in all the parameters in fitting the model to data and estimating parameters
+- Allows us to include all prior information and/or assumptions about the distribution (the range of values) for each parameter
+- Allows us to prioritize data input that is more reliable in fitting the model to data (e.g., not including more unreliable early illness count data)
+
+### Flow diagram
+
+![Compartmental model flow diagram](flow_diagram_v2.png)
+
+### System of Equations
+$$
+\begin{align*}
+    dS/dt &= -\beta S(I+A)\\
+    dE/dt &= \beta S(I+A) - \tfrac{1}{d_{EI}}E\\
+    dA/dt &= \tfrac{1-r}{d_{EI}}E - \tfrac{1}{d_{IR}}A\\
+    dI/dt &= \tfrac{r}{d_{EI}}E - (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I\\
+    dH/dt &= \alpha (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I - (\tfrac{\kappa}{d_{HQ}}\tfrac{1-\kappa}{d_{HR}})H \\
+    dQ/dt &= \kappa (\tfrac{\kappa}{d_{HQ}}\tfrac{1-\kappa}{d_{HR}})H - (\tfrac{\delta}{d_{QD}}\tfrac{1-\delta}{d_{QR}})Q \\
+    dV/dt &= p_V Q\\
+    dD/dt &= \delta (\tfrac{\delta}{d_{QD}}\tfrac{1-\delta}{d_{QR}})Q\\
+    dR/dt &= (1-\alpha) (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I + (1-\kappa) (\tfrac{\kappa}{d_{HQ}}\tfrac{1-\kappa}{d_{HR}})H + (1-\delta)(\tfrac{\delta}{d_{QD}}\tfrac{1-\delta}{d_{QR}})Q + \tfrac{1}{d_{IR}}A   \
+\end{align*}
+$$
+
+$$
+R0 = \beta ({\frac{r}{\tfrac{\alpha}{d_{IH}}+\tfrac{1-\alpha}{d_{IR}}}+ (1-r){d_{IR}}})
+\\
+N=S+E+A+I+H+Q+D+R
+$$
+
+
+### Model parameters
+
+| Parameter | Description                                                       | Value                                     |
+|-----------|-------------------------------------------------------------------|-------------------------------------------|
+| $R0$      | Basic reproductive number                                         | Estimated                                 |
+| $\beta$   | transmission rate                                                 | Analytically derived from model and R0    |
+| $d_{EI}$  |  days between exposure and infectivity   (incubation period)      | 5 days                                    |
+| $d_{IH}$  | days between symptom onset and  hospitalization (if required)     | 10 days                                   |
+| $d_{IR}$  | days between symptom onset and  recovery (if not hospitalized)    | 7 days                                    |
+| $d_{HQ}$  | days between hospitalization and  ICU (if required)               | 1 days                                    |
+| $d_{QR}$  | days between hospitalization and  recovery (if ICU not required)  | 12 days                                   |
+| $d_{QD}$  | days between ICU and fatality                                     | 8 days                                    |
+| $d_{QR}$  | days between ICU and recovery                                     | 7 days                                    |
+| $\alpha$  | probability infected (I) requires  hospitalization (vs. recovers) | Estimated                                 |
+| $\kappa$  | probability hospitalized (H)  requires ICU (vs. recovers)         | Estimated                                 |
+| $\delta$  | probability ICU (Q) patient dies                                  | Estimated                                 |
+| $p_V$     |  probability ventilation (V) required  given ICU                  | Estimated                                 |
+| $N$       | Total population size                                             |                                           |
+| $S$       | Susceptible population                                            |                                           |
+| $E$       | Exposed not yet infectious                                        |                                           |
+| $A$       | Infected, unobserved                                              |                                           |
+| $I$       | Infected, observed                                                |                                           |
+| $H$       | In Hospital                                                       |                                           |
+| $Q$       | In ICU                                                            |                                           |
+| $V$       | On ventilator                                                     |                                           |
+| $D$       | Dead                                                              |                                           |
+| $R$       | Recovered/removed                                                 |                                           |
+
+
+**Model parameters - fixed, taken from literature:**
+- Transition times between compartments
+- Sources provided at [this link](https://docs.google.com/spreadsheets/d/1PQttOS0VllpDGZswngMBIX5GMV2cMAxyseD3L-aNw-U/edit#gid=1798107562)
+
+**Model Parameters — estimated by our model**
+- $R0$, the reproductive number or average number of new infections generated by an infected person in a completely susceptible population
+- $r$, the proportion of illnesses that are observed
+- $Frac_{R0}$, the reduction in the initial R0 due to social distancing
+- $\alpha$, the probability of hospitalization given illness, i.e. $Pr(Hospital | Illness)$
+- $\kappa$, the probability of ICU care necessary given hospitalization, i.e. $Pr(ICU | Hospital)$
+- $p_v$, the probability of ventilation given ICU care, i.e. $Pr(Ventilation | ICU)$
+- $\delta$, the probability of death given ICU care, i.e. $Pr(Death | ICU)$
+
+### Projections by Key Risk Groups and Risk Factors
+
+We analyze how population prevalence of known COVID-19 *risk factors*: advanced age, existence of other health conditions or comorbidities, smoking status, and obesity status, affect COVID-19 illness trajectories in L.A. County and spatial subdivisions.
+
+**(1) Estimating the conditional probability of COVID illness severity given combinations of risk factors** 
+
+- Using studies reporting the marginal risk of severe COVID-19 outcomes given individual risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with combinations of risk factors.
+- Specifically, we estimate the probability that individuals having (or not) combinations of risk factors are admitted to hospital given having acquired illness $Pr(Hospital | Illness)$, are admitted to the ICU given admittance to hospitalized $Pr(ICU | Hospital)$, and that die given being admitted to the ICU $Pr(Death | ICU)$.
+- Our methodology for joint risk factor estimation relies on a model, called JAM, developed for use in genome-wide analyses to identify the conditional relative risk (RR) of phenotypic occurrence given joint combinations of genes from two pieces of information: (i) the marginal RR between single genes and phenotype and (ii) the correlation structure between the genes. 
+- We apply the JAM model to estimate the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors. For information informing (i) we obtain the marginal RR between individual risk factors and COVID-19 illness severity from published COVID-19 studies (sources below, peer-reviewed where available). For (2), we obtain the correlation structure between the risk factors using data from The National Health and Nutrition Examination Survey (NHANES). NHANES is a survey research program conducted by the National Center for Health Statistics (NCHS) to assess the health and nutritional status of adults and children in the United States, and to track changes over time. We use the NHANES cohort of 2018-2019.
+- After obtaining the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors, we convert these to the probabilities $Pr(Hospital | Illness, Profile_i)$, $Pr(ICU | Hospital,Profile_i)$, and $Pr(Death | ICU,Profile_i)$.
+- The analysis we present here has taken the combinations of risk factors and grouped these into 5 key *risk groups* according to similar within-group levels of the probabilities $Pr(Hospital | Illness, Profile_i)$, $Pr(ICU | Hospital, Profile_i)$, and $Pr(Death | ICU, Profile_i)$. 
+- To produce an estimate of the overall $Pr(Hospital | Illness)$ across all risk groups for L.A. County and subpopulations, we take the weighted average of the probability for each risk group and the prevalence of the risk group in all illnesses, i.e.
+
+$$
+\begin{align*}
+Pr(Hospital | Illness) = \sum_i Pr(Group_i | Illness)Pr(Hospital|Group_i,Illness)
+\end{align*}
+$$
+We assume that the prevalence of the risk group in the ill population, $Pr(Group_i|Illness)$, is equal to the prevalence of the group in the general population of L.A. County, i.e. $Pr(Group_i)$. We again borrow the correlation structure between risk factors derived from the NHANES cohort to estimate the population prevalence $Pr(Group_i)$ from available data on the prevalence of individual risk factors.
+
+The same approach is applied to estimate $Pr(ICU | Hospital)$ and $Pr(Death|ICU)$:
+$$
+\begin{align*}
+Pr(ICU | Hosptial) = \sum_i Pr(Group_i | Hospital)Pr(ICU|Group_i,Hospital)\\
+Pr(Death | ICU) = \sum_i Pr(Group_i | ICU)Pr(Death|Group_i,ICU)
+\end{align*}
+$$
+
+**(2) Estimating the proportion of each risk group that will make up the cohorts of COVID patients admitted to hospital, admitted to ICU, or that die in L.A. County and SPAs**
+
+- We estimate the proportion of each risk group that will make up the cohorts of COVID patients admitted to hospital ($Pr(Group_i|Hospital$)), admitted to ICU ($Pr(Group_i|ICU$)), or death ($Pr(Group_i|Death$)) in L.A. County population and each SPA, as the relative share of each group and disease status, i.e.
+$$
+\begin{align*}
+Pr(Group_i|Hospital) = \frac{Pr(Group_i|Illness)Pr(Hospital|Group_i,Illness)}{Pr(Hospital|Illness)}\\
+Pr(Group_i|ICU) = \frac{Pr(Group_i|Hospital)Pr(ICU|Group_i,Hospital)}{Pr(ICU|Hospital)}\\
+Pr(Group_i|Death) = \frac{Pr(Group_i|ICU)Pr(Death|Group_i,ICU)}{Pr(Death|ICU)}\\
+\end{align*}
+$$
+We multiply the group prevalences above by the trajectory median values for number in hospital, ICU, and death from the epidemic model to arrive at the trajectory breakdowns presented above.
+
+**Data sources**
+
+- The comorbidities included in the "any comorbidity" category are: hypertension, diabetes, cardiovascular disease, cerebrovascular disease / stroke, cancer, COPD, and athsma. It is important to note that each of these conditions has its own risk of disease outcome; future models will disaggregate risk estimates by specific risk conditions when sufficient data becomes available to produce these estimations. 
+Studies on COVID-19 clinical presentation and trajectories to inform the probability of hospitalization, ICU, and ventilation based on single risk factors:
+- Guan, Wei-jie, et al. "[Clinical characteristics of coronavirus disease 2019 in China.](https://www.nejm.org/doi/full/10.1056/NEJMoa2002032)" New England Journal of Medicine (2020). 
+- Petrilli, Christopher M., et al. "[Factors associated with hospitalization and critical illness among 4,103 patients with COVID-19 disease in New York City](https://www.medrxiv.org/content/10.1101/2020.04.08.20057794v1)." medRxiv (2020).
+- [Summary table of the modified Relative Risks (RR) coming from these studies, which are used by our statistical model estimates](https://docs.google.com/spreadsheets/d/1Crsz7hfgBx4_-SsZI7u0e6IrHlQa-qVPbr3N87fUuqg/edit#gid=1637953801) 
+
+## Limitations
+- This model does not account for differences in contact patterns within and across key groups, such as workplaces, schools, and communities; or of group-specific social distancing scenarios.
+- This model does not account for the role of interventions beyond social distancing, such as contact tracing and surveillance testing, which are critical to identifying and limiting the spread of the virus.
+- This model focuses only on the direct effects of stay-at-home orders on COVID-19 infection transmission and hospitalization. It does not account for the non-COVID-19 related public health impact of stay-at-home orders.
+- This model does not account for unanticipated behavioral responses to the effects of interventions or mitigation strategies
+- New information about the epidemiological characteristics of COVID-19 is continuously arising, and incorporating the latest information into our models is possible and will be key to maintaining its relevance for decision insights. 
+
+# Coming soon
+
+- Projections by SPA
+- Projections by race/ethnicity
+
+# Team
+
+[Abigail Horn](www.abigail-horn.com)
+
+[Lai Jiang](https://scholar.google.com/citations?user=GhsMHqYAAAAJ&hl=en)
+
+[Emil Hvirfeldt](https://www.hvitfeldt.me/)
+
+[Wendy Cozen](https://keck.usc.edu/faculty-search/wendy-cozen/)
+
+[David Conti](https://keck.usc.edu/faculty-search/david-v-conti/)
+
+# Acknowledgements
+- We would like to acknowledge Claire Jacquillat and Adam Taylor for their contributions related to data wrangling, cleaning, interpretation, and visualization.
+
+# Appendix
+
+Specification of stochastic model
+
+## Specification of stochastic model
+
+```{r stochastic-model}
+lang_output <- function(x, lang) {
+  cat(c(sprintf("```%s", lang), x, "```"), sep = "\n")
+}
+r_output <- function(x) lang_output(x, "r")
+r_output(readLines(path_seihqdr_model))
+```
 
 
