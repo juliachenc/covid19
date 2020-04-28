@@ -1315,12 +1315,223 @@ p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d
 </div>
 </div>
 
+## {-}
 
+```{r trajectory-process-clean, include=FALSE}
+## PROCESS TRAJ.OUT TO FIND MEAN  ############################################################################
+H.mean <- traj.CI.out %>% select(c(date,state.name,mean)) %>% filter(state.name==c("Htot"))
+Q.mean <- traj.CI.out %>% select(c(date,state.name,mean)) %>% filter(state.name==c("Q"))
+D.mean <- traj.CI.out %>% select(c(date,state.name,mean)) %>% filter(state.name==c("D"))
 
+H.mean$H <- H.mean$mean
+H.mean$mean <- NULL
+H.mean$state.name <- NULL
+Q.mean$Q <- Q.mean$mean
+Q.mean$mean <- NULL
+D.mean$D <- D.mean$mean
+D.mean$mean <- NULL
+HQD.mean <- cbind(cbind(H.mean,Q.mean$Q),D.mean$D)
+colnames(HQD.mean) <- c("date","H","Q","D")
 
+## FIX DATES ##################################################################
+HQD.mean$date <- as.Date(HQD.mean$date)
 
+## ORGANIZE / CLEAN ##################################################################
+HQD.mean2 <- HQD.mean
+HQD.mean2$Hospitalizations <- HQD.mean2$H
+HQD.mean2$H <- NULL
+HQD.mean2$ICU <- HQD.mean2$Q
+HQD.mean2$Q <- NULL
+HQD.mean2$Deaths <- HQD.mean2$D
+HQD.mean2$D <- NULL
+HQD.mean2 <- melt(HQD.mean2,id = 'date')
+HQD.mean2$Stage <- HQD.mean2$variable
+HQD.mean2$variable <- NULL
 
+HQD.mean2$Stage <- factor(HQD.mean2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+```
 
+```{r trajectory-groupby.risk, include=FALSE}
+
+# Trajectory count data 
+
+#pull the total for each risk profile by stage
+count_risk_profile <- function(group) {
+  grouped.by.data <- full.data %>% 
+  dplyr::group_by(stage, {{group}}, SPA.Name) %>% 
+  dplyr::summarise(values = sum(values)) %>%
+  ungroup
+
+  #Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
+  grouped.by.data$stage <- factor(grouped.by.data$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+  
+  #match the daily count naming
+  grouped.by.data$stage[grouped.by.data$stage == "prevalence.H"] <- "Hospitalizations"
+  grouped.by.data$stage[grouped.by.data$stage == "prevalence.Q"] <- "ICU"
+  grouped.by.data$stage[grouped.by.data$stage == "prevalence.D"] <- "Deaths"
+  
+  #break down daily count by risk profile
+  left_join(
+    HQD.mean2 %>% dplyr::rename(count=value), 
+    grouped.by.data,
+    by = c("Stage" = "stage")
+  ) %>% 
+    dplyr::rename(prop=values) %>% 
+    mutate(count_res=round(count*prop,3))
+}
+
+count.risk <- count_risk_profile(riskprofile)
+count.comb <- count_risk_profile(comorbidity)
+count.age <- count_risk_profile(age)
+count.BMI <- count_risk_profile(BMI)
+count.smoke <- count_risk_profile(smoking)
+```
+
+```{r}
+#Hospitalizations
+trajectory_chart <- function(data, fill, stage, y.label) {
+  ggplot(filter(data, SPA.Name == 'LA County' & Stage == stage), 
+         aes(x = date,
+             y = count_res,
+             fill = {{fill}})) +
+    geom_area() +
+    labs(title = glue("{stage} by Risk Profile for LA County"),
+         x = "Date",
+         y = y.label) +
+    scale_x_date(limits = as.Date(c("2020-03-01","2021-01-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+    theme(axis.text.x = element_text(angle = 90), 
+                   strip.text.x = element_text(size = 12, face = "bold"))
+}
+
+p.traj.risk.h <- trajectory_chart(count.risk, fill = riskprofile, stage = "Hospitalizations", y.label = "Numbers in Hospital") +
+      scale_fill_manual("legend", values = risk_color_key) 
+p.traj.risk.q <- trajectory_chart(count.risk, fill = riskprofile, stage = "ICU", y.label = "Numbers in ICU") +
+      scale_fill_manual("legend", values = risk_color_key)
+p.traj.risk.d <- trajectory_chart(count.risk, fill = riskprofile, stage = "Deaths", y.label = "Number deceased") +     
+  scale_fill_manual("legend", values = risk_color_key)
+
+p.traj.comb.h <- trajectory_chart(count.comb, fill = comorbidity, stage = "Hospitalizations", y.label = "Numbers in Hospital")
+p.traj.comb.q <- trajectory_chart(count.comb, fill = comorbidity, stage = "ICU", y.label = "Numbers in ICU")
+p.traj.comb.d <- trajectory_chart(count.comb, fill = comorbidity, stage = "Deaths", y.label = "Number deceased")
+
+p.traj.age.h <- trajectory_chart(count.age, fill = age, stage = "Hospitalizations", y.label = "Numbers in Hospital")
+p.traj.age.q <- trajectory_chart(count.age, fill = age, stage = "ICU", y.label = "Numbers in ICU")
+p.traj.age.d <- trajectory_chart(count.age, fill = age, stage = "Deaths", y.label = "Number deceased")
+
+p.traj.BMI.h <- trajectory_chart(count.BMI, fill = BMI, stage = "Hospitalizations", y.label = "Numbers in Hospital")
+p.traj.BMI.q <- trajectory_chart(count.BMI, fill = BMI, stage = "ICU", y.label = "Numbers in ICU")
+p.traj.BMI.d <- trajectory_chart(count.BMI, fill = BMI, stage = "Deaths", y.label = "Number deceased")
+
+p.traj.smoke.h <- trajectory_chart(count.smoke, fill = smoking, stage = "Hospitalizations", y.label = "Numbers in Hospital")
+p.traj.smoke.q <- trajectory_chart(count.smoke, fill = smoking, stage = "ICU", y.label = "Numbers in ICU")
+p.traj.smoke.d <- trajectory_chart(count.smoke, fill = smoking, stage = "Deaths", y.label = "Number deceased")
+```
+
+## Trajectories: Hospitalizations, ICU, Deaths by Key Risk Factors LA County
+
+<div>
+<!-- Nav tabs -->
+<ul class="nav nav-tabs nav-justified" role="tablist">
+
+<li class="nav-item active">
+<a class="nav-link active" data-toggle="tab" href="#trajectory1tab1"><b>By risk group</b></a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" data-toggle="tab" href="#trajectory1tab2"><b>By age</b></a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" data-toggle="tab" href="#trajectory1tab3"><b>By comorbidity</b></a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" data-toggle="tab" href="#trajectory1tab4"><b>By obesity status</b></a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" data-toggle="tab" href="#trajectory1tab5"><b>By smoking status</b></a>
+</li>
+
+</ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+<div id="trajectory1tab1" class="tab-pane active">
+```{r}
+(p.traj.risk.h + p.traj.risk.q) / p.traj.risk.d
+```
+</div>
+
+<div id="trajectory1tab2" class="tab-pane">
+```{r}
+(p.traj.age.h + p.traj.age.q) / p.traj.age.d
+```
+</div>
+
+<div id="trajectory1tab3" class="tab-pane">
+```{r}
+(p.traj.comb.h + p.traj.comb.q) / p.traj.comb.d
+```
+</div>
+
+<div id="trajectory1tab4" class="tab-pane">
+```{r}
+(p.traj.BMI.h + p.traj.BMI.q) / p.traj.BMI.d
+```
+</div>
+
+<div id="trajectory1tab5" class="tab-pane">
+```{r}
+(p.traj.smoke.h + p.traj.smoke.q) / p.traj.smoke.d
+```
+</div>
+
+</div>
+</div>
+
+## Trajectories: Broken down by key risk factors for LA County
+
+<div>
+<!-- Nav tabs -->
+<ul class="nav nav-tabs" role="tablist">
+
+<li class="nav-item active" style ="width:50%">
+<a class="nav-link active" data-toggle="tab" href="#trajectory2tab1"><b>Hospitalizations by risk group, age, comorbidity, BMI status</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#trajectory2tab2"><b>ICU by risk group, age, comorbidity, BMI status</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#trajectory2tab3"><b>Deaths by risk group, age, comorbidity, BMI status</b></a>
+</li>
+
+</ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+<div id="trajectory2tab1" class="tab-pane active">
+```{r}
+p.traj.risk.h + p.traj.age.h + p.traj.comb.h + p.traj.BMI.h
+```
+</div>
+
+<div id="trajectory2tab2" class="tab-pane">
+```{r}
+p.traj.risk.q + p.traj.age.q + p.traj.comb.q + p.traj.BMI.q
+```
+</div>
+
+<div id="trajectory2tab3" class="tab-pane">
+```{r}
+p.traj.risk.d + p.traj.age.d + p.traj.comb.d + p.traj.BMI.d
+```
+</div>
+
+</div>
+</div>
 
 
 
