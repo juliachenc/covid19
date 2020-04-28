@@ -1087,10 +1087,233 @@ options = list(pageLength = 10,
 )
 ```
 
+## 5 Risk Groups by Stage of Disease and SPA
+
+```{r}
+## 0) PROCESS DATA TO PLOT STACKED BAR CHARTS #######################################################################################
+data.melted <- melt(data, id = c('Profile', 'age', 'BMI', 'smoking', 'comorbidity', 'Pr.H', 'Pr.Q', 'Pr.D', 'riskprofile'))
+
+data.melted$SPA.Name <- data.melted$variable
+data.melted$variable <- NULL
+
+data.melted$SPA.Name <- factor(data.melted$SPA.Name, levels =  c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County"))
+
+data.melted$prevalence.gen.pop <- data.melted$value
+data.melted$value <- NULL
+
+#merge with everything else
+
+full.data <- merge(data.melted, dataH.melted, by = c('Profile', 'SPA.Name' ) )
+full.data <- merge(full.data, dataQ.melted, by = c('Profile', 'SPA.Name' ) )
+full.data <- merge(full.data, dataD.melted, by = c('Profile', 'SPA.Name' ) )
+
+# Risk coloring
+risk_color_key <- c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")
 
 
+## 1) Risk profile #######################################################################################
+risk_profile_chart <- function(y, title) {
+  ggplot(data = full.data, aes(x=SPA.Name, y = {{y}}, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = risk_color_key) + 
+    labs(title = glue("Risk profiles in {title} by SPA"), x = "SPA", y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+}
+
+p.risk.gen <- risk_profile_chart(y = prevalence.gen.pop, title = "hospitalized")
+p.risk.h <- risk_profile_chart(y = prevalence.H, title = "general population")
+p.risk.q <- risk_profile_chart(y = prevalence.Q, title = "ICU")
+p.risk.d <- risk_profile_chart(y = prevalence.D, title = "deceased")
+
+risk_factor_chart <- function(y, fill, title) {
+  ggplot(data = full.data, aes(x = SPA.Name, y = {{y}}, fill = {{fill}})) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = title, x = "SPA", y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+}
+
+## 1) Risk factors in general population ######################################
+p.BMI.gen   <- risk_factor_chart(y = prevalence.gen.pop, fill = BMI, title = "Obesity in general population by SPA")
+p.comb.gen  <- risk_factor_chart(y = prevalence.gen.pop, fill = comorbidity, title = "Comorbidity in general population by SPA")
+p.age.gen   <- risk_factor_chart(y = prevalence.gen.pop, fill = age, title = "Age in general population by SPA")
+p.smoke.gen <- risk_factor_chart(y = prevalence.gen.pop, fill = smoking, title = "Smoking in general population by SPA")
+
+## 2) Risk factors in hospitalized population #################################
+p.BMI.h   <- risk_factor_chart(y = prevalence.H, fill = BMI, title = "Obesity in hospitalized by SPA")
+p.comb.h  <- risk_factor_chart(y = prevalence.H, fill = comorbidity, title = "Comorbidity in hospitalized by SPA")
+p.age.h   <- risk_factor_chart(y = prevalence.H, fill = age, title = "Age in hospitalized by SPA")
+p.smoke.h <- risk_factor_chart(y = prevalence.H, fill = smoking, title = "Smoking in hospitalized by SPA")
+
+## 3) Risk factors in ICU population ##########################################
+p.BMI.q   <- risk_factor_chart(y = prevalence.Q, fill = BMI, title = "Obesity in ICU by SPA")
+p.comb.q  <- risk_factor_chart(y = prevalence.Q, fill = comorbidity, title = "Comorbidity in ICU by SPA")
+p.age.q   <- risk_factor_chart(y = prevalence.Q, fill = age, title = "Age in ICU by SPA")
+p.smoke.q <- risk_factor_chart(y = prevalence.Q, fill = smoking, title = "Smoking in ICU by SPA")
+
+## 4) Risk factors in deceased ################################################
+p.BMI.d   <- risk_factor_chart(y = prevalence.D, fill = BMI, title = "Obesity in deceased by SPA")
+p.comb.d  <- risk_factor_chart(y = prevalence.D, fill = comorbidity, title = "Comorbidity in deceased by SPA")
+p.age.d   <- risk_factor_chart(y = prevalence.D, fill = age, title = "Age in deceased by SPA")
+p.smoke.d <- risk_factor_chart(y = prevalence.D, fill = smoking, title = "Smoking in deceased by SPA")
+```
 
 
+```{r include=FALSE}
+
+# RISK PROFILE AT EACH STAGE FOR LA COUNTY
+
+## RESHAPE DATASET #######################################################################################
+
+full.data <- full.data %>%
+  gather(keys, values, prevalence.gen.pop:prevalence.D )
+full.data$stage <- full.data$keys
+full.data$keys <- NULL 
+full.data$stage <- factor(full.data$stage, levels =  c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D"))
+
+## Prevalence of risk profiles at each stage of disease ##############################################################  
+
+labels.SPA <- c(`Antelope Valley` = 'Antelope Valley' , 
+                `San Fernando` = 'San Fernando' , 
+                `San Gabriel`= 'San Gabriel' , 
+                Metro = 'Metro', 
+                West = 'West', 
+                South = 'South', 
+                East = 'East', 
+                `South Bay` = 'South Bay' , 
+                `LA County` = 'LA County')
+
+p.prev.risk.stage.SPAs <- ggplot(full.data, aes(x = stage, y = values, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    scale_fill_manual("legend", values = risk_color_key) + 
+    facet_wrap(SPA.Name ~ ., labeller=labeller(SPA.Name = labels.SPA)) +
+    labs(title = "Prevalence of risk profiles at each stage for LA County and SPAs", x = "Stage", y = "Prevalence") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+### Risk profiles, comorbidity, age, obesity by stage of disease for LA County ##############################################################  
+
+LA.data <- subset(full.data, SPA.Name == 'LA County')
+
+p.riskprofiles <- 
+  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    scale_fill_manual("legend", values = risk_color_key) + 
+    labs(title = "Risk Profiles By Stage of Disease", x = "Stage", y = "Prevalence") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+la_risk_factor_chart <- function(fill, title) {
+  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = {{fill}})) +
+    geom_bar(position="stack", stat = 'identity') + 
+    labs(title = title, x = "Stage", y = "Prevalence") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+}
+
+p.BMI <-     la_risk_factor_chart(BMI, "Obesity By Stage of Disease")
+p.age <-     la_risk_factor_chart(age, "Age By Stage of Disease")
+p.comb <-    la_risk_factor_chart(comorbidity, "Any Comorbidity By Stage of Disease")
+p.smoking <- la_risk_factor_chart(smoking, "Smoking Status By Stage of Disease")
+```
+
+- These figures show the estimated proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within the L.A. County/SPA population, based on the population prevalence of the risk group in L.A. County/SPAs. 
+- The analyses are presented for each risk group, as well as stratified to the individual risk factors (age, comorbidities, obesity status, smoking status).
+
+<div>
+<!-- Nav tabs -->
+<ul class="nav nav-tabs nav-justified" role="tablist">
+
+<li class="nav-item active">
+<a class="nav-link active" data-toggle="tab" href="#riskgrouptab1"><b>By SPA, stage of disease</b></a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" data-toggle="tab" href="#riskgrouptab2"><b>By stage of disease, SPA</b></a>
+</li>
+
+</ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+<div id="riskgrouptab1" class="tab-pane active">
+```{r}
+p.risk.gen + p.risk.h + p.risk.q + p.risk.d
+```
+</div>
+
+<div id="riskgrouptab2" class="tab-pane">
+```{r}
+p.prev.risk.stage.SPAs
+```
+</div>
+
+</div>
+</div>
+
+## Key Risk Factors by Stage of Disease
+
+<div>
+<!-- Nav tabs -->
+<ul class="nav nav-tabs" role="tablist">
+
+<li class="nav-item active" style ="width:50%">
+<a class="nav-link active" data-toggle="tab" href="#keyriskfactortab1"><b>Comparing risk factors</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#keyriskfactortab2"><b>Age by stage of disease</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#keyriskfactortab3"><b>Comorbidity by stage of disease</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#keyriskfactortab4"><b>BMI by stage of disease</b></a>
+</li>
+
+<li class="nav-item" style ="width:50%">
+<a class="nav-link" data-toggle="tab" href="#keyriskfactortab5"><b>Smoking by stage of disease</b></a>
+</li>
+
+</ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+<div id="keyriskfactortab1" class="tab-pane active">
+```{r}
+p.riskprofiles + p.comb + p.age + p.BMI
+```
+</div>
+
+<div id="keyriskfactortab2" class="tab-pane">
+```{r}
+p.age.gen + p.age.h + p.age.q + p.age.d
+```
+</div>
+
+<div id="keyriskfactortab3" class="tab-pane">
+```{r}
+p.comb.gen + p.comb.h + p.comb.q + p.comb.d
+```
+</div>
+
+<div id="keyriskfactortab4" class="tab-pane">
+```{r}
+p.BMI.gen + p.BMI.h + p.BMI.q + p.BMI.d
+```
+</div>
+
+<div id="keyriskfactortab5" class="tab-pane">
+```{r}
+p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d
+```
+</div>
+
+</div>
+</div>
 
 
 
