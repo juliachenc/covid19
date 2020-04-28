@@ -11,6 +11,8 @@ library(dplyr)
 library(here)
 library(fs)
 library(dde)
+library(knitr)
+library(kableExtra)
 
 source(here("code/calc_risk_probs_update.R"))
 
@@ -34,7 +36,7 @@ seihqdr_generator <- odin::odin(path_seihqdr_model)
 # no_obs: number of observation days
 ## Read and process the data
 
-obs_cum_new_counts = t(read.csv(here("data", "cum_counts_040920.csv"), sep=",",stringsAsFactors = FALSE))
+obs_cum_new_counts = t(read.csv(here("data", "cum_counts_042420.csv"), sep=",",stringsAsFactors = FALSE))
 colnames<-c("Htotcum","D","Vcum","Idetectcum","H_new","D_new","H_capacity","Q_capacity")
 colnames(obs_cum_new_counts) <- colnames
 obs_cum_new_counts <- as.data.frame(obs_cum_new_counts)
@@ -137,7 +139,7 @@ tolerance=c(15,4) # defining the sequence of tolerance levels
 
 ###################################################################################################
 ## RUN ABC ALGORITHM
-ABC_Wegmann<-ABC_mcmc(method="Wegmann",model=model.1sim.stats,prior=prior.par,
+ABC_Wegmann<-ABC_mcmc(method="Marjoram",model=model.1sim.stats,prior=prior.par,
                       summary_stat_target=summarydata, n_calibration=2000,
                       tolerance_quantile=0.1,verbose=TRUE,progress=TRUE)
 
