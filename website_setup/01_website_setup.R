@@ -132,7 +132,7 @@ prior.Delta <- c("unif",0.2,0.8)
 prior.Alpha <- c("unif",Alpha.prior.mean - (Alpha.prior.mean/6), Alpha.prior.mean + (Alpha.prior.mean/2))
 prior.Kappa <- c("unif",Kappa.prior.mean - (Kappa.prior.mean/6), Kappa.prior.mean + (Kappa.prior.mean/2))
 prior.p_V <- c("unif",0.6,0.9)
-prior.par <- list(prior.R0, prior.r,prior.st,prior.R0.redux,prior.Delta,prior.Alpha,prior.Kappa,prior.p_V)
+prior.par <-list(prior.R0, prior.r,prior.st,prior.R0.redux,prior.Delta,prior.Alpha,prior.Kappa,prior.p_V,prior.R0.redux)
 
 ## OTHER INPUTS
 tolerance=c(15,4) # defining the sequence of tolerance levels
