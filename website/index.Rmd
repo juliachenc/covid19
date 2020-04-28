@@ -24,6 +24,7 @@ library(odin)
 library(fitR)
 library(knitr)
 library(kableExtra)
+library(formattable)
 ```
 
 ```{r}
@@ -113,7 +114,7 @@ abc_priors <- tribble(
 # no_obs: number of observation days
 ## Read and process the data
 
-obs_cum_new_counts = t(read.csv(here("data", "cum_counts_040920.csv"), sep=",",stringsAsFactors = FALSE)) 
+obs_cum_new_counts = t(read.csv(here("data", "cum_counts_042420.csv"), sep=",",stringsAsFactors = FALSE)) 
 colnames<-c("Htotcum","D","Vcum","Idetectcum","H_new","D_new","H_capacity","Q_capacity")
 colnames(obs_cum_new_counts) <- colnames
 obs_cum_new_counts <- as.data.frame(obs_cum_new_counts)
@@ -807,7 +808,284 @@ p.D.3.June1 <- forecast_plotting_function(traj.CI = traj.3.June1,
 </div>
 </div>
 
+# Projections by Key Risk Groups and Risk Factors 
 
+- We analyze how population prevalence of known COVID-19 *risk factors*: advanced age, existence of other health conditions or comorbidities, smoking status, and obesity status, affect COVID-19 illness trajectories in L.A. County and spatial subdivisions.
+
+- First, we estimate the conditional probability of COVID illness severity given combinations of risk factors. We categorize the population into a number of *risk profiles*, representing different combinations of known COVID-19 *risk factors*: advanced age, existence of other health conditions or comorbidities, smoking status, and obesity status. Using previous COVID-19 studies reporting the marginal risk of severe COVID-19 outcomes given individual risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals having or not having combinations of risk factors represented by these *risk profiles*. Specifically, we estimate the probability that individuals within a specific risk group are admitted to hospital given having acquired illness $Pr(Hospital | Illness, Profile_i)$, are admitted to the ICU given admittance to hospitalized $Pr(ICU | Hospital, Profile_i)$, and that die given being admitted to the ICU $Pr(Death | ICU, Profile_i)$. More information is provided below under **Methods and Data**.
+
+- For the analysis below, we have grouped the multiple *risk profiles* into 5 key *risk groups* according to similar within-group levels of the probabilities $Pr(Hospital | Illness, Profile_i)$, $Pr(ICU | Hospital, Profile_i)$, and $Pr(Death | ICU, Profile_i)$. 
+
+- Second, we use these probabilities to estimate the proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within the L.A. County population, based on the prevalence of each risk group in the population.
+
+- Results are also presented for each Service Planning Area (SPA) population within L.A. County. [A SPA is a specific geographical region within Los Angeles County used by the Department of Public Health to plan and provide health services](http://publichealth.lacounty.gov/chs/SPAMain/ServicePlanningAreas.htm). There are 8 SPAs in Los Angeles County. 
+
+### Risk Profiles, Risk Factors, and Risk Groups
+
+- The following table presents the model-estimated probabilities $Pr(Hospital | Illness,Profile_i)$, $Pr(ICU | Hospital,Profile_i)$, and $Pr(Death | ICU,Profile_i)$ for each risk group (or combination of risk factors), as well as the prevalence of these risk groups/factors in the general L.A. County Population $Pr(Profile_i)$.
+
+```{r load.data, include=FALSE}
+# LOAD DATA
+
+### Data from calc_risk_profiles_042220
+profile.cnt.SPAs <- readr::read_csv(here("results", "ProfilePrev.GeneralPop.csv"))
+H.profile.share.relative.all.SPAs <- readr::read_csv(here("results", "ProfilePrev.HospitalPop.csv"))
+Q.profile.share.relative.all.SPAs <- readr::read_csv(here("results", "ProfilePrev.ICUPop.csv"))
+D.profile.share.relative.all.SPAs <- readr::read_csv(here("results", "ProfilePrev.DeadPop.csv"))
+
+##import prevalence by profile
+data <- as.data.frame(profile.cnt.SPAs)
+dataH <- as.data.frame(H.profile.share.relative.all.SPAs)
+dataQ <- as.data.frame(Q.profile.share.relative.all.SPAs)
+dataD <- as.data.frame(D.profile.share.relative.all.SPAs)
+
+#import the probability by profile
+Pr.H <- read_csv(here("results", "Pr.H.BMI.csv"))
+Pr.Q <- read_csv(here("results", "Pr.Q.BMI.csv"))
+Pr.D <- read_csv(here("results", "Pr.D.BMI.csv"))
+
+SPA.data <- risk.probs.SPAs
+
+### Data from estimated SEIR model (traj.CI.out) ##################################################
+traj.CI.out <- traj.0
+```
+
+```{r clean-process-data, include=FALSE}
+# CLEAN AND PROCESS DATA
+
+## 1) RENAME VARIABLES #############################################################################
+
+#Change the profile numbers to factors and name the variable
+Profile <- factor(seq(1,nrow(data)))
+data <- cbind(data,Profile)
+
+## dataH ##
+
+#Change the profile numbers to factors and name the variable
+dataH <- cbind(dataH,Profile)
+
+#Drop variables we don't care about (they are included in the whole dataset, this will avoid dupliactes)
+dataH$Age0.19 <- NULL
+dataH$Age20.44 <- NULL
+dataH$Age45.64 <- NULL  
+dataH$Age65. <- NULL
+dataH$ObesityBMI.30 <- NULL
+dataH$ObesityBMI30.40 <- NULL
+dataH$ObesityBMI.40 <- NULL
+dataH$SmokingYes <- NULL
+dataH$ComorbidityYes <- NULL
+dataH$X1 <- NULL
+  
+#melt data
+dataH.melted <- melt(dataH, id = 'Profile')
+dataH.melted$SPA.Name <- dataH.melted$variable
+dataH.melted$variable <- NULL
+dataH.melted$SPA.Name <- factor(dataH.melted$SPA.Name, levels =  c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County"))
+dataH.melted$prevalence.H <- dataH.melted$value
+dataH.melted$value <- NULL
+
+## dataQ ##
+
+#Change the profile numbers to factors and name the variable
+dataQ <- cbind(dataQ, Profile)
+
+#Drop variables we don't care about (they are included in the whole dataset, this will avoid dupliactes)
+dataQ$Age0.19 <- NULL
+dataQ$Age20.44 <- NULL
+dataQ$Age45.64 <- NULL  
+dataQ$Age65. <- NULL
+dataQ$ObesityBMI.30 <- NULL
+dataQ$ObesityBMI30.40 <- NULL
+dataQ$ObesityBMI.40 <- NULL
+dataQ$SmokingYes <- NULL
+dataQ$ComorbidityYes <- NULL
+dataQ$X1 <- NULL
+
+#melt data
+dataQ.melted <- melt(dataQ, id = 'Profile')
+dataQ.melted$SPA.Name <- dataQ.melted$variable
+dataQ.melted$variable <- NULL
+dataQ.melted$SPA.Name <- factor(dataQ.melted$SPA.Name, levels =  c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County"))
+dataQ.melted$prevalence.Q <- dataQ.melted$value
+dataQ.melted$value <- NULL
+
+## dataD ##
+
+#Change the profile numbers to factors and name the variable
+dataD <- cbind(dataD,Profile)
+
+#Drop variables we don't care about (they are included in the whole dataset, this will avoid dupliactes)
+dataD$Age0.19 <- NULL
+dataD$Age20.44 <- NULL
+dataD$Age45.64 <- NULL  
+dataD$Age65. <- NULL
+dataD$ObesityBMI.30 <- NULL
+dataD$ObesityBMI30.40 <- NULL
+dataD$ObesityBMI.40 <- NULL
+dataD$SmokingYes <- NULL
+dataD$ComorbidityYes <- NULL
+dataD$X1 <- NULL
+
+
+#melt data
+dataD.melted <- melt(dataD, id = 'Profile')
+dataD.melted$SPA.Name <- dataD.melted$variable
+dataD.melted$variable <- NULL
+dataD.melted$SPA.Name <- factor(dataD.melted$SPA.Name, levels =  c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County"))
+dataD.melted$prevalence.D <- dataD.melted$value
+dataD.melted$value <- NULL
+
+## PrH ## 
+
+#Change the profile numbers to factors and name the variable
+Pr.H$Profile <- factor(seq_len(nrow(Pr.H)))
+
+#Change the name of the variable "Pr" to a more detailed name
+Pr.H$Pr.H <- Pr.H$Pr
+Pr.H$Pr <- NULL
+
+#Drop variables we don't care about (they are included in the whole dataset, this will avoid dupliactes)
+Pr.H$Age0.19 <- NULL
+Pr.H$Age20.44 <- NULL
+Pr.H$Age45.64 <- NULL  
+Pr.H$Age65. <- NULL
+Pr.H$ObesityBMI.30 <- NULL
+Pr.H$ObesityBMI30.40 <- NULL
+Pr.H$ObesityBMI.40 <- NULL
+Pr.H$SmokingYes <- NULL
+Pr.H$ComorbidityYes <- NULL
+Pr.H$X1 <- NULL
+
+## PrQ ##
+
+#Change the profile numbers to factors and name the variable
+Pr.Q$Profile <- factor(seq_len(nrow(Pr.Q)))
+
+#Change the name of the variable "Pr" to a more detailed name
+Pr.Q$Pr.Q <- Pr.Q$Pr
+Pr.Q$Pr <- NULL
+
+#Drop variables we don't care about (they are included in the whole dataset, this will avoid dupliactes)
+Pr.Q$Age0.19 <- NULL
+Pr.Q$Age20.44 <- NULL
+Pr.Q$Age45.64 <- NULL  
+Pr.Q$Age65. <- NULL
+Pr.Q$ObesityBMI.30 <- NULL
+Pr.Q$ObesityBMI30.40 <- NULL
+Pr.Q$ObesityBMI.40 <- NULL
+Pr.Q$SmokingYes <- NULL
+Pr.Q$ComorbidityYes <- NULL
+Pr.Q$X1 <- NULL
+
+## PrD ##
+
+#Change the profile numbers to factors and name the variable
+Pr.D$Profile <- factor(seq_len(nrow(Pr.D)))
+
+Pr.D$Pr.D <- Pr.D$Pr
+Pr.D$Pr <- NULL
+
+#Drop variables we don't care about (they are included in the whole dataset, this will avoid dupliactes)
+Pr.D$Age0.19 <- NULL
+Pr.D$Age20.44 <- NULL
+Pr.D$Age45.64 <- NULL  
+Pr.D$Age65. <- NULL
+Pr.D$ObesityBMI.30 <- NULL
+Pr.D$ObesityBMI30.40 <- NULL
+Pr.D$ObesityBMI.40 <- NULL
+Pr.D$SmokingYes <- NULL
+Pr.D$ComorbidityYes <- NULL
+Pr.D$X1 <- NULL
+
+
+## 2) DUMMY VARIABLES <- LEVELS ##################################################################
+data$X1 <- NULL
+data$age <- "Blank"
+data$age[data$Age0.19==1] <- "0-19"
+data$age[data$Age20.44==1] <- "20-44"
+data$age[data$Age45.64==1] <- "45-64"
+data$age[data$Age65.==1] <- "65+"
+data$Age0.19 <- NULL
+data$Age20.44 <- NULL
+data$Age45.64 <- NULL
+data$Age65. <- NULL
+data$age <- factor(data$age, levels =  c("0-19", "20-44", "45-64", "65+"))
+
+data$BMI <- "Blank"
+data$BMI[data$ObesityBMI.30==1] <- "BMI<30"
+data$BMI[data$ObesityBMI30.40==1] <- "30<BMI<40"
+data$BMI[data$ObesityBMI.40==1] <- "BMI>40"
+data$ObesityBMI.30 <- NULL
+data$ObesityBMI30.40 <- NULL
+data$ObesityBMI.40 <- NULL
+
+data$BMI <- factor(data$BMI, levels =  c("BMI<30", "30<BMI<40", "BMI>40"))
+
+data$smoking <- "Blank"
+data$smoking[data$SmokingYes==1] <- "Smoker"
+data$smoking[data$SmokingYes==0] <- "Non Smoker"
+data$smoking <- factor(data$smoking, levels = c("Smoker", "Non Smoker"))
+
+data$SmokingYes <- NULL
+
+data$comorbidity <- "Blank"
+data$comorbidity[data$ComorbidityYes==1] <- "Comorbidity"
+data$comorbidity[data$ComorbidityYes==0] <- "No Comorbidity"
+data$comorbidity <- factor(data$comorbidity, levels = c("Comorbidity", "No Comorbidity"))
+
+data$ComorbidityYes <- NULL
+
+
+## 3) MERGE DATASETS ##################################################################
+
+data <- merge(data, Pr.H, by = "Profile")
+data <- merge(data, Pr.Q, by = "Profile")
+data <- merge(data, Pr.D, by = "Profile")
+
+
+## 4) Create Risk Profile Groupings ##################################################################
+### NOTE: Grouping done by death risk level
+data$riskprofile <- "Blank"
+data$riskprofile[data$Pr.D<.01] <- "Risk 5"
+data$riskprofile[(data$Pr.D<.07) & (data$Pr.D>.01)] <- "Risk 4"
+data$riskprofile[(data$Pr.D<.14) & (data$Pr.D>.07)] <- "Risk 3"
+data$riskprofile[(data$Pr.D<.24) & (data$Pr.D>.14)] <- "Risk 2"
+data$riskprofile[(data$Pr.D>.24)] <- "Risk 1"
+# data$riskprofile[data$Pr.D<.01] <- "Risk 5"
+# data$riskprofile[(data$Pr.D<.09) & (data$Pr.D>.01)] <- "Risk 4"
+# data$riskprofile[(data$Pr.D<.19) & (data$Pr.D>.09)] <- "Risk 3"
+# data$riskprofile[(data$Pr.D<.3) & (data$Pr.D>.19)] <- "Risk 2"
+# data$riskprofile[(data$Pr.D>.3)] <- "Risk 1"
+data$riskprofile <- factor(data$riskprofile, levels = c("Risk 1", "Risk 2", "Risk 3", "Risk 4", "Risk 5" ))
+
+## Round all numeric variable to 3 digits
+data <- data %>% 
+  mutate_if(is.numeric, round, digits = 3)
+```
+
+```{r risk-profile-table, echo=FALSE}
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+as.datatable(formattable(subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+            align =c("l","l","l","l","l","l","l","c","c","c","l","l","l"), 
+            list(
+  #`Profile` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+  `age`= color_tile('yellow', 'darkorange'),
+  `BMI`= color_tile('lightblue', 'pink'),
+  `smoking`= color_tile('grey', 'transparent'),
+  `comorbidity`= color_tile('darkgrey', 'transparent'),
+  `riskprofile`= color_tile('red', 'green'),
+  `LA County`= color_bar('cornflowerblue', fun = unit.scale),
+  `Pr.H`= color_bar('violet', fun = unit.scale),
+  `Pr.Q`= color_bar('violet', fun = unit.scale),
+  `Pr.D`= color_bar('violet', fun = unit.scale)
+)), rownames = FALSE, colnames = c('Pop prevalence Pr(Profile i in L.A.County)' = 'LA County', 'Age' = 'age', 'BMI status' = 'BMI', 'Smoking status' = 'smoking', 'Existing comorbidities' = 'comorbidity', 'Risk Group' = 'riskprofile', 'Pr(Hospital|Illness)' = 'Pr.H', 'Pr(ICU|Hospital)' = 'Pr.Q', 'Pr(Death|ICU)' = 'Pr.D' ), 
+#filter = 'bottom', 
+options = list(pageLength = 10, 
+               autoWidth = TRUE, 
+               order = list(list(6, 'desc'), list(7, 'desc'), list(8, 'desc')))
+)
+```
 
 
 
