@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, 
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, cache = TRUE,
                       out.width = "100%",
                       fig.asp = 0.619, fig.width = 10,
                       dpi = 100)
@@ -20,7 +20,7 @@ library(patchwork)
 library(here)
 library(glue)
 library(odin)
-library(fitR)
+library(fitR) # remotes::install_github("sbfnk/fitR")
 library(knitr)
 library(kableExtra)
 library(formattable)
