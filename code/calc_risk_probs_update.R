@@ -1,7 +1,8 @@
 
 ###############################################################################################################
 ## CALCULATE RISK PROBABILITIES
-## V2 - UPDATING PR(Q) WITH POP PREVALENCE OF PR(H)
+## UPDATING PR(Q) WITH POP PREVALENCE OF PR(H)
+## ADDING OBESITY
 ###############################################################################################################
 
 
@@ -188,12 +189,13 @@ write.csv(D.profile.share.relative.all.SPAs, file = path(data.dir, "ProfilePrev.
 
 ### Dataframe with risk probabilities
 risk.probs.SPAs <-
-  data.frame(H.risk.all.SPAs,Q.risk.all.SPAs,D.risk.all.SPAs) %>%
-  mutate(H.risk.all.SPAs = round(H.risk.all.SPAs,5),
-         Q.risk.all.SPAs = round(Q.risk.all.SPAs,5), D.risk.all.SPAs = round(D.risk.all.SPAs,5))
+  data.frame(H.risk.all.SPAs, Q.risk.all.SPAs, D.risk.all.SPAs) %>%
+  mutate(H.risk.all.SPAs = round(H.risk.all.SPAs, 3),
+         Q.risk.all.SPAs = round(Q.risk.all.SPAs, 3),
+         D.risk.all.SPAs = round(D.risk.all.SPAs, 3))
 
 rownames(risk.probs.SPAs) <- SPA.order
-names(risk.probs.SPAs) <- c("Pr(H)","Pr(Q)","Pr(D)")
+names(risk.probs.SPAs) <- c("Pr(Hospital|Illness)", "Pr(ICU|Hosptial)", "Pr(Death|ICU)")
 
 data.dir = here("results")
 write.csv(risk.probs.SPAs, file = path(data.dir, "Over.SPAs.Risk.Probs.csv"))
