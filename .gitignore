@@ -1,3 +1,5 @@
 .Rproj.user
 .Rhistory
 .RData
+website/index_*
+*/DS_Store
