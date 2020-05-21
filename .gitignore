@@ -2,4 +2,5 @@
 .Rhistory
 .RData
 website/index_*
-*/DS_Store
+*.DS_Store
+*_cache
