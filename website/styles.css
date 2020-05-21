@@ -1,9 +1,0 @@
-.nav-tabs.nav-justified>li>a {
-    color: darkred;
-    font-size: 1.3em;
-}
-
-.nav-tabs.nav-justified>.active>a {
-    background-color: #eee;
-    color: #444;
-}

@@ -1,0 +1,10 @@
+name: "USC Predicts COVID19"
+output_dir: "_site"
+exclude: ["code", "data", "results", "n_simul_tot_step1", "output_mcmc"]
+navbar:
+  title: "USC Predicts COVID19"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
