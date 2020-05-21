@@ -1,10 +1,9 @@
 ---
 title: "USC Predict COVID Project: \n Predictive Epidemic Model for COVID-19 in Los Angeles County"
-author: "Abigail Horn, PhD^[abigail.horn@usc.edu], David Conti, PhD"
-date: "5/15/2020"
+author: "University of Southern California Department of Preventive Medicine"
 ---
 
-### Updated with data available as of `r Sys.Date()`
+Updated with data available as of `r Sys.Date()`
 
 ``` {r setup, include=FALSE}
 
@@ -71,6 +70,8 @@ code.dir=here("code/")
 data.dir=here("data/")
 result.dir = here("results/")
 ```
+
+<br>
 
 # Aims
 
