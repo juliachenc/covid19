@@ -27,7 +27,7 @@ colnames(scenarios_table) <- c("Scenario", "% of orig. R0", "% increase from cur
 
 ### Scenarios evaluated
 
-`r length(R0_redux_scenarios)` are illustrated here. Each scenario corresponds to a different amount of contact rate, and can be understood in terms of:
+Here we evaluate the impact of `r length(R0_redux_scenarios)` scenarios, each corresponding to a different contact rate. These scenarios can be understood in terms of:
 
 - The *Effective $R0$*: The effective R0 this % decrease corresponds to
 - The *% of original $R0$*: % of the original (pre-social-distancing) $R0$ the effective $R0$ this scenario represents

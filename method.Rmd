@@ -389,9 +389,9 @@ We multiply the group prevalences above by the trajectory median values for numb
 - We use current numbers of **infected (observed)**, **hospitalized**, **ICU**, **ventilated**, and **deaths**, as well as the capacity (total number of resouces available) at hospitals, ICUs, and ventilators in L.A. County from the Los Angeles County Department of Public Health, updated daily by Faith Washburn (shared privately)
 - The data used in this version of the report includes counts up through `r Sys.Date()`
 
-### Data processing: Skilled Nursing Facility (SNF) counts removed from LA County daily counts 
+### Data processing: Nursing home counts removed from LA County daily counts 
 
-- We are fitting our model to the general COVID-19 illness trends in L.A. County. Due to the large number of outbreaks and the share of deaths coming from nursing homes (Skilled Nursing Facilities, SNFs), we have removed estimated numbers of illnesses, hospitalizations, ICU visits, ventilations, and deaths from SNFs. We fit our general population model to the data with the SNF cases removed, as illustrated below.
+- We are fitting our model to the general COVID-19 illness trends in L.A. County. Due to the large number of outbreaks and the share of deaths coming from nursing homes (i.e., Skilled Nursing Facilities, SNFs), we have removed estimated numbers of illnesses, hospitalizations, ICU visits, ventilations, and deaths from SNFs. We fit our general population model to the data with the SNF cases removed, as illustrated below.
 - Counts removed from Illnesses, Hospitalizations, Ventilations, and Deaths
 
 ```{r plot-NH-removed, echo=FALSE}
