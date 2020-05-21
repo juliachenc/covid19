@@ -81,8 +81,7 @@ result.dir = here("results/")
 
 # Aims
 
-TEST 2
-TEST TEST The USC Predict COVID project is using an epidemic model to estimate the impact of COVID-19 in Los Angeles County
+The USC Predict COVID project is using an epidemic model to estimate the impact of COVID-19 in Los Angeles County
 
 * We are addressing the key questions of:
   - When will the peak of the epidemic occur and how will it impact health care capacity?
@@ -178,30 +177,52 @@ step <- c(1:no_obs_NH)
 obs.shift <- cbind(step,NH_counts)
 data_NH = obs.shift
 
+### @EMIL: EDITED THIS FUNCTION 5-19-20
 ### Function to exponentially interpolate counts coming from SNF and remove that fraction from LA cases
 NH_frac <- function(NH.rm.start.date,no_obs,NH.var.to.modify,input.NH.dates, full.data.in,var.to.modify){
   date.var.equals.1 <- as.Date(NH.rm.start.date)
   assume.first.NH.date <- as.numeric(date.var.equals.1 - as.Date("2020-03-01")) 
   
-  #num.NH.dates <- length(NH.var.to.modify)
+  # # t0 = assume.first.NH.date
+  # # tf = input.NH.dates[1]+1
+  # # y0 = 1
+  # # yf = NH.var.to.modify[1]
+  # # 
+  # # # Estimating exponential
+  # # k = (log(y0/yf))/(t0-tf)
+  # # A = y0/exp(k*t0)
+  # # 
+  # # t_int = t0:tf
+  # # y_int = A*exp(k*t_int)
+  # # plot(t_int,y_int)
+  # # 
+  # # NH_dates <- c(1:no_obs)
+  # # NH.counts <- rep(0,no_obs)
+  # # NH.counts[t_int] <- round(y_int)
+  # # NH.counts[(tf+1):no_obs] <- NH.var.to.modify[-1]
+  # 
+  #plot(NH_dates,NH.counts)
+  
+  NH.interpolate.t.start <- assume.first.NH.date
+  NH.interpolate.t.end <- (input.NH.dates[1]+1)
+  NH.interpolate.t <- c(NH.interpolate.t.start, NH.interpolate.t.end)
+  NH.interpolate.y <- c(1, NH.var.to.modify[1])
 
-  NH.interpolate.t <- c(assume.first.NH.date,input.NH.dates)
-  NH.interpolate.y <- c(1, NH.var.to.modify)
-  
-  interpolate_NH <- spline(x=NH.interpolate.t, y=log(NH.interpolate.y), n = input.NH.dates[length(input.NH.dates)]-assume.first.NH.date+1, method="natural")
-  interpolate_NH$y <- exp(interpolate_NH$y)
-  
-  #plot(interpolate_NH$x, (interpolate_NH$y), type ="o")
+  interpolate_NH <- spline(x=NH.interpolate.t, y=(NH.interpolate.y)^(.5), n = (NH.interpolate.t.end - NH.interpolate.t.start +1), method="natural")
+  interpolate_NH$y <- (interpolate_NH$y)^2
+  plot(interpolate_NH)
   
   NH_dates <- c(1:no_obs)
   NH.counts <- rep(0,no_obs)
   NH.counts[interpolate_NH$x] <- round(interpolate_NH$y)
-  
+  NH.counts[((NH.interpolate.t.end)+1):no_obs] <- NH.var.to.modify[-1]
+  #plot(NH_dates,NH.counts)
+
   modify.var <- full.data.in[,var.to.modify]
-  #modify.var <- as.numeric(select(full.data.in, var.to.modify))
   frac_NH <- NH.counts/modify.var
   frac_NH[is.nan(frac_NH)]<-0
   
+  # This takes care of whether there are fewer NH input data points than cumcounts data points
   last.NH.date <- input.NH.dates[length(input.NH.dates)]
   if(last.NH.date < no_obs){
     frac_NH[c( (last.NH.date+1) : no_obs)] = rep(frac_NH[last.NH.date], times = length(frac_NH[c( (last.NH.date+1) : no_obs)])  )
@@ -212,19 +233,16 @@ NH_frac <- function(NH.rm.start.date,no_obs,NH.var.to.modify,input.NH.dates, ful
 ###########################################################################
 ## INTERPOLATE AND MODIFY I, H, V, D TO MODIFY CUMULATIVE AND NEW COUNTS UPDATED WITH NH CASES REMOVED
 
-### NEED TO UPDATE THE NUMBER OF INPUT DATES IF WE GET MORE SNF COUNTS
-# date.1<-as.numeric(as.Date("2020-04-17") - as.Date("2020-03-01"))
-# date.2<-as.numeric(as.Date("2020-04-29") - as.Date("2020-03-01"))
-# date.3<-as.numeric(as.Date("2020-04-30") - as.Date("2020-03-01"))
+### @EMIL: EDITED THESE DATES BELOW
 
 date.i<-as.numeric(as.Date("2020-04-21") - as.Date("2020-03-01")) 
-#date.f<-as.numeric(import.date - as.Date("2020-03-01"))
 
 ### MODIFY I
 NH.var.to.modify <- (NH_counts[[1]] + NH_counts[[2]])
 input.NH.dates <- c(1:length(NH.var.to.modify)) + date.i
 
-NH.rm.start.date=as.Date("2020-03-20")
+### @EMIL
+NH.rm.start.date=as.Date("2020-03-30")
 
 frac_NH_I <- NH_frac(NH.rm.start.date=NH.rm.start.date, no_obs=no_obs, NH.var.to.modify=NH.var.to.modify, input.NH.dates=input.NH.dates, 
                           full.data.in = data.in.tmp.orig, var.to.modify = "Idetectcum")
@@ -235,7 +253,9 @@ plot(x=(1:length(frac_NH_I)), y=frac_NH_I)
 #NH.var.to.modify <- 0.4*(NH_counts[[1]] + NH_counts[[2]])
 NH.var.to.modify <- 1.5*(NH_counts[[3]])
 #input.NH.dates <- c( date.1,date.2,date.3)
-NH.rm.start.date= NH.rm.start.date+10 #"2020-03-25"
+
+### @EMIL
+NH.rm.start.date= NH.rm.start.date+1 #"2020-03-25"
 
 frac_NH_H <- NH_frac(NH.rm.start.date=NH.rm.start.date, no_obs=no_obs, NH.var.to.modify=NH.var.to.modify, input.NH.dates=input.NH.dates, 
                           full.data.in = data.in.tmp.orig, var.to.modify = "Htotcum")
@@ -246,7 +266,9 @@ plot(x=(1:length(frac_NH_H)), y=frac_NH_H)
 #NH.var.to.modify <- (.45*.4)*(0.4)*(NH_counts[[1]] + NH_counts[[2]])
 NH.var.to.modify <- 0.7*(NH_counts[[3]])
 #input.NH.dates <- c( date.1,date.2,date.3)
-NH.rm.start.date= NH.rm.start.date+2   #"2020-03-27"
+
+### @EMIL
+NH.rm.start.date= NH.rm.start.date+1   #"2020-03-27"
 frac_NH_V <- NH_frac(NH.rm.start.date=NH.rm.start.date, no_obs=no_obs, NH.var.to.modify=NH.var.to.modify, input.NH.dates=input.NH.dates, 
                           full.data.in = data.in.tmp.orig, var.to.modify = "Vcum")
 plot(x=(1:length(frac_NH_V)), y=frac_NH_V)
@@ -254,7 +276,9 @@ plot(x=(1:length(frac_NH_V)), y=frac_NH_V)
 ### MODIFY D
 NH.var.to.modify <- NH_counts$D_resident_cum
 #input.NH.dates <- c(date.2,date.3)
-NH.rm.start.date= NH.rm.start.date+10 #"2020-04-05"
+
+### @EMIL
+NH.rm.start.date= NH.rm.start.date+1 #"2020-04-05"
 
 frac_NH_D <- NH_frac(NH.rm.start.date=NH.rm.start.date, no_obs=no_obs, NH.var.to.modify=NH.var.to.modify, input.NH.dates=input.NH.dates, 
                           full.data.in = data.in.tmp.orig, var.to.modify = "D")
@@ -2321,6 +2345,8 @@ p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d
 
 ```{r illness-severity-by-race,include=FALSE}
 
+### @EMIL: THIS WHOLE CHUNK I'VE EDITED
+
 ########################################################################################################################################################
 ########################################################################################################################################################
 ## BAR CHART COMPARISONS
@@ -2358,8 +2384,9 @@ p.shares.races<-
   ggplot( aes(x=stage, y=values,fill=Race)) +
 #  ggplot( aes(x=stage,y=values,fill=factor(group,levels=c(race.order))))+
   geom_bar(position="stack", stat = 'identity')+
-  labs(title = "Projected Illness Severity by Race/Ethnicity", x = "Stage", y = "Prevalence", legend="Race/Ethnicity") +
-  scale_x_discrete(labels = c("Population","Hospitalized","ICU","Dead"))
+  labs(title = "Model-Projected Relative Proportion (%) of Race/Ethnicity \n by Stage of Disease", x = "Stage", y = "Relative Proportion (%)", legend="Race/Ethnicity") +
+  scale_x_discrete(labels = c("Population % \n (baseline)","Hospitalized %","ICU admittance %","Deaths %"))
+
 
 
 
@@ -2374,17 +2401,28 @@ step.race <- seq(1:no.obs.race)
 colnames.race <- start.date.race + step.race
 colnames(race_observed_D) <- colnames.race
 
-race_observed_D_May11 <- race_observed_D$`2020-05-11`
-race_observed_D_May11 <- race_observed_D_May11/sum(race_observed_D_May11)
+# race_observed_D_May11 <- race_observed_D$`2020-05-11`
+# race_observed_D_May11 <- race_observed_D_May11/sum(race_observed_D_May11)
+# 
+# race_observed_D_Apr16 <- race_observed_D$`2020-04-16`
+# race_observed_D_Apr16 <- race_observed_D_Apr16/sum(race_observed_D_Apr16)
+# 
+# relative.shares.races.D.obs <- as.data.frame(cbind(relative.shares.races[,1], relative.shares.races[,4], race_observed_D_Apr16, race_observed_D_May11))
+# colnames(relative.shares.races.D.obs) <- c("prevalence.gen.pop","proj.D","obs.D.Apr16","obs.D.May11")
 
-race_observed_D_Apr16 <- race_observed_D$`2020-04-16`
-race_observed_D_Apr16 <- race_observed_D_Apr16/sum(race_observed_D_Apr16)
+race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
+race_model_D <- relative.shares.races[,"prevalence.D"]
 
-relative.shares.races.D.obs <- as.data.frame(cbind(relative.shares.races[,1], relative.shares.races[,4], race_observed_D_Apr16, race_observed_D_May11))
-colnames(relative.shares.races.D.obs) <- c("prevalence.gen.pop","proj.D","obs.D.Apr16","obs.D.May11")
+D.dates.select <- c("2020-04-16", "2020-05-01", "2020-05-11", "2020-05-17")
+race_observed_D_select <- race_observed_D %>% select(D.dates.select)
+race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
+
+relative.shares.races.D.obs <- as.data.frame(cbind(race_prevalence_gen_pop,race_obs_D,race_model_D))
+colnames.race.D <- c("prevalence.gen.pop", paste0("obs.D.",D.dates.select), "model.D")
+colnames(relative.shares.races.D.obs) <- colnames.race.D
 
 # process data for easy ggplot input
-relative.shares.races.D.obs.melted <- melt(as.matrix(relative.shares.races.D.obs), id=c("prevalence.gen.pop", "proj.D" ,"obs.D.Apr16","obs.D.May11" ))
+relative.shares.races.D.obs.melted <- melt(as.matrix(relative.shares.races.D.obs))
 relative.shares.races.D.obs.melted$race <-relative.shares.races.D.obs.melted$X1
 relative.shares.races.D.obs.melted$stage <-relative.shares.races.D.obs.melted$X2
 relative.shares.races.D.obs.melted$values <-relative.shares.races.D.obs.melted$value
@@ -2392,19 +2430,21 @@ relative.shares.races.D.obs.melted$X1 <- NULL
 relative.shares.races.D.obs.melted$X2 <- NULL
 relative.shares.races.D.obs.melted$value <- NULL
 
-relative.shares.races.D.obs.melted <- relative.shares.races.D.obs.melted %>% mutate(Race=factor(race,levels=c(race.order)))
-
 ######################################
 ## Bar chart
 
+relative.shares.races.D.obs.melted <- relative.shares.races.D.obs.melted %>% mutate(Race=factor(race,levels=c(race.order)))
+
+labels.shares.races.D <- c("% of population", paste0("Obs. % of deaths \n",D.dates.select), "Model projected % \n of deaths ")
+
 p.shares.races.D.obs<-
   relative.shares.races.D.obs.melted %>%
-  mutate(stage = factor(stage, levels=c("prevalence.gen.pop", "proj.D" ,"obs.D.Apr16","obs.D.May11" ))) %>%
+  mutate(stage = factor(stage, levels=colnames.race.D)) %>%
   ggplot( aes(x=stage, y=values,fill=Race)) +
 #  ggplot( aes(x=stage,y=values,fill=factor(group,levels=c(race.order))))+
   geom_bar(position="stack", stat = 'identity')+
-  labs(title = "Deaths by Race/Ethnicity: Projected vs. Observed", x = "Projection (Model) or Observation (Data)", y = "Prevalence", legend="Race/Ethnicity") +
-  scale_x_discrete(labels = c("% of Population","Projected%","Obs% Apr16","Obs% May 11"))
+  labs(title = "Deaths by Race/Ethnicity: Model Projection vs. Observed", x = "Projection (Model) or Observation (Data)", y = "Relative % by Race", legend="Race/Ethnicity") +
+  scale_x_discrete(labels = labels.shares.races.D)
 
 
 ```
@@ -2548,16 +2588,13 @@ p.traj.race.D<-
 
 ## Across race/ethnicity {.tabset}
 
-Fraction of all LA County Cases by Race 
-
-- Due to disparities in the prevalence of health conditions, health behaviors, and age -- the risk factors for COVID-19 -- the relative risk of death is not distributed equally across each race/ethnicity.
-- These figures demostrate the projections of the relative share of hospitalizations, ICU admissions, and deaths by race/ethnicity from our model, which accounts for biological COVID-19 risk factors. Values are compared with the baseline distribution of the relative share of the L.A. County population in each race/ethnicity group.
+- These figures demostrate the projections of the relative share of hospitalizations, ICU admissions, and deaths by race/ethnicity from our model, which accounts for biological risk factors for COVID-19. Values are compared with the baseline distribution of the relative share of the L.A. County population in each race/ethnicity group.
+- Due to disparities in the prevalence of the risk factors for COVID-19 (health conditions, health behaviors, and age) the relative risk of hospitalization, ICU admittance, and death is not distributed equally across each race/ethnicity (i.e., is not distributed in accordance with the population distribution).
 
 ### Deaths by race: Model projections vs. observed LA data
 
-- This figure compares the projections of the relative share of deaths by race/ethnicity from our model **with the observed relative share of deaths by race/ethnicity in L.A. County**. The population prevalence of each race/ethnicity is also provided as a baseline (left column). 
-- A key insight from this figure is that as the epidemic evolves, the trend in death rate by race/ethnicity appears to be converging to the biological expected risk as calculated by our model. 
-- Only time will tell if this stabilies or if the death rate by race/ethnicity grows disproportionately to that expected by biological factors alone as the epidemic progresses.
+- This figure compares model projections of the relative share of deaths by race/ethnicity (right-most bar) with the observed relative share of deaths by race/ethnicity in L.A. County. The population prevalence of each race/ethnicity is also provided as a baseline (left-most bar). 
+- A key insight from this figure is that as the epidemic evolves, the trend of the distribution of deaths by race/ethnicity appears to be converging to the expected distribution based on the biological risk factors for COVID-19, as calculated by our model. Time will tell if this distribution stabilizes or if the relative share of each race/ethnicity grows disproportionately to that expected by biological factors, indicating the role of other factors in determining the illness dynamics.
 
 ```{r, echo=FALSE, message=FALSE}
 
@@ -2572,7 +2609,7 @@ p.shares.races
 
 ```
 
-### Projected illness trajectories by race and risk group
+### Projected timeseries by race and stage of disease
 ```{r, echo=FALSE, message=FALSE}
 
 p.traj.race.I + p.traj.race.H + p.traj.race.Q + p.traj.race.D
@@ -2581,12 +2618,3 @@ p.traj.race.I + p.traj.race.H + p.traj.race.Q + p.traj.race.D
 
 ## {-}
 
-# Summary
-- Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19.
-LA County is succeeding in mitigating the epidemic curve due to strong adherence to social distancing (model-estimated reduction in contact rate of >70%).
-- Our model suggests that social distancing may need to be continued for a longer period of time to retain these mitigation effects.
-- Our model predicts that higher risk groups -- characterized not only by advanced age but also combinations of existing health conditions -- will make up the majority of those afflicted with severe disease. We analyze how these risk factors project onto race/ethnicity groups and project expected illness patterns based on population size and prevalence of these risk factors.
-- Model estimates can and will change as new studies and data become available.
-
-# Acknowledgements
-- We would like to acknowledge Claire Jacquillat and Adam Taylor for their contributions related to data wrangling, cleaning, interpretation, and visualization.
