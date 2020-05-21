@@ -12,9 +12,6 @@ knitr::opts_chunk$set(
   message=FALSE)
 ```
 
-
-## SCENARIOS EVALUATED: Increase contact rate on May 16th, 2020 by variable amounts {.tabset}
-
 ```{r scenarios-evaluated, include=FALSE}
 
 R0_redux_est <- round(ABC.par.stats$`Frac R0 Mar11`[1] , 2)
@@ -435,7 +432,12 @@ p.Itot.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.
 
 ```
 
-### Maintain current level of social distancing
+
+## Increase contact rate on May 16th, 2020 by variable amounts {.tabset}
+
+<br>
+
+### Scenario 0
 
 Equal to:
 
@@ -454,7 +456,7 @@ ggplotly(p.Itot.2.May1.0)
 
 ```
 
-### *% of original R0*: `r as.numeric(scenarios_table[2,2])`
+### Scenario 1
 
 Equal to:
 
@@ -473,7 +475,7 @@ ggplotly(p.Itot.2.May1.1)
 
 ```
 
-### *% of original R0*: `r as.numeric(scenarios_table[3,2])`
+### Scenario 2
 
 Equal to:
 
@@ -492,7 +494,7 @@ ggplotly(p.Itot.2.May1.2)
 
 ```
 
-### *% of original R0*: `r as.numeric(scenarios_table[4,2])`
+### Scenario 3
 
 Equal to:
 
@@ -511,7 +513,7 @@ ggplotly(p.Itot.2.May1.3)
 
 ```
 
-### *% of original R0*: `r as.numeric(scenarios_table[5,2])`
+### Scenario 4
 
 Equal to:
 
@@ -530,7 +532,7 @@ ggplotly(p.Itot.2.May1.4)
 
 ```
 
-### *% of original R0*: `r as.numeric(scenarios_table[6,2])`
+### Scenario 5
 
 Equal to:
 
@@ -549,7 +551,7 @@ ggplotly(p.Itot.2.May1.5)
 
 ```
 
-### *% of original R0*: `r as.numeric(scenarios_table[7,2])`
+### Scenario 6
 
 Equal to:
 
