@@ -1792,9 +1792,9 @@ p.traj.smoke.d<-
 
 ```
 
-## Across risk factors
+## Across risk factors {.tabset}
 
-Fraction of all LA County Cases by risk factor {.tabset}
+Fraction of all LA County Cases by risk factor 
 
 ### By risk group
 ```{r, echo=FALSE, message=FALSE}
