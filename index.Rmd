@@ -1,6 +1,11 @@
 ---
 title: "USC Predict COVID Project: \n Predictive Epidemic Model for COVID-19 in Los Angeles County"
 author: "University of Southern California Department of Preventive Medicine"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
 ---
 
 Updated with data available as of `r Sys.Date()`
