@@ -1,5 +1,13 @@
 ---
-title: "About This Website"
+title: "Team"
 ---
 
-More about this website.
+[Abigail Horn](www.abigail-horn.com)
+
+[Lai Jiang](https://scholar.google.com/citations?user=GhsMHqYAAAAJ&hl=en)
+
+[Emil Hvitfeldt](https://www.hvitfeldt.me/)
+
+[Wendy Cozen](https://keck.usc.edu/faculty-search/wendy-cozen/)
+
+[David Conti](https://keck.usc.edu/faculty-search/david-v-conti/)

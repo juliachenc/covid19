@@ -3630,19 +3630,6 @@ p.I + p.H + p.V + p.D + plot_annotation(title = "Skilled Nursing Facility Counts
 - The accuracy of the parameter estimation depends on the accuracy of the prior specifications and any fixed parameters employed, including the incubation and recovery period. As new information about the epidemiological characteristics of COVID-19 continues to arise, model estimation will need to be continuously updated.
 - Incorporating the latest information into our models is possible and will be key to maintaining its relevance for decision insights. 
 
-
-# Team
-
-[Abigail Horn](www.abigail-horn.com)
-
-[Lai Jiang](https://scholar.google.com/citations?user=GhsMHqYAAAAJ&hl=en)
-
-[Emil Hansen]()
-
-[Wendy Cozen](https://keck.usc.edu/faculty-search/wendy-cozen/)
-
-[David Conti](https://keck.usc.edu/faculty-search/david-v-conti/)
-
 # Acknowledgements
 - We would like to acknowledge Claire Jacquillat and Adam Taylor for their contributions related to data wrangling, cleaning, interpretation, and visualization.
 
