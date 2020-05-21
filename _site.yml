@@ -6,6 +6,8 @@ navbar:
   left:
     - text: "Home"
       href: index.html
+    - text: "Scenarios"
+      href: scenarios.html
     - text: "Method"
       href: method.html
     - text: "About"
