@@ -131,9 +131,9 @@ calc_risk_probs_code <- path(code.dir, "calc_risk_probs_042220.R")
 # no_obs: number of observation days
 ## Read and process the data
 
-#obs_cum_new_counts = t(read.csv(path(data.dir, "cum_counts_042420.csv"), sep=",",stringsAsFactors = FALSE))
-#obs_cum_new_counts = t(read.csv(path(data.dir, "cum_counts_I_new_042820.csv"), sep=",",stringsAsFactors = FALSE))
-obs_cum_new_counts = t(read.csv(path(data.dir, "cum_counts_051120.csv"), sep=",",stringsAsFactors = FALSE))
+cum_file <- sort(dir_ls(data.dir, regexp = "cum_counts_"), decreasing = TRUE)[1]
+
+obs_cum_new_counts = t(read.csv(cum_file, sep=",",stringsAsFactors = FALSE))
 import.date <- as.Date("2020-05-06")
 
 #colnames<-c("Htotcum","D","Vcum","Idetectcum","H_new","D_new","H_capacity","Q_capacity")
@@ -159,8 +159,9 @@ data.in.tmp.orig <- obs_cum_new_counts %>% dplyr::select(-c(H_capacity,Q_capacit
 ```{r SNF-data-frac-calc, include=FALSE}
 
 ### READ IN SNF DATA AND CALCULATE FRACTIONS COMPOSED OF THIS GROUP
+snf_file <- sort(dir_ls(data.dir, regexp = "SNF_"), decreasing = TRUE)[1]
 
-NH_counts = t(read.csv(path(data.dir, "SNF_051120.csv"), sep=",",stringsAsFactors = FALSE))
+NH_counts = t(read.csv(snf_file, sep=",",stringsAsFactors = FALSE))
 
 
 NH_counts <- as.data.frame(NH_counts)
@@ -1279,8 +1280,7 @@ p.smoking<-
 
 ### By SPA, stage of disease
 ```{r, echo=FALSE}
-p.risk.gen + p.risk.h + p.risk.q + p.risk.d
-
+p.risk.gen + p.risk.h + p.risk.q + p.risk.d + plot_layout(guides = 'collect')
 ```
 
 ### By stage of disease, SPA
@@ -2363,9 +2363,9 @@ p.shares.races<-
 
 ##############################################################################################################################
 ## Compare projected D to observed D
+race_file <- sort(dir_ls(data.dir, regexp = "race_D_"), decreasing = TRUE)[1]
 
-#Pop.prevalence = read.csv(path(data.dir, "Pop.prevalence.BMI.csv"), sep=",", header=TRUE,row.names = 1 )
-race_observed_D = read.csv(path(data.dir, "race_D_051020.csv"), sep=",", header=TRUE,row.names = 1 )
+race_observed_D = read.csv(race_file, sep=",", header=TRUE,row.names = 1 )
 start.date.race <- as.Date("2020-03-28")
 no.obs.race <- ncol(race_observed_D)
 step.race <- seq(1:no.obs.race)
