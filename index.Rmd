@@ -53,6 +53,7 @@ library(formattable)
 library(DT)
 library(reshape)
 library(here)
+library(fs)
 
 library(MASS)
 library(plotly)
@@ -80,7 +81,8 @@ result.dir = here("results/")
 
 # Aims
 
-The USC Predict COVID project is using an epidemic model to estimate the impact of COVID-19 in Los Angeles County
+TEST 2
+TEST TEST The USC Predict COVID project is using an epidemic model to estimate the impact of COVID-19 in Los Angeles County
 
 * We are addressing the key questions of:
   - When will the peak of the epidemic occur and how will it impact health care capacity?
