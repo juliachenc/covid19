@@ -683,46 +683,9 @@ yesR.p.Itot.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.dat
 
 ```
 
-# (1) Model projections
+# Model projections
 
-## (1.1) Projections Against Data {.tabset}
-
-**Demonstrating model fit against COVID-19 data for Los Angeles, for the following variables/compartments:**
-
-* New = new daily incidence
-* Current = current census in compartment
-* Cumulative = running total over time
-
-**COVID-19 data is shown as black dots in the figures below.**
-
-### Short time horizon
-```{r, echo=FALSE}
-
-yesR.plot.all.variables.current.scenario.150days
-
-```
-
-### Longer time horizon
-```{r, echo=FALSE}
-
-yesR.plot.all.variables.current.scenario.300days
-
-```
-
-
-{-}
-
-
-## (1.2) Detailed Projections by Key Compartments {.tabset}
-
-**Projections for key compartments:**
-
-- Current census in Hosptial
-- Current census in ICU
-- Current census in Ventilation
-- Cumulative deaths
-- Current Illnesses: Observed
-- Current Illnesses: Total (observed + unobserved)
+## By Key Compartments {.tabset}
 
 ### Current in Hospital
 ```{r, echo=FALSE}
@@ -759,19 +722,33 @@ ggplotly(yesR.p.I.0)
 ggplotly(yesR.p.Itot.0)
 
 ```
-{-}
+
+## Against Data {.tabset}
+
+**Demonstrating model fit against COVID-19 data for Los Angeles, for the following variables/compartments:**
+
+* New = new daily incidence
+* Current = current census in compartment
+* Cumulative = running total over time
+
+**COVID-19 data is shown as black dots in the figures below.**
+
+### Short time horizon
+```{r, echo=FALSE}
+
+yesR.plot.all.variables.current.scenario.150days
+
+```
+
+### Longer time horizon
+```{r, echo=FALSE}
+
+yesR.plot.all.variables.current.scenario.300days
+
+```
 
 
-
-
-
-
-
-
-
-
-
-# (1.3) Projections for LA County and by SPA Given Risk Factors
+## By SPA Given Risk Factors
 
 
 ```{r calc-risk-probs-initial, include=FALSE}
@@ -1303,7 +1280,7 @@ p.smoking<-
 ```
 
 
-## Projections by Risk Factors {.tabset}
+## By Risk Factors {.tabset}
 
 - These figures show the estimated proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within the L.A. County/SPA population, based on the population prevalence of the risk group in L.A. County/SPAs. 
 - The analyses are presented for each risk group, as well as stratified to the individual risk factors (age, comorbidities, obesity status, smoking status).
@@ -1347,8 +1324,6 @@ p.BMI.gen + p.BMI.h + p.BMI.q + p.BMI.d
 p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d
 
 ```
-
-## {-}
 
 ```{r trajectory-process-clean, include=FALSE}
 
@@ -1825,7 +1800,9 @@ p.traj.smoke.d<-
 
 ```
 
-## Projections across risk factors: Fraction of all LA County Cases by risk factor {.tabset}
+## Across risk factors
+
+Fraction of all LA County Cases by risk factor {.tabset}
 
 ### By risk group
 ```{r, echo=FALSE, message=FALSE}
@@ -1852,13 +1829,7 @@ p.traj.smoke.d<-
 (p.traj.smoke.h + p.traj.smoke.q) / p.traj.smoke.d
 ```
 
-## {-}
-
-
-
-
-
-# (1.4) Projections by Race / Ethnicity
+## By race/ethnicity {.tabset}
 
 ```{r calc-risk-probs-race, include=FALSE}
 ###################################################################################################
@@ -2316,8 +2287,6 @@ p.prev.risk.stage.races<- ggplot(full.data, aes(x = stage, y = values, fill = ri
 ```
 
 
-## Projections by race/ethnicity {.tabset}
-
 - These figures show the estimated proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within each race/ethnicity population, based on the population prevalence of the risk group in race/ethnicity groups. 
 - The analyses are presented for each risk group, as well as stratified to the individual risk factors (age, comorbidities, obesity status, smoking status).
 
@@ -2355,10 +2324,6 @@ p.BMI.gen + p.BMI.h + p.BMI.q + p.BMI.d
 p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d
 
 ```
-
-
-## {-}
-
 
 ```{r illness-severity-by-race,include=FALSE}
 
@@ -2587,8 +2552,9 @@ p.traj.race.D<-
 
 ```
 
+## Across race/ethnicity {.tabset}
 
-## Projections across race/ethnicity: Fraction of all LA County Cases by Race {.tabset}
+Fraction of all LA County Cases by Race 
 
 - Due to disparities in the prevalence of health conditions, health behaviors, and age -- the risk factors for COVID-19 -- the relative risk of death is not distributed equally across each race/ethnicity.
 - These figures demostrate the projections of the relative share of hospitalizations, ICU admissions, and deaths by race/ethnicity from our model, which accounts for biological COVID-19 risk factors. Values are compared with the baseline distribution of the relative share of the L.A. County population in each race/ethnicity group.
