@@ -747,10 +747,6 @@ yesR.plot.all.variables.current.scenario.300days
 
 ```
 
-
-## By SPA Given Risk Factors
-
-
 ```{r calc-risk-probs-initial, include=FALSE}
 ###################################################################################################
 ## (1) PR(H) PR(Q) PR(D) ESTIMATION (PRIORS)
@@ -1005,15 +1001,11 @@ data <- data %>%
 
 ```
 
-### Risk Profiles, Risk Factors, and Risk Groups
-
-- The following table presents the model-estimated probabilities $Pr(Hospital | Illness,Profile_i)$, $Pr(ICU | Hospital,Profile_i)$, and $Pr(Death | ICU,Profile_i)$ for each risk group (or combination of risk factors), as well as the prevalence of these risk groups/factors in the general L.A. County Population $Pr(Profile_i)$.
-
 ```{r risk-profile-table, echo=FALSE}
 
 unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
 
-as.datatable(formattable(subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table <- as.datatable(formattable(subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
             align =c("l","l","l","l","l","l","l","c","c","c","l","l","l"), 
             list(
   #`Profile` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 

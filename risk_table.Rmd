@@ -1,0 +1,11 @@
+---
+title: "Projections By SPA Given Risk Factors"
+---
+
+### Risk Profiles, Risk Factors, and Risk Groups
+
+- The following table presents the model-estimated probabilities $Pr(Hospital | Illness,Profile_i)$, $Pr(ICU | Hospital,Profile_i)$, and $Pr(Death | ICU,Profile_i)$ for each risk group (or combination of risk factors), as well as the prevalence of these risk groups/factors in the general L.A. County Population $Pr(Profile_i)$.
+
+```{r, echo=FALSE}
+risk_table
+```
