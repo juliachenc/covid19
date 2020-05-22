@@ -11,18 +11,11 @@ We use previous studies to narrow the specification of the probability of hospit
 - **Smoking**
 - **Other comorbidities**: hypertension, diabetes, cardiovascular disease, cerebrovascular disease / stroke, cancer, COPD, and athsma.
 
-<br>
+Using studies reporting the risk of severe COVID-19 outcomes given *individual* risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with *combinations* of risk factors. We call specific combinations of risk factors *risk profiles*. We group these risk profiles into 5 *risk groups* based on similar within-group probabilities of severe illness. For details see [Methods](https://uscbiostats.github.io/COVID19/method.html).
 
-Using studies reporting the risk of severe COVID-19 outcomes given *individual* risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with *combinations* of risk factors. We call specific combinations of risk factors *risk profiles*. We group these risk profiles into 5 *risk groups* based on similar within-group probabilities of severe illness.
+The table presents the model-estimated probability of hospitalization given illness, $Pr(Hospital | Illness,Profile_i)$, probability of admittance to the intensive care unit (ICU) given being in hospital, $Pr(ICU | Hospital,Profile_i)$, and probability of death given being in ICU, $Pr(Death | ICU,Profile_i)$ for each risk profile (or combination of risk factors), as well as the prevalence of these risk profiles in the general L.A. County Population (Population Prevalence in L.A. County).
 
-For more details see [Methods](https://uscbiostats.github.io/COVID19/method.html)
-<br>
-
-The following table presents the model-estimated probability of hospitalization given illness, $Pr(Hospital | Illness,Profile_i)$, probability of admittance to the intensive care unit (ICU) given being in hospital, $Pr(ICU | Hospital,Profile_i)$, and probability of death given being in ICU, $Pr(Death | ICU,Profile_i)$ for each risk profile (or combination of risk factors), as well as the prevalence of these risk profiles in the general L.A. County Population (Population Prevalence in L.A. County).
-
-<br>
-
-You can use the *Search* bar to search for your own risk profile by inputting your risk features, for example: "20-44 BMI<30" 
+You can use the **Search** bar to search for your own risk profile by inputting your risk features, for example: "20-44 BMI<30".
 
 
 ```{r, echo=FALSE}

@@ -1,5 +1,7 @@
 ---
 title: "Social distancing scenarios"
+editor_options: 
+  chunk_output_type: console
 ---
 
 ``` {r setup, include=FALSE}
@@ -8,7 +10,7 @@ knitr::opts_chunk$set(
   fig.height = 7,
   echo=FALSE,
   warning=FALSE,
-  cache=FALSE,
+  cache=TRUE,
   message=FALSE)
 ```
 
@@ -79,8 +81,31 @@ sd.redux = R0_redux_eval[7]
 traj.2.May1.6 <- model.output.to.plot.SIM(ABC.out.mat, par.vec.length=number.pars.to.use, iter=iter, time.steps=time.steps, vars.to.plot = vars.plus.R, 
                                        init.date.data="2020-03-01", all=TRUE, scenario.selection = scenario,intervention_date=intervention_date,sd.redux=sd.redux)
 
+ymax.nice <- function(traj, var.to.plot, time.steps.4plot){
+  median.of.var <- traj %>% filter(state.name==var.to.plot) %>% filter(date < as.Date("2020-03-01")+time.steps.4plot) %>% select(up_95)
+  max.median <- max(median.of.var)
+  
+  roundUpNice <- function(x, nice=c(1,2,4,5,6,8,10)) {
+    if(length(x) != 1) stop("'x' must be of length 1")
+    10^floor(log10(x)) * nice[[which(x <= 10^floor(log10(x)) * nice)[[1]]]]
+  }
+  
+  ymax.nice.4plot <- roundUpNice(max.median)
+  return(ymax.nice.4plot)
+}
+
+ymax.nice.Htot <- ymax.nice(traj.2.May1.6, var.to.plot = "Htot",time.steps.4plot=time.steps.4plot)  
+ymax.nice.Q <- ymax.nice(traj.2.May1.6, var.to.plot = "Q",time.steps.4plot=time.steps.4plot)  
+ymax.nice.V <- ymax.nice(traj.2.May1.6, var.to.plot = "V",time.steps.4plot=time.steps.4plot)  
+ymax.nice.D <- ymax.nice(traj.2.May1.6, var.to.plot = "D",time.steps.4plot=time.steps.4plot)  
+ymax.nice.I <- ymax.nice(traj.2.May1.6, var.to.plot = "I",time.steps.4plot=time.steps.4plot)  
+ymax.nice.Itot <- ymax.nice(traj.2.May1.6, var.to.plot = "Itot",time.steps.4plot=time.steps.4plot)  
+
 
 ### PLOT OBJECTS
+
+##########################
+## Htot
 
 scenario=2
 intervention_date = "2020-05-16"
@@ -88,98 +113,53 @@ use.title=TRUE
 plot.capacity=TRUE
 time.steps.4plot = 400
 var.to.plot="Htot"
-ymax=15000
+ymax=ymax.nice.Htot
 
-
+scenario.no = 0
 sd.redux = R0_redux_eval[1]
 traj.CI=traj.2.May1.0
 p.H.2.May1.0 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 1
 sd.redux = R0_redux_eval[2]
 traj.CI=traj.2.May1.1
 p.H.2.May1.1 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 2
 sd.redux = R0_redux_eval[3]
 traj.CI=traj.2.May1.2
 p.H.2.May1.2 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 3
 sd.redux = R0_redux_eval[4]
 traj.CI=traj.2.May1.3
 p.H.2.May1.3 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 4
 sd.redux = R0_redux_eval[5]
 traj.CI=traj.2.May1.4
 p.H.2.May1.4 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 5
 sd.redux = R0_redux_eval[6]
 traj.CI=traj.2.May1.5
 p.H.2.May1.5 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 6
 sd.redux = R0_redux_eval[7]
 traj.CI=traj.2.May1.6
 p.H.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-
-
-
-
-##########################
-## V
-
-plot.capacity=TRUE
-time.steps.4plot = 500
-var.to.plot="V"
-ymax=4000
-
-sd.redux = R0_redux_eval[1]
-traj.CI=traj.2.May1.0
-p.V.2.May1.0 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                                   time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-
-sd.redux = R0_redux_eval[2]
-traj.CI=traj.2.May1.1
-p.V.2.May1.1 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                                   time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-sd.redux = R0_redux_eval[3]
-traj.CI=traj.2.May1.2
-p.V.2.May1.2 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                                   time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-sd.redux = R0_redux_eval[4]
-traj.CI=traj.2.May1.3
-p.V.2.May1.3 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                                   time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-
-sd.redux = R0_redux_eval[5]
-traj.CI=traj.2.May1.4
-p.V.2.May1.4 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                                   time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-sd.redux = R0_redux_eval[6]
-traj.CI=traj.2.May1.5
-p.V.2.May1.5 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                                   time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-
-sd.redux = R0_redux_eval[7]
-traj.CI=traj.2.May1.6
-p.V.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                                   time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
 
 ##########################
@@ -189,47 +169,54 @@ p.V.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.dat
 plot.capacity=TRUE
 time.steps.4plot = 500
 var.to.plot="Q"
-ymax=8000
+ymax=ymax.nice.Q
 
-
+scenario.no = 0
 sd.redux = R0_redux_eval[1]
 traj.CI=traj.2.May1.0
 p.Q.2.May1.0 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 1
 sd.redux = R0_redux_eval[2]
 traj.CI=traj.2.May1.1
 p.Q.2.May1.1 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 2
 sd.redux = R0_redux_eval[3]
 traj.CI=traj.2.May1.2
 p.Q.2.May1.2 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 3
 sd.redux = R0_redux_eval[4]
 traj.CI=traj.2.May1.3
 p.Q.2.May1.3 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 4
 sd.redux = R0_redux_eval[5]
 traj.CI=traj.2.May1.4
 p.Q.2.May1.4 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 5
 sd.redux = R0_redux_eval[6]
 traj.CI=traj.2.May1.5
 p.Q.2.May1.5 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 6
 sd.redux = R0_redux_eval[7]
 traj.CI=traj.2.May1.6
 p.Q.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+
 
 
 ##########################
@@ -238,96 +225,108 @@ p.Q.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.dat
 plot.capacity=TRUE
 time.steps.4plot = 500
 var.to.plot="V"
-ymax=4000
+ymax=ymax.nice.V
 
+scenario.no = 0
 sd.redux = R0_redux_eval[1]
 traj.CI=traj.2.May1.0
 p.V.2.May1.0 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 1
 sd.redux = R0_redux_eval[2]
 traj.CI=traj.2.May1.1
 p.V.2.May1.1 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 2
 sd.redux = R0_redux_eval[3]
 traj.CI=traj.2.May1.2
 p.V.2.May1.2 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 3
 sd.redux = R0_redux_eval[4]
 traj.CI=traj.2.May1.3
 p.V.2.May1.3 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 4
 sd.redux = R0_redux_eval[5]
 traj.CI=traj.2.May1.4
 p.V.2.May1.4 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 5
 sd.redux = R0_redux_eval[6]
 traj.CI=traj.2.May1.5
 p.V.2.May1.5 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 6
 sd.redux = R0_redux_eval[7]
 traj.CI=traj.2.May1.6
 p.V.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
 
 
 ##########################
 ## D
 
-
 plot.capacity=NULL
-time.steps.4plot = 500
 var.to.plot="D"
-ymax=30000
+ymax=ymax.nice.D
 
+scenario.no = 0
 sd.redux = R0_redux_eval[1]
 traj.CI=traj.2.May1.0
 p.D.2.May1.0 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 1
 sd.redux = R0_redux_eval[2]
 traj.CI=traj.2.May1.1
 p.D.2.May1.1 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 2
 sd.redux = R0_redux_eval[3]
 traj.CI=traj.2.May1.2
 p.D.2.May1.2 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 3
 sd.redux = R0_redux_eval[4]
 traj.CI=traj.2.May1.3
 p.D.2.May1.3 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 4
 sd.redux = R0_redux_eval[5]
 traj.CI=traj.2.May1.4
 p.D.2.May1.4 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 5
 sd.redux = R0_redux_eval[6]
 traj.CI=traj.2.May1.5
 p.D.2.May1.5 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 6
 sd.redux = R0_redux_eval[7]
 traj.CI=traj.2.May1.6
 p.D.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
 
 
@@ -338,46 +337,54 @@ p.D.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.dat
 plot.capacity=NULL
 time.steps.4plot = 500
 var.to.plot="I"
-ymax=70000
+ymax=ymax.nice.I
 
+scenario.no = 0
 sd.redux = R0_redux_eval[1]
 traj.CI=traj.2.May1.0
 p.I.2.May1.0 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 1
 sd.redux = R0_redux_eval[2]
 traj.CI=traj.2.May1.1
 p.I.2.May1.1 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 2
 sd.redux = R0_redux_eval[3]
 traj.CI=traj.2.May1.2
 p.I.2.May1.2 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 3
 sd.redux = R0_redux_eval[4]
 traj.CI=traj.2.May1.3
 p.I.2.May1.3 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 4
 sd.redux = R0_redux_eval[5]
 traj.CI=traj.2.May1.4
 p.I.2.May1.4 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 5
 sd.redux = R0_redux_eval[6]
 traj.CI=traj.2.May1.5
 p.I.2.May1.5 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 6
 sd.redux = R0_redux_eval[7]
 traj.CI=traj.2.May1.6
 p.I.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+
 
 
 
@@ -388,46 +395,53 @@ p.I.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.dat
 plot.capacity=NULL
 time.steps.4plot = 500
 var.to.plot="Itot"
-ymax=3e6
+ymax=ymax.nice.Itot
 
+scenario.no = 0
 sd.redux = R0_redux_eval[1]
 traj.CI=traj.2.May1.0
 p.Itot.2.May1.0 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 1
 sd.redux = R0_redux_eval[2]
 traj.CI=traj.2.May1.1
 p.Itot.2.May1.1 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 2
 sd.redux = R0_redux_eval[3]
 traj.CI=traj.2.May1.2
 p.Itot.2.May1.2 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 3
 sd.redux = R0_redux_eval[4]
 traj.CI=traj.2.May1.3
 p.Itot.2.May1.3 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 4
 sd.redux = R0_redux_eval[5]
 traj.CI=traj.2.May1.4
 p.Itot.2.May1.4 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
+scenario.no = 5
 sd.redux = R0_redux_eval[6]
 traj.CI=traj.2.May1.5
 p.Itot.2.May1.5 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
+scenario.no = 6
 sd.redux = R0_redux_eval[7]
 traj.CI=traj.2.May1.6
 p.Itot.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
                                    time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+                                   scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux, scenario.no = scenario.no)
 
 
 ```
