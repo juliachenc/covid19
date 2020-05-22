@@ -2,12 +2,46 @@
 title: "Team"
 ---
 
-[Abigail Horn](www.abigail-horn.com)
+## Department of Preventive Medicine
 
-[Lai Jiang](https://scholar.google.com/citations?user=GhsMHqYAAAAJ&hl=en)
+[Abigail Horn, PhD](www.abigail-horn.com)
+Postdoctoral Research Fellow, Center for Applied Network Analysis, 
+Department of Preventive Medicine
 
-[Emil Hvitfeldt](https://www.hvitfeldt.me/)
+[Lai Jiang, MS](https://scholar.google.com/citations?user=GhsMHqYAAAAJ&hl=en)
+Biostatistics PhD Candidate
+
+[Emil Hvitfeldt, MS](https://www.hvitfeldt.me/)
+Research Programmer
 
 [Wendy Cozen](https://keck.usc.edu/faculty-search/wendy-cozen/)
+Professor of Preventive Medicine
+Leader, Translational Epidemiology
+Director, Population-based Tissue Procurement Core
 
-[David Conti](https://keck.usc.edu/faculty-search/david-v-conti/)
+[David Conti, PhD](https://keck.usc.edu/faculty-search/david-v-conti/)
+Professor of Preventive Medicine
+Associate Director for Data Science Integration
+
+## Los Angeles County Department of Public Health (LACDPH)
+
+[Paul Simon, MD, MPH](https://ph.ucla.edu/faculty/simon), 
+Chief Science Officer and Director of the Division of Assessment, Planning, and Quality, LACDPH
+Adjunct Professor, Department of Epidemiology, UCLA Fielding School of Public Health
+
+[Will Nicholas, PhD, MPH](http://publichealth.lacounty.gov/chie/who_we_are_2.htm)
+Director, Center for Health Impact Evaluation, LACDPH
+
+[Faith Washburn, MPH](http://publichealth.lacounty.gov/chie/who_we_are_2.htm)
+Epidemiology Analyst
+
+## Acknowledgements
+
+Additionally, we would like to acknowledge:
+
+[Kayla de la Haye](https://www.kayladelahaye.net/)
+Assistant Professor of Preventive Medicine for helpful discussion
+
+and 
+
+[Claire Jacquillat](https://www.linkedin.com/authwall?trk=gf&trkInfo=AQG3KVF6rpn2PwAAAXI7ea9Q8QpZmycppjxhhVX6cRMO1bNUfKKoeXR-RvAvfaLx1avEcheI5LQls-QVHsgyskdpxkiYEbxOfrC4jNSZJkJ1skKaVDFr7PxhVPqk3xhETPE39vk=&originalReferer=https://www.google.com/&sessionRedirect=https%3A%2F%2Fwww.linkedin.com%2Fin%2Fclairejacquillat%2Fen-us) and Adam Taylor for their contributions related to data cleaning and visualization.

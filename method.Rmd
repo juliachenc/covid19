@@ -1,8 +1,23 @@
 ---
 title: "Methods and data"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
 editor_options: 
   chunk_output_type: console
 ---
+
+``` {r setup, include=FALSE}
+knitr::opts_chunk$set(
+  fig.width = 11,
+  fig.height = 9,
+  echo=FALSE,
+  warning=FALSE,
+  cache=FALSE,
+  message=FALSE)
+```
 
 ## Aims
 
@@ -33,6 +48,8 @@ The USC Predict COVID project is using an epidemic model to estimate the impact 
 
 * We provide predictions for the impact on counts and corresponding time periods under various social distancing scenarios in which restrictions are eased.
 
+<br>
+
 ## Model overview
 
 ### Why our model is unique
@@ -60,7 +77,9 @@ What a stochastic model allows:
 - Allows us to include all prior information and/or assumptions about the distribution (the range of values) for each parameter
 - Allows us to prioritize data input that is more reliable in fitting the model to data (e.g., not including more unreliable early illness count data)
 
-## Stochastic differential equation epidemic model
+<br>
+
+## SEIR+RISK Stochastic differential equation epidemic model
 
 ### Flow diagram
 
@@ -128,6 +147,8 @@ $$
 **Model Parameters — estimated by our model**
 
 - Section below
+
+<br>
 
 ## Prior parameter specifications {.tabset}
 
@@ -411,6 +432,8 @@ Pr(Group_i|Death) = \frac{Pr(Group_i|ICU)Pr(Death|Group_i,ICU)}{Pr(Death|ICU)}\\
 $$
 We multiply the group prevalences above by the trajectory median values for number in hospital, ICU, and death from the epidemic model to arrive at the trajectory breakdowns presented above.
 
+<br>
+
 ## Data
 
 ### Illness case data
@@ -429,6 +452,7 @@ p.I + p.H + p.V + p.D + plot_annotation(title = "Skilled Nursing Facility Counts
 
 ```
 
+<br>
 
 ## Model Limitations
 - This model does not account for differences in contact patterns within and across key groups, such as workplaces, schools, and communities; or of group-specific social distancing scenarios.
@@ -438,12 +462,11 @@ p.I + p.H + p.V + p.D + plot_annotation(title = "Skilled Nursing Facility Counts
 - The accuracy of the parameter estimation depends on the accuracy of the prior specifications and any fixed parameters employed, including the incubation and recovery period. As new information about the epidemiological characteristics of COVID-19 continues to arise, model estimation will need to be continuously updated.
 - Incorporating the latest information into our models is possible and will be key to maintaining its relevance for decision insights. 
 
+<br> 
+
 ## Summary
 - Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19.
 LA County is succeeding in mitigating the epidemic curve due to strong adherence to social distancing (model-estimated reduction in contact rate of >70%).
 - Our model suggests that social distancing may need to be continued for a longer period of time to retain these mitigation effects.
 - Our model predicts that higher risk groups -- characterized not only by advanced age but also combinations of existing health conditions -- will make up the majority of those afflicted with severe disease. We analyze how these risk factors project onto race/ethnicity groups and project expected illness patterns based on population size and prevalence of these risk factors.
 - Model estimates can and will change as new studies and data become available.
-
-## Acknowledgements
-- We would like to acknowledge Claire Jacquillat and Adam Taylor for their contributions related to data cleaning and visualization.
