@@ -1,10 +1,5 @@
 base
 methods
-usethis
-devtools
-fs
-remotes
-tictoc
 datasets
 utils
 grDevices
@@ -53,3 +48,4 @@ formattable
 DT
 reshape
 here
+fs

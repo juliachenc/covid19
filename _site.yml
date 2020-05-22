@@ -1,8 +1,8 @@
-name: "USC Predicts COVID19"
+name: "USC Predict COVID19"
 output_dir: "docs"
 exclude: ["code", "data", "results", "n_simul_tot_step1", "output_mcmc"]
 navbar:
-  title: "USC Predicts COVID19"
+  title: "USC Predict COVID19"
   left:
     - text: "Home"
       href: index.html
@@ -10,7 +10,7 @@ navbar:
       href: scenarios.html
     - text: "Risk Table"
       href: risk_table.html
-    - text: "Method"
+    - text: "Methods"
       href: method.html
     - text: "About"
       href: about.html
