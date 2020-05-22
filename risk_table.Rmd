@@ -4,7 +4,26 @@ title: "Projections By SPA Given Risk Factors"
 
 ### Risk Profiles, Risk Factors, and Risk Groups
 
-- The following table presents the model-estimated probabilities $Pr(Hospital | Illness,Profile_i)$, $Pr(ICU | Hospital,Profile_i)$, and $Pr(Death | ICU,Profile_i)$ for each risk group (or combination of risk factors), as well as the prevalence of these risk groups/factors in the general L.A. County Population $Pr(Profile_i)$.
+We use previous studies to narrow the specification of the probability of hospitalization given illness, admittance to the intensive care unit (ICU) given being in hospital, and death given being in ICU by incorporating risk factors:
+
+- **Age**
+- **Sex**
+- **Smoking**
+- **Other comorbidities**: hypertension, diabetes, cardiovascular disease, cerebrovascular disease / stroke, cancer, COPD, and athsma.
+
+<br>
+
+Using studies reporting the risk of severe COVID-19 outcomes given *individual* risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with *combinations* of risk factors. We call specific combinations of risk factors *risk profiles*. We group these risk profiles into 5 *risk groups* based on similar within-group probabilities of severe illness.
+
+For more details see [Methods](https://uscbiostats.github.io/COVID19/method.html)
+<br>
+
+The following table presents the model-estimated probability of hospitalization given illness, $Pr(Hospital | Illness,Profile_i)$, probability of admittance to the intensive care unit (ICU) given being in hospital, $Pr(ICU | Hospital,Profile_i)$, and probability of death given being in ICU, $Pr(Death | ICU,Profile_i)$ for each risk profile (or combination of risk factors), as well as the prevalence of these risk profiles in the general L.A. County Population (Population Prevalence in L.A. County).
+
+<br>
+
+You can use the *Search* bar to search for your own risk profile by inputting your risk features, for example: "20-44 BMI<30" 
+
 
 ```{r, echo=FALSE}
 risk_table

@@ -3,4 +3,3 @@
 .RData
 website/index_*
 *.DS_Store
-*_cache
