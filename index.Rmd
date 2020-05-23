@@ -84,7 +84,7 @@ result.dir = here("results/")
 
 # Aims
 
-The USC Predict COVID project has developed the **SEIR+RISK** epidemic model to estimate and gain insight into the impact of COVID-19 in Los Angeles County and on its citizens. 
+The USC Predict COVID project has developed the **SEIR+RISK** epidemic model to estimate and gain insight into the impact of COVID-19 in Los Angeles County and on its residents. 
 
 The primary questions we are addressing are:
 
@@ -224,7 +224,7 @@ source(supporting_functions)
 
 ## Inputs
 pop.size <- 1e7
-frac.obs <- c(0.02,0.04) # Best estimate from model
+frac.obs <- c(0.02,0.1) # Best estimate from model
 #frac.obs <- c(0.0002,0.0125)
 # Dates 1 to 3 weeks before seroprevalence study
 sero.date <- as.Date("2020-04-05")
@@ -318,10 +318,10 @@ ABC.out.mat[8] <- p_V
 ###################################################################################################
 ## PRIOR DISTRIBUTIONS
 ## A list joining the prior for each parameter
-prior.R0 <- c("normal",R0,.05) 
+prior.R0 <- c("normal",R0,.1) 
 #prior.r <- c("unif", .005, .035) # c("normal",r,0.01)
 prior.st <- c("unif",40,50) 
-prior.R0.redux <- c("unif", R0_redux - 0.1, R0_redux + 0.1)  #c("normal",R0_redux, 0.05) 
+prior.R0.redux <- c("unif", R0_redux - 0.2, R0_redux + 0.2)  #c("normal",R0_redux, 0.05) 
 prior.Delta <- c("normal",0.55,0.03) 
 prior.Alpha <- c("normal",Alpha, 0.03) 
 prior.Kappa <- c("normal",Kappa, 0.03)
@@ -485,7 +485,7 @@ yesR.p.Itot.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.dat
 
 ```
 
-# Model projections
+# Model projections {#Model-proj-link}
 
 ## By Key Compartments {.tabset}
 
@@ -884,6 +884,7 @@ p.smoking<-
 
 ```
 
+# Projections for At-Risk Groups
 
 ## By Risk Factors {.tabset}
 
