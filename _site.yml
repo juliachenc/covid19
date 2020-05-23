@@ -3,6 +3,7 @@ output_dir: "docs"
 exclude: ["code", "data", "results", "n_simul_tot_step1", "output_mcmc"]
 navbar:
   title: "USC Predict COVID19"
+  logo: here("2-Line_KeckSOMofUSC_GoldOnCard.jpg")
   left:
     - text: "Home"
       href: index.html
