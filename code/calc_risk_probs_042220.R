@@ -56,7 +56,8 @@ write.csv(Pr.D, file = path(result.dir, "Pr.D.BMI.csv"))
 ### POPULATION RISK FACTOR PREVALENCE FOR LA COUNTY
 ### Data coming from [Los Angeles County Health Survey](http://www.publichealth.lacounty.gov/ha/hasurveyintro.htm)
 
-Pop.prevalence = read.csv(path(data.dir, "Pop.prevalence.BMI.csv"), sep=",", header=TRUE,row.names = 1 )
+Pop.prevalence.race = read.csv(path(data.dir, "Pop.prevalence.BMI.csv"), sep=",", header=TRUE,row.names = 1 )
+Pop.prevalence <- Pop.prevalence.race
 Pop.prev.matrix<-as.matrix(Pop.prevalence)
 
 SIGMA.BMI = read.csv(path(data.dir, "Each.Comb.Corr.Weighted.txt"), sep=" ", header=TRUE,row.names = 1)

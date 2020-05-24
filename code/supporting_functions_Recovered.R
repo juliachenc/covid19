@@ -78,6 +78,7 @@ summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.da
 
   ## GET TODAY'S DATE
   CFR.today<- traj.CI %>% filter(date==Sys.Date()) %>% select(-c(date,N)) %>% mutate_if(is.numeric, round, digits=4)
+  #rownames(CFR.today) <- c("Case Fatality Rate: Observed", "Case Fatality Rate: True, Estimated")
   rownames(CFR.today) <- c("Case Fatality Rate: Observed", "Case Fatality Rate: True, Estimated")
   CFR.today <- select(CFR.today, -c(1))
 
@@ -92,7 +93,7 @@ summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.da
     return(posterior.CI)
   }
 
-  R0.posterior.CI <- posterior.CI(ABC_out$param[,1])
+  R0.posterior.CI <- round(posterior.CI(ABC_out$param[,1]),digits=2)
   r.posterior.CI <- posterior.CI(ABC_out$param[,2])
   R0redux.posterior.CI <- posterior.CI(ABC_out$param[,4])
   Alpha.posterior.CI <- posterior.CI(ABC_out$param[,6])
@@ -434,7 +435,8 @@ plot.model.single <- function(traj.CI, data.in, init.date.data=NULL, date.offset
   p <- p + scale_x_date(limits = as.Date(c(startDatePlot,endDatePlot)), date_breaks = "2 weeks" , date_labels = "%d-%b-%y")
   p <- p + theme(axis.text.x = element_text(angle = 90),
                  strip.text.x = element_text(size = 12, face = "bold"))
-  p <- p + ylab(paste0("Number  ", as.character(longnames[var.to.plot]))) + xlab(NULL)
+#  p <- p + ylab(paste0("Number  ", as.character(longnames[var.to.plot]))) + xlab(NULL)
+  p <- p + ylab(NULL) + xlab(NULL)
 
 
   if(!is.null(ymax)){
@@ -587,7 +589,7 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
       # ## SCENARIO4: INTERVENTION DATE = DATE SOCIAL DISTANCING BEGINS
       intervention_date <- as.Date(intervention_date)
       intervention_date_numeric <- as.numeric(intervention_date - as.Date("2020-03-01"))
-      date_to_start_easing <- start_time+intervention_date_numeric
+      date_to_start_easing <- as.numeric(as.Date("2020-04-25")-as.Date("2020-03-01"))
 
       Beta_t<- c(
         0,                              #1
@@ -595,9 +597,9 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
         (start_time+1),                #3
         (start_time+intervention_date_numeric),       #4
         (start_time+intervention_date_numeric+15),
-        (start_time+intervention_date_numeric+50),
-        (start_time+intervention_date_numeric+51),
-        (start_time+intervention_date_numeric+500))         #5
+        (start_time+date_to_start_easing),
+        (start_time+date_to_start_easing+1),
+        (start_time+date_to_start_easing+500))         #5
 
       Beta_y<- c(
         Br, #1
@@ -606,8 +608,8 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
         Br,
         (Br*R0_redux), #5
         (Br*R0_redux), #6
-        (Br*R0_redux), #(Br*.4), #7
-        (Br*R0_redux)) #(Br*.4)) #8
+        (Br*R0_redux*1), #7
+        (Br*R0_redux*1)) #8
 
     }
 
