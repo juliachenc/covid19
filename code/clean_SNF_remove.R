@@ -18,7 +18,7 @@ NH_frac <- function(NH.rm.start.date,no_obs,NH.var.to.modify,input.NH.dates, ful
   NH_dates <- c(1:no_obs)
   NH.counts <- rep(0,no_obs)
   NH.counts[interpolate_NH$x] <- round(interpolate_NH$y)
-  NH.counts[((NH.interpolate.t.end)+1):no_obs] <- NH.var.to.modify[-1]
+  NH.counts[((NH.interpolate.t.end)+1):no_obs] <- NH.var.to.modify[3:length(NH.var.to.modify)]
   #plot(NH_dates,NH.counts)
 
   modify.var <- full.data.in[,var.to.modify]

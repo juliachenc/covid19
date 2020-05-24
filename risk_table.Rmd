@@ -1,5 +1,7 @@
 ---
-title: "Projections By SPA Given Risk Factors"
+title: "Projections by Risk Factors and At-Risk Groups"
+editor_options: 
+  chunk_output_type: console
 ---
 
 ### Risk Profiles, Risk Factors, and Risk Groups
@@ -21,3 +23,4 @@ You can use the **Search** bar to search for your own risk profile by inputting 
 ```{r, echo=FALSE}
 risk_table
 ```
+
