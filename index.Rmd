@@ -98,6 +98,8 @@ Our epidemic modeling efforts provide:
 - Projections of illness severity trajectories in L.A. County as a whole and for race/ethnicity groups, based on prevalence of known COVID-19 risk factors.
 - Predictions for the impact on counts and corresponding time periods under various social distancing scenarios in which restrictions are eased.
 
+**The particular contribution of our model over existing models estimating hospital resource demand is that it accounts for combinations of risk factors (age, unhealthy behaviors, existing comorbidities, and combinations of comorbidities), including area-level differences in prevalence of these risk factors, in determining COVID intensity.** Accounting for differential risk for specific populations is important both for making projections about the scale of the epidemic, and for prioritizing at-risk populations for protection. In the [Risk Table](https://uscbiostats.github.io/COVID19/risk_table.html) page, we also provide the results of our estimates as a tool where individuals can look up their risk of severe illness based on their individual combinations of risk factors.
+
 
 ```{r calc-risk-probs, include=FALSE, eval=TRUE}
 ###################################################################################################
@@ -145,6 +147,9 @@ data = obs.shift
 ## DATA FORMAT FOR PLOTTING (BELOW)
 data.in.tmp.orig <- obs_cum_new_counts %>% dplyr::select(-c(H_capacity,Q_capacity,V_free,Q_free))
 
+length(data.in.tmp.orig)
+length(NH_counts)
+
 ```
 
 ```{r SNF-data-frac-calc, include=FALSE}
@@ -172,6 +177,9 @@ clean_SNF_remove <- path(code.dir, "clean_SNF_remove.R")
 #r_output(readLines(clean_SNF_remove))
 source(clean_SNF_remove)
 
+# CURRENT TOTAL % OF DEATHS COMING FROM SNF -- FOR METHODS
+NH_total_frac <- last(NH_counts$D_resident_cum) / last(data.in.tmp.orig$D)
+NH_total_per <- round(NH_total_frac*100,1)
 
 ```
 
@@ -495,35 +503,57 @@ yesR.p.Itot.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.dat
 
 ## By Key Compartments {.tabset}
 
-**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+**Demonstrating detailed model projections (numbers in compartments over time, over time) for Los Angeles, for the following key variables/compartments:**
+
+- Current census in Hospital
+- Current census in ICU
+- Current census Ventilated
+- Cumulative Deaths
+- Current Illnesses: Observed/Detected
+- Current Total Illnesses: Observed + Unobserved
+
+Projections are shown as the median number in compartments over time, with the 50% and 95% Confidence Intervals. Projections are shown against data for variables where data is available. Key healthcare capacity limits (hospital beds, ICU beds, ventilators) are indicated for Los Angeles County.
+
+### Current in Hospital
 
 **The dashed line represents healthcare resource capacity limits.**
 
-### Current in Hospital
 ```{r, echo=FALSE}
 ggplotly(yesR.p.H.0)
 
 ```
 
 ### Current in ICU
+
+**The dashed line represents healthcare resource capacity limits.**
+
 ```{r, echo=FALSE}
 ggplotly(yesR.p.Q.0)
 
 ```
 
 ### Current in Ventilation
+
+**The dashed line represents healthcare resource capacity limits.**
+
 ```{r, echo=FALSE}
 ggplotly(yesR.p.V.0)
 
 ```
 
 ### Cumulative Deaths
+
+**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+
 ```{r, echo=FALSE}
 ggplotly(yesR.p.D.0)
 
 ```
 
 ### Current Observed Illnesses
+
+**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+
 ```{r, echo=FALSE}
 ggplotly(yesR.p.I.0)
 
@@ -537,17 +567,20 @@ ggplotly(yesR.p.Itot.0)
 
 ## Against Data {.tabset}
 
-**Demonstrating model fit against COVID-19 data for Los Angeles, for the following variables/compartments:**
+**Summarizing model fit against COVID-19 data for Los Angeles, for all variables/compartments. Each variable/compartment can be tracked according to three views:**
 
-* New = new daily incidence
-* Current = current census in compartment
-* Cumulative = running total over time
+* **New = new daily incidence**. Unstable but relevant for interpreting immediate trends.
+* **Current = current census in compartment**. Relevant for comparing with healthcare capacity limitations.
+* **Cumulative = running total over time**. Provides understanding of longer term trends.
 
-**The black dots depict COVID-19 data with counts from outbreaks in nursing homes removed**
-
-**The dashed line represents resource capacity limits**
+These figures provide a summarizing view across all model variables. More detailed projections of key variables are provided in the section above.
 
 ### Short time horizon
+
+**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+
+**The dashed line represents healthcare resource capacity limits.**
+
 ```{r all-150days, echo=FALSE}
 
 yesR.plot.all.variables.current.scenario.150days
@@ -555,6 +588,11 @@ yesR.plot.all.variables.current.scenario.150days
 ```
 
 ### Longer time horizon
+
+**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+
+**The dashed line represents healthcare resource capacity limits.**
+
 ```{r all-300days, echo=FALSE}
 
 yesR.plot.all.variables.current.scenario.300days
