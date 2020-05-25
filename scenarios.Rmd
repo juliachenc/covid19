@@ -50,7 +50,7 @@ Here we evaluate the impact of `r length(R0_redux_scenarios)` scenarios, each co
 #   kable_styling(bootstrap_options = "striped", full_width = F)
 
 formattable(scenarios_table,
-            align=rep("c",NCOL(scenarios_table2)),
+            align=rep("c",NCOL(scenarios_table)),
             list(`Percent orig. R0` = percent,
                  `Percent increase from current R0` = percent))
 
@@ -59,7 +59,7 @@ formattable(scenarios_table,
 
 ```{r scenarios-calculations, include=FALSE}
 
-R0_redux_eval = R0_redux_scenarios/100
+R0_redux_eval = R0_redux_scenarios
 
 scenario = 2
 intervention_date = "2020-05-16"
