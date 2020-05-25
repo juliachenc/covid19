@@ -32,9 +32,9 @@ The key aims we are addressing are:
 
 **Aim 3**: Evaluate the influence of the epidemic on different at-risk groups
 
-Information provided by each aim:
+## Information provided by each aim
 
-### Aim 1: Project the peak of the epidemic and its impact on health care capacity
+**Aim 1: Project the peak of the epidemic and its impact on health care capacity**
 
 We estimate counts of the numbers of individuals over time, including the peak occurrence, for the following:
 
@@ -62,7 +62,7 @@ Model estimates realting to Aim 1 are found on the [Model Projections](https://u
 
 <br>
 
-### Aim 2: Project the dynamics of the epidemic when social distancing is reduced or returns to pre-pandemic levels
+**Aim 2: Project the dynamics of the epidemic when social distancing is reduced or returns to pre-pandemic levels**
 
 We provide predictions for the impact on counts and corresponding time periods under various social distancing scenarios in which restrictions are eased. We evaluate the impact of 7 scenarios, each corresponding to a different contact rate. These scenarios can be understood in terms of:
 
@@ -74,7 +74,7 @@ Model estimates realting to Aim 2 are found on the [Scenarios Page](https://uscb
 
 <br>
 
-### Aim 3: Evaluate the influence of the epidemic on different at-risk groups
+**Aim 3: Evaluate the influence of the epidemic on different at-risk groups**
 
 - We provide projections of illness severity trajectories in L.A. County as a whole and for race/ethnicity groups, based on prevalence of known COVID-19 risk factors. 
 
@@ -86,42 +86,73 @@ These projections are provided on the [Home](https://uscbiostats.github.io/COVID
 
 <br>
 
-# Model overview
+# Model Contributions
 
-## Why our model is unique
+## Why our model is unique: Contributions according to each aim
 
-- Our epidemic compartmental model uses stochastic differential equations and approximate Bayes calculation techniques for parameter estimation.
-- Importantly, the model presents the uncertainty in all estimations and predictions. 
-- We incorporate prior information for parameter specification.
-- We incorporate risk factors (e.g. advanced age, existing health conditions) into the analysis. 
-- We can modify parameters at different time points, enabling the specification of interventions, e.g. social distancing scenarios
+**Aim 1: Projecting the peak of the epidemic and its impact on health care capacity**
 
-## Background
+* We develop an SEIR model that also incorporates healthcare utilization variables: Hospitalization, Ventilation, and Death compartments. This enables us to provide projections for these compartments, which are important for planning. It also enables better specification of our model and more accurate parameter estimation because these counts are more reliable than Illness counts.
+* We also include a variable and parameter enabling us to estimate Unobserved Illnesses. This is combined with external information to specify a prior on the true number of undetected cases, coming from seroprevalence studies
+* Our epidemic compartmental model uses stochastic differential equations and approximate Bayes calculation techniques for parameter estimation, enabling presentation of the uncertainty in all estimations and predictions.
+* This Bayesian approach allows us to influence parameter estimates through prior specification. We utilize diverse, reliable data streams to specify these priors:
+  * Mobility data to inform the change in contact rates or R0
+  * Seroprevalence studies to inform the fraction of illnesses that are detected vs. undetected
+  * Published studies on COVID-19 illness trajectories to inform the probability of severe illness given risk factors, and local prevalence data to inform the rates of individuals in the population with combinations of these risk factors.
 
-**Stochastic epidemic model**:
+**Aim 2: Projecting the dynamics of the epidemic when social distancing is reduced or returns to pre-pandemic levels**
 
-- Deterministic model: for given values of parameters, dynamics across compartments will be fixed. 
-- Stochastic model: Appropriate probability distributions are used model the transfer of individuals across
-compartments.
+* We modify parameters at different time points, providing better model specification and estimation for a rapidly developing epidemic and behavioral responses, incorporating evolving trends e.g. in testing.
+* Time-varying parameters also enable the specification of interventions for scenario analysis and future planning, e.g. social distancing scenarios.
+* Mobility data which we incorporate helps to specify the observed changes in contact rate, which can inform behavioral response to various social distancing scenarios.
 
-What a stochastic model allows:
+**Aim 3: Evaluating the influence of the epidemic on different at-risk groups**
 
-- Looking back: Provides a better framework for parameter estimation, based on observed data 
-- Looking forward: Enables forecasts with confidence bounds that account for variability in parameters
+* The particular contribution of our model over existing models estimating hospital resource demand is that it accounts for combinations of risk factors (age, existing comorbidities and combinations of comorbidities), including area-level differences in prevalence of these risk factors, in determining COVID intensity. 
+* Using studies reporting the risk of severe COVID-19 outcomes for **individual** risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for given **combinations** of risk factors. 
+* Accounting for differential risk for specific populations is important both for model projections, helping to factor in local prevalence rates of risk factors in estimating the scale of the epidemic. 
+* It also enables us to provide projections based on specific at-risk groups, informing the prioritization of specific populations for protection.
+* Additionally, the integration in this model between risk factors and illness projections allows for actionable policy analysis not possible if these are independently, for example in determining a portfolio of health factor priorities that would most effectively reduce disease incidence and severity.
 
-**Approximate Bayesian Computation (ABC) for parameter estimation**:
+<br><br>
 
-- Allows us to incorporate the uncertainty in all the parameters in fitting the model to data and estimating parameters
-- Allows us to include all prior information and/or assumptions about the distribution (the range of values) for each parameter
-- Allows us to prioritize data input that is more reliable in fitting the model to data (e.g., not including more unreliable early illness count data)
-
-<br>
 
 # Methods
 
-## SEIR+RISK epidemic model {.tabset}
+## SEIR+Risk epidemic model {.tabset}
 
-In the following we provide an overview of the stochastic differential equation epidemic model developed in this work. We have called this the **SEIR+RISK** model because we incorporate risk probabilities into the model specification.
+In the following we provide an overview of the stochastic differential equation epidemic model developed in this work. We have called this the **SEIR+Risk** model because we incorporate risk probabilities into the model specification.
+
+### Overview
+
+**Model compartments**
+
+We develop a model of COVID-19 transmission in a single, fully-mixed population. The transmission process we develop reflects transitions known to be important to COVID-19 transmission, and includes Susceptible, Exposed (latent but not yet infectious), Infectious, and Recovered compartments. We also include healthcare utilization variables: Hospitalization, Ventilation, and Death compartments. This enables us to provide projections for these compartments, which are important for planning. It also enables better specification of our model and more accurate parameter estimation because these counts are more reliable than Illness counts. We additionally include a variable and parameter enabling us to estimate the Unobserved Infectious class. This is combined with external information to specify a prior on the true number of undetected cases, coming from seroprevalence studies.
+
+**Time-varying factor reduction in $R0$**
+
+In addition to the compartments, we include time-varying parameters. Currently, we specify a parameter encoding a reduction in contact rate. Changes in contact rate translate directly changes in the basic reproductive number $R0$ and the infectivitity rate $\beta$ because all of these quantities are directly proportional. Because $R0$ is a more commonly discussed quantity, and a parameter estimated by our model, in the following we discuss changes in contact rate in terms of the equivalent changes in $R0$, i.e. $Frac_{R0}(t)$. For shorthand we also refer to this parameter as $\mu$ in the system of equations. This time varying parameter allows us to explicitly model the change in contact rate, or equivalently, change in $R0$, with time due to different policy interventions / social distancing scenarios. We are able to specify the prior for this parameter using reliable mobility data. This time varying parameter allows us to perform better model estimates, as well as to do scenario analysis and planning for the future.
+
+State that R0 ~ Beta ~ contact rate x probability of transmission → R0 ~ contact rate 
+→ Drop in R0 is ~ to drop in contact rate
+
+
+### Stochasticity
+
+**The difference between a deterministic model and a stochastic model**: 
+
+- Deterministic model: For given values of parameters, dynamics across compartments will be fixed. 
+- Stochastic model: Probability distributions are used model the transfer of individuals between compartments.
+
+**Benefits of a stochastic model**:
+
+- Reflects the stochasticity inherent in the disease transmission and evolution process
+- For parameter estimation: Provides a better framework for parameter estimation, based on observed data 
+- For projections and scenario analysis: Enables forecasts with confidence bounds that account for variability in parameters and the stochasticity of the disease process.
+
+**How stochasticity is included in our model**
+
+We develop a stochastic Eulerian discrete-valued epidemic model. In this model, individuals move between compartments with transitions mathematically defined by Poisson, binomial, and multinomial distributions. Each evaluation of the model with the same parameter values and initial conditions will result in an ensemble of epidemic realizations. In addition to the stochasticity of the disease transmission and evolution process, we bring in stochasticity in the parameter estimates. We simulate trajectories across distributions of likely parameter values instead of reducing parameters to a fixed estimate.
 
 ### Flow diagram
 
@@ -136,8 +167,8 @@ knitr::include_graphics(path(data.dir, "flow_diagram_v2.png"))
 
 $$
 \begin{align*}
-    dS/dt &= -\beta S(I+A)\\
-    dE/dt &= \beta S(I+A) - \tfrac{1}{d_{EI}}E\\
+    dS/dt &= -\beta \mu(t)S(I+A)\\
+    dE/dt &= \beta \mu(t) S(I+A) - \tfrac{1}{d_{EI}}E\\
     dA/dt &= \tfrac{1-r}{d_{EI}}E - \tfrac{1}{d_{IR}}A\\
     dI/dt &= \tfrac{r}{d_{EI}}E - (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I\\
     dH/dt &= \alpha (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I - (\tfrac{\kappa}{d_{HQ}}\tfrac{1-\kappa}{d_{HR}})H \\
@@ -149,7 +180,7 @@ $$
 $$
 
 $$
-R0 = \beta ({\frac{r}{\tfrac{\alpha}{d_{IH}}+\tfrac{1-\alpha}{d_{IR}}}+ (1-r){d_{IR}}})
+R0 = \beta \mu(t) ({\frac{r}{\tfrac{\alpha}{d_{IH}}+\tfrac{1-\alpha}{d_{IR}}}+ (1-r){d_{IR}}})
 \\
 N=S+E+A+I+H+Q+D+R
 $$
@@ -169,7 +200,9 @@ $$
 | $D$ | Dead |
 | $R$ | Recovered/removed |
 
-### Model Parameters - Fixed
+### Model Parameters
+
+**Fixed**
 
 - Fixed model parameters provide the transition times between compartments. 
 - Values were taken from the literature from various, summarized [here](https://docs.google.com/spreadsheets/d/1PQttOS0VllpDGZswngMBIX5GMV2cMAxyseD3L-aNw-U/edit#gid=1798107562).
@@ -184,46 +217,73 @@ $$
 | $d_{QD}$ | days between ICU and fatality | 8 days |
 | $d_{QR}$ | days between ICU and recovery | 7 days |
 
-### Model Parameters - Estimated 
-
-- The following parameters were estimated by our model. The section *Estimated Parameters* provides details on parameter prior and posterior distributions.
+**Estimated**
 
 | Parameter | Description |
 |----------------------------|-----------------------------------------------------------------------------|
 | $R0$ | Basic reproductive number |
-| $Frac_{R0}$  Mar.12-May 12 | Factor reduction in initial $R0$ Mar.12-May12 |
-| $Frac_{R0}$  May.12-May 25 | Factor reduction in initial $R0$ May 12-25 |
+| $\Beta$* | Infectivity rate |
+| $t(0)$ | Start time of the epidemic |
+| $Frac_{R0}$, $\mu(t)$ | Time-varying reduction in initial $R0$ |
 | $r$ | Proportion of illnesses that are detected and reported out of all illnesses |
-| $Pr(Hospital|Illness)$ | probability infected (I) requires  hospitalization (vs. recovers) |
-| $Pr(ICU|Hospital)$ | probability hospitalized (H)  requires ICU (vs. recovers) |
-| $Pr(Death|ICU)$ | probability ICU (Q) patient dies |
-| $Pr(Ventilation|ICU)$ | probability ventilation (V) required  given ICU |
+| $Pr(Hospital|Illness)$, $\alpha$ | probability infected (I) requires  hospitalization (vs. recovers) |
+| $Pr(ICU|Hospital)$, $\kappa$ | probability hospitalized (H)  requires ICU (vs. recovers) |
+| $Pr(Death|ICU)$, $delta$ | probability ICU (Q) patient dies |
+| $Pr(Ventilation|ICU)$, $p_V$ | probability ventilation (V) required  given ICU |
+
+* $\Beta$ is analytically derived from our model with estimated value for $R0$.
+
+**The section *Estimated Parameters* provides details on parameter prior and posterior distributions.**
+
+### Parameter Estimation Procedure
+
+We use **Approximate Bayesian Computation (ABC)** for parameter estimation.
+
+**Benefits of using ABC include**:
+
+- Allows us to incorporate the uncertainty in all the parameters in fitting the model to data and estimating parameters
+- Allows us to include all prior information and/or assumptions about the distribution (the range of values) for each parameter
+- Allows us to prioritize data input that is more reliable in fitting the model to data (e.g., not including more unreliable early illness count data)
+
+**Overview**
+
+- In brief, ABC involves specifyinig prior distributions for parameters that function as the modelers' assumed likelihood of an initial "guess" of the initial parameter values. The model is simulated with a parameter "guess" and the resulting outbreak is compared to the observed data to determine how similar these appear. This procedure is repeated to identify a range of parameter values for which the fit of the simulations to the observed outbreak data is adequate. These resulting parameter values used for the simulations that are in agreement with data then serve as ‘parameter estimates.’ 
+- Using ABC on multiple parameters simultaneously produces joint posterior estimates over all parameters rather than the marginal posterior of a single parameter. In forward simulations of our model, we simulate trajectories with parameter values coming from this joint posterior distribution, rather than a single value of a parameter.
+
+**Variable observations used for parameter estimation**
+
+We use current numbers of **Infected (observed)**, **Hospitalized**, **ICU**, **Ventilated**, and **Deaths** in the parameter estimation procedure. Incorporating data beyond observed Infected cases allows for better fitting, because this data is more reliable; for example, deaths are likely more accurately reported than cases in settings with limited testing capacity where tests are usually prioritized for the more severely ill patients. We further improve the reliability of the data used for estimation by weighting the parameter estimation procedure such that early count data in all compartments is not included; what this means is that we only use to variable counts beginning around mid-March 2020 (and at later dates for more delayed compartments e.g. Death counts).
+
+
+{-}
 
 <br>
 
 ## Estimated Parameters {.tabset}
 
-**Model estimated parameters: Prior information and posterior estimates**
-
-Here we summarize our estimated parameter values for key epidemic and model quantities: 
+### We estimate the following key epidemic and model quantities
 
 | Parameter | Description |
 |----------------------------|-----------------------------------------------------------------------------|
 | $R0$ | Basic reproductive number |
-| $Frac_{R0}$  Mar.12-May 12 | Factor reduction in initial $R0$ Mar.12-Apr.25 |
-| $Frac_{R0}$  May.12-May 25 | Factor reduction in initial $R0$ Apr.26- |
+| $t(0)$ | Start time of the epidemic |
+| $Frac_{R0}$, $\mu(t)$ | Time-varying reduction in initial $R0$ |
 | $r$ | Proportion of illnesses that are detected and reported out of all illnesses |
-| $Pr(Hospital|Illness)$ | probability infected (I) requires  hospitalization (vs. recovers) |
-| $Pr(ICU|Hospital)$ | probability hospitalized (H)  requires ICU (vs. recovers) |
-| $Pr(Death|ICU)$ | probability ICU (Q) patient dies |
-| $Pr(Ventilation|ICU)$ | probability ventilation (V) required  given ICU |
+| $Pr(Hospital|Illness)$, $\alpha$ | probability infected (I) requires  hospitalization (vs. recovers) |
+| $Pr(ICU|Hospital)$, $\kappa$ | probability hospitalized (H)  requires ICU (vs. recovers) |
+| $Pr(Death|ICU)$, $delta$ | probability ICU (Q) patient dies |
+| $Pr(Ventilation|ICU)$, $p_V$ | probability ventilation (V) required  given ICU |
 
 
-Because our model is stochastic and we are using Bayesian techniques for parameter estimation, each posterior parameter estimate is represented by a distribution of likely values.
+### Model Estimated Parameters: Prior Specification and Posterior Estimates
+
+**In the following we provide information on prior specification and resulting posterior estimation of each parameter. Because our model is stochastic and we are using Bayesian techniques for parameter estimation, each posterior parameter estimate is represented by a distribution of likely values.**
+
+## {.tabset}
 
 ### Summary of key estimated parameters
 
-Summary of key statistics of each estimated parameter: the mean and the standard deviation (sd).
+**Summary of key statistics of each estimated parameter: the mean and the standard deviation**
 
 ```{r estimated-par, echo=FALSE}
 #ABC.par.stats.print <- select(ABC.par.stats, -c('Start time'))
@@ -266,23 +326,23 @@ The prevalence of these risk factors in Los Angeles County is also included.
 
 - The comorbidities included in the "any comorbidity" category are: hypertension, diabetes, cardiovascular disease, cerebrovascular disease / stroke, cancer, COPD, and athsma. It is important to note that each of these conditions has its own risk of disease outcome; future models will disaggregate risk estimates by specific risk conditions when sufficient data becomes available to produce these estimations. 
 
+- The value of accounting for combinations of risk factors and breaking down risk estimates to specific combinations of risk factors is that this provides more specific information on risk for specific individuals. Marginal probabilities for single risk factors represent an average across all combinations of conditions; for example, the probability of hospitalization given illness for age 65+ averages over the risk for the population 65+ that has multiple comorbidities as well as those that do not, whereas the risk for an individual 65+ with no comorbidities will be significantly lower than that for someone with multiple comorbidities and a history of smoking. 
+
 
 **Details: Estimating the conditional probability of COVID illness severity given combinations of risk factors** 
 
-- Using studies reporting the marginal risk of severe COVID-19 outcomes given individual risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with combinations of risk factors.
-- Specifically, we estimate the probability that individuals having (or not) combinations of risk factors are admitted to hospital given having acquired (observed/detected) illness $Pr(Hospital | Illness)$, are admitted to the ICU given admittance to hospitalized $Pr(ICU | Hospital)$, and that die given being admitted to the ICU $Pr(Death | ICU)$.
-- Our methodology for joint risk factor estimation relies on a model, called JAM, developed for use in genome-wide analyses to identify the conditional relative risk (RR) of phenotypic occurrence given joint combinations of genes from two pieces of information: (i) the marginal RR between single genes and phenotype and (ii) the correlation structure between the genes. 
-- We apply the JAM model to estimate the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors. For information informing (i) we obtain the marginal RR between individual risk factors and COVID-19 illness severity from published COVID-19 studies (sources below, peer-reviewed where available). For (2), we obtain the correlation structure between the risk factors using data from The National Health and Nutrition Examination Survey (NHANES). NHANES is a survey research program conducted by the National Center for Health Statistics (NCHS) to assess the health and nutritional status of adults and children in the United States, and to track changes over time. We use the NHANES cohort of 2017-2018.
-- After obtaining the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors, we convert these to the probabilities $Pr(Hospital | Illness, Profile_i)$, $Pr(ICU | Hospital,Profile_i)$, and $Pr(Death | ICU,Profile_i)$.
-- The analysis we present here has taken the combinations of risk factors and grouped these into 5 key *risk groups* according to similar within-group levels of the probabilities $Pr(Hospital | Illness, Profile_i)$, $Pr(ICU | Hospital, Profile_i)$, and $Pr(Death | ICU, Profile_i)$. 
-- To produce an estimate of the overall $Pr(Hospital | Illness)$ across all risk groups for L.A. County and subpopulations, we take the weighted average of the probability for each risk profile and the prevalence of the risk profile pover all illnesses, i.e.
+Using studies reporting the marginal risk of severe COVID-19 outcomes given individual risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with combinations of risk factors. Specifically, we estimate the probability that individuals having (or not) combinations of risk factors are admitted to hospital given having acquired (observed/detected) illness $Pr(Hospital | Illness)$, are admitted to the ICU given admittance to hospitalized $Pr(ICU | Hospital)$, and that die given being admitted to the ICU $Pr(Death | ICU)$.
+
+Our methodology for joint risk factor estimation relies on a model, called JAM, developed for use in genome-wide analyses to identify the conditional relative risk (RR) of phenotypic occurrence given joint combinations of genes from two pieces of information: (i) the marginal RR between single genes and phenotype and (ii) the correlation structure between the genes. We apply the JAM model to estimate the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors. For information informing (i) we obtain the marginal RR between individual risk factors and COVID-19 illness severity from published COVID-19 studies (sources below, peer-reviewed where available). For (ii), we obtain the correlation structure between the risk factors using data from The National Health and Nutrition Examination Survey (NHANES). NHANES is a survey research program conducted by the National Center for Health Statistics (NCHS) to assess the health and nutritional status of adults and children in the United States, and to track changes over time. We use the NHANES cohort of 2017-2018.
+
+After obtaining the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors, we convert these risks into the probabilities $Pr(Hospital | Illness, Profile_i)$, $Pr(ICU | Hospital,Profile_i)$, and $Pr(Death | ICU,Profile_i)$. The analysis we present here has taken the combinations of risk factors and grouped these into 5 key *risk groups* according to similar within-group levels of the probabilities $Pr(Hospital | Illness, Profile_i)$, $Pr(ICU | Hospital, Profile_i)$, and $Pr(Death | ICU, Profile_i)$. To produce an estimate of the overall $Pr(Hospital | Illness)$ across all risk groups for L.A. County and subpopulations, we take the weighted average of the probability for each risk profile and the prevalence of the risk profile pover all illnesses, i.e.
 
 $$
 \begin{align*}
 Pr(Hospital | Illness) = \sum_i Pr(Profile_i | Illness)Pr(Hospital|Profile_i,Illness)
 \end{align*}
 $$
-We assume that the prevalence of the risk group in the ill population, $Pr(Group_i|Illness)$, is equal to the prevalence of the group in the general population of L.A. County, i.e. $Pr(Group_i)$. We again borrow the correlation structure between risk factors derived from the NHANES cohort to estimate the population prevalence $Pr(Group_i)$ from available data on the prevalence of individual risk factors.
+We assume that the prevalence of the risk profile in the ill population, $Pr(Profile_i|Illness)$, is equal to the prevalence of the profile in the general population of L.A. County, i.e. $Pr(Profile_i)$. We again borrow the correlation structure between risk factors derived from the NHANES cohort to estimate the population prevalence $Pr(Profile_i)$ from available data on the prevalence of individual risk factors.
 
 The same approach is applied to estimate $Pr(ICU | Hospital)$ and $Pr(Death|ICU)$:
 $$
@@ -530,12 +590,13 @@ We the multiply the group prevalences above by the trajectory median values for 
 
 We use current numbers of **infected (observed)**, **hospitalized**, **ICU**, **ventilated**, and **deaths**, as well as the capacity (total number of resouces available) at hospitals, ICUs, and ventilators in L.A. County from the Los Angeles County Department of Public Health, updated daily by Faith Washburn (shared privately). 
 
-The data used in this version of the report includes counts up through `r Sys.Date()`
+The data used in this version of the report includes counts up through `r Sys.Date() - 1`
 
 **Data processing: Nursing home counts removed from LA County daily counts**
 
-- We are fitting our model to the general COVID-19 illness trends in L.A. County. Due to the large number of outbreaks and the share of deaths coming from nursing homes (i.e., Skilled Nursing Facilities, SNFs), we have removed estimated numbers of illnesses, hospitalizations, ICU visits, ventilations, and deaths from SNFs. We fit our general population model to the data with the SNF cases removed, as illustrated below.
-- Counts removed from Illnesses, Hospitalizations, Ventilations, and Deaths
+- We are fitting our model to the general COVID-19 illness trends in L.A. County. At present, the burden of mortality of COVID-19 is led by cases from residents of Skilled Nursing Facilities (SNFs), more commonly referred to as Nursing Homes, a category of licensed healthcare residences for seniors who require a higher level of medical care than can be provided in an assisted living facility. As of `r Sys.Date()`, the percentage of all deaths in L.A. County that coming from SNFs is `r NH_total_per`%.
+
+- Due to the differences in both (i) the prevalence of particularly high-risk profiles in SNFs and (ii) the conditions of these close-quartered facilities for which social distancing and reductions in contact rate are less tenable, the dynamics of the outbreak and associated illness severity probabilities will be distinct in SNFs from the general community. Therefore, to fit a model for the general L.A. community we have removed the numbers of illnesses, hospitalizations, ventilations, and deaths coming from SNFs from the overall L.A. counts before the parameter estimation procedure. In other words, we fit our general population model to the data with the SNF cases removed, as illustrated below. Because case counts from SNFs are not available prior to April 21, 2020, we have estimated the epidemic trajectory in SNFs leading up to this date.
 
 ```{r plot-NH-removed, echo=FALSE}
 
@@ -554,6 +615,10 @@ Studies on COVID-19 clinical presentation and trajectories to inform the probabi
 - Guan, Wei-jie, et al. "[Clinical characteristics of coronavirus disease 2019 in China.](https://www.nejm.org/doi/full/10.1056/NEJMoa2002032)" New England Journal of Medicine (2020). 
 - Petrilli, Christopher M., et al. "[Factors associated with hospitalization and critical illness among 4,103 patients with COVID-19 disease in New York City](https://www.medrxiv.org/content/10.1101/2020.04.08.20057794v1)." medRxiv (2020).
 - [Summary table of the modified Relative Risks (RR) coming from these studies, which are used by our statistical model estimates](https://docs.google.com/spreadsheets/d/1Crsz7hfgBx4_-SsZI7u0e6IrHlQa-qVPbr3N87fUuqg/edit#gid=1637953801) 
+
+**Correlation structure between risk factors**
+
+We obtain the correlation structure between the risk factors using data from The National Health and Nutrition Examination Survey (NHANES). NHANES is a survey research program conducted by the National Center for Health Statistics (NCHS) to assess the health and nutritional status of adults and children in the United States, and to track changes over time. We use the NHANES cohort of 2017-2018.
 
 **L.A. County Risk Factor Prevalences**
 
@@ -577,18 +642,26 @@ We use mobility data to narrow the specification of the reduction in the average
 <br>
 
 ### Model Limitations
-- This model does not account for differences in contact patterns within and across key groups, such as workplaces, schools, and communities; or of group-specific social distancing scenarios.
-- This model does not account for the role of interventions beyond social distancing, such as contact tracing and surveillance testing, which are critical to identifying and limiting the spread of the virus.
-- This model focuses only on the direct effects of stay-at-home orders on COVID-19 infection transmission and hospitalization. It does not account for the non-COVID-19 related public health impact of stay-at-home orders.
-- This model does not account for unanticipated behavioral responses to the effects of interventions or mitigation strategies
-- The accuracy of the parameter estimation depends on the accuracy of the prior specifications and any fixed parameters employed, including the incubation and recovery period. As new information about the epidemiological characteristics of COVID-19 continues to arise, model estimation will need to be continuously updated.
-- Incorporating the latest information into our models is possible and will be key to maintaining its relevance for decision insights. 
+
+* **Dynamics**: We develop a simplistic modeling dynamics that assumes homogeneous mixing and a single population, whereas there are many different subpopulations with different contact structures and types. As such, this model does not account for differences in contact patterns within and across key groups, such as workplaces, schools, and communities; or of group-specific social distancing scenarios. Future work should stratify contact rates to specific risk groups. In addition, high resolution models are available and are being used to simulate at a micro level the different policies and interventions that can be implemented; this should be the direction of future work to predict the effect the portfolio of options for reopening society.
+* This model does not account for the role of interventions beyond social distancing, such as contact tracing and surveillance testing, which are critical to identifying and limiting the spread of the virus.
+* This model does not account for unanticipated behavioral responses to the effects of interventions or mitigation strategies
+* The accuracy of the parameter estimation depends on the accuracy of the prior specifications and any fixed parameters employed, including the incubation and recovery period. As new information about the epidemiological characteristics of COVID-19 continues to arise, model estimation will need to be continuously updated.
+
+* **Probability of health care resource utilization**: Our model provides the “baseline” estimates of health care probabilities due to biological risk factors for COVID alone (age, comorbidities, obesity, smoking). However there are many other factors that are impacting what we are observing on the epidemic --
+  * **Differences in dynamics among subpopulations**: Different dynamics at different scales due to different types of contact patterns and structures, and abilities to adhere social distancing guidance/guidelines, which translate to different rates of infection and subsequent stages of illness. 
+  * **Initial conditions**: Randomness (and structure) in initial seeding events 
+  * **Access to care**: Disparities exist in access to health care and which individuals are being treated in health care facilities, which also impacts the numbers showing up in health care related data.
+* **Testing**: Disparities in who is getting tested and at what stage of disease
+
 
 <br> 
 
-### Summary
-- Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19.
-LA County is succeeding in mitigating the epidemic curve due to strong adherence to social distancing (model-estimated reduction in contact rate of >70%).
-- Our model suggests that social distancing may need to be continued for a longer period of time to retain these mitigation effects.
-- Our model predicts that higher risk groups -- characterized not only by advanced age but also combinations of existing health conditions -- will make up the majority of those afflicted with severe disease. We analyze how these risk factors project onto race/ethnicity groups and project expected illness patterns based on population size and prevalence of these risk factors.
-- Model estimates can and will change as new studies and data become available.
+### Initial Findings
+
+* Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19.
+* L.A. County has succeeded in mitigating the epidemic curve due to early action and strong adherence to social distancing (model-estimated reduction in contact rate of >70%).
+* Our model suggests that social distancing may be relaxed to levels even up to an 100% increase of social encounters beyond that enforced in the first phase of response (Level 1), while still keeping the epidemic under control. However beyond a certain level of increase, a major resurgence will be seen. What exactly does an 100% increase from Level 1 social distancing translate to? Finer-resolution micro-simulation models combined with analysis of near-real-time mobility data may help to answer these questions.
+* Our model predicts that higher risk groups -- characterized not only by advanced age but also combinations of existing health conditions -- will make up the overwhelming majority of those afflicted with severe disease. Our model breaks down risk to the various combinations of various risk factors. The results of this analysis show that advance age in combination with multiple comorbidities leads the burden of morbidity and mortality for COVID-19.
+* We analyze how these risk factors project onto race/ethnicity groups and project expected illness patterns based on population size and prevalence of these risk factors. Thus far, the observed risk of death by race in L.A. is consistent with what we would expect based on biological risk factors alone. This will need to be further analyzed and interpreted, but as an initial analysis, may suggest that LA may be an outlier compared with other major U.S. cities in terms of the disproportionate burden of morbidity and mortality on more marginalized groups.
+* Incorporating the latest information into our models is possible and will be key to maintaining its relevance for decision insights. 
