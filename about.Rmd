@@ -14,6 +14,9 @@ Biostatistics PhD Candidate
 [Emil Hvitfeldt, MS](https://www.hvitfeldt.me/)
 Research Programmer
 
+[Kayla de la Haye](https://www.kayladelahaye.net/)
+Assistant Professor of Preventive Medicine
+
 [Wendy Cozen](https://keck.usc.edu/faculty-search/wendy-cozen/)
 Professor of Preventive Medicine
 Leader, Translational Epidemiology
@@ -38,10 +41,5 @@ Epidemiology Analyst
 ## Acknowledgements
 
 Additionally, we would like to acknowledge:
-
-[Kayla de la Haye](https://www.kayladelahaye.net/)
-Assistant Professor of Preventive Medicine for helpful discussion
-
-and 
 
 [Claire Jacquillat](https://www.linkedin.com/authwall?trk=gf&trkInfo=AQG3KVF6rpn2PwAAAXI7ea9Q8QpZmycppjxhhVX6cRMO1bNUfKKoeXR-RvAvfaLx1avEcheI5LQls-QVHsgyskdpxkiYEbxOfrC4jNSZJkJ1skKaVDFr7PxhVPqk3xhETPE39vk=&originalReferer=https://www.google.com/&sessionRedirect=https%3A%2F%2Fwww.linkedin.com%2Fin%2Fclairejacquillat%2Fen-us) and Adam Taylor for their contributions related to data cleaning and visualization.

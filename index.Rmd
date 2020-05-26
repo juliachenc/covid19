@@ -84,7 +84,7 @@ result.dir = here("results/")
 
 # Aims
 
-The USC Predict COVID project has developed the **SEIR+RISK** epidemic model to estimate and gain insight into the impact of COVID-19 in Los Angeles County and on its residents. 
+The USC Predict COVID project has developed the **SEIR+Risk** epidemic model to estimate and gain insight into the impact of COVID-19 in Los Angeles County and on its residents. 
 
 The primary questions we are addressing are:
 
@@ -503,16 +503,7 @@ yesR.p.Itot.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.dat
 
 ## By Key Compartments {.tabset}
 
-**Demonstrating detailed model projections (numbers in compartments over time, over time) for Los Angeles, for the following key variables/compartments:**
-
-- Current census in Hospital
-- Current census in ICU
-- Current census Ventilated
-- Cumulative Deaths
-- Current Illnesses: Observed/Detected
-- Current Total Illnesses: Observed + Unobserved
-
-Projections are shown as the median number in compartments over time, with the 50% and 95% Confidence Intervals. Projections are shown against data for variables where data is available. Key healthcare capacity limits (hospital beds, ICU beds, ventilators) are indicated for Los Angeles County.
+Here we provide model projections for the SEIR+Risk model in L.A. County. Projections are shown as the median number in compartments over time, with the 50% and 95% Confidence Intervals. Observed data is depicted for variables where data is available. Key healthcare capacity limits (hospital beds, ICU beds, ventilators) in L.A. County are also indicated.
 
 ### Current in Hospital
 
@@ -601,7 +592,7 @@ yesR.plot.all.variables.current.scenario.300days
 
 ## Summary Table
 ### Posterior parameter estimates for key variables 
-Median and 95% CI displayed
+Median and 95% CI displayed.
 
 ```{r, echo=FALSE}
 
@@ -941,6 +932,8 @@ p.smoking<-
     theme(axis.text.x = element_text(angle = 45))
 
 ```
+
+<br><br>
 
 # Projections for At-Risk Groups
 
@@ -2033,6 +2026,9 @@ p.traj.race.D<-
 
 - A key insight from this figure is that as the epidemic evolves, the trend of the distribution of deaths by race/ethnicity appears to be converging to the expected distribution based on the biological risk factors for COVID-19, as calculated by our model. Time will tell if this distribution stabilizes or if the relative share of each race/ethnicity grows disproportionately to that expected by biological factors, indicating the role of other factors in determining the illness dynamics.
 
+- It is important to note that the observed distribution of deaths by race for L.A. County (columns 2 - 6 below) includes cases from nursing homes (SNFs), whereas the model projections are fit to data with these cases removed. Because SNF deaths represent a significant portion of overall deaths, removing SNF numbers from the observed distribution may lead to a different distribution of deaths by race for the general L.A. County population than that plotted below.
+
+
 ```{r, echo=FALSE, message=FALSE}
 
 p.shares.races.D.obs
@@ -2055,4 +2051,32 @@ p.traj.race.I + p.traj.race.H + p.traj.race.Q + p.traj.race.D +
 ```
 
 ## {-}
+
+## Probability of severe disease by race
+
+This table shows the model estimated probability of severe disease by race/ethnicity group based on the prevalence of the risk factors in each race/ethnicity group in L.A. County. Although the nominal values of the probabilities do not differ significantly across races (for example, the probabilities for $Pr(Death|Illness)$ vary from a minimum of 0.05 to a maximum of 0.14), the relative differences between the race/ethnicity groups can translate to meaningful differences at the level of the population. To visualize these relative differences, we have depicted these probabilities using color bars sized to a normalized scale for which the color bar for the largest probability value in a column spans the column width and the lowest probability for that column is shown with a very thin bar of color.
+
+With the normalized scaling, this chart can be used to compare the relative risk of severe illness from COVID-19 across the race/ethnicity groups. Some insights this provides:
+
+* $Pr(Death|Illness)$ is lowest for the Latinx population, largely attributable to the lower age distribution in this group. 
+* $Pr(Death|Illness)$ is highest for the Native Hawaiian popualtion, driven mainly by higher prevalence of smoking and obesity rates in this population.
+* $Pr(Death|Illness)$ is almost equivalent for white and black populations. 
+
+It is important to recall that our model for risk of severe illness accounts only for biological risk factors for severe illness. There are many other factors that may affect the spread of the disease, the severity of illness, and the numbers appearing in healthcares statistics. Differences observed in the distribution of deaths across these groups from those projected by our model indicates these factors beyond the biological susceptibility to COVID-19 disease severity are at play. More details are provided in [Methods](https://uscbiostats.github.io/COVID19/method.html#conclusions).
+
+```{r}
+
+Pr.D.I <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],3)
+risk.probs.table <- risk.probs.races  
+risk.probs.table$"Pr(Death|Illness)" <- Pr.D.I
+
+formattable(risk.probs.table,
+            list(
+              `Pr(Hospital|Illness)` = color_bar('cornflowerblue', fun = unit.scale),
+              `Pr(ICU|Hosptial)` = color_bar('violet', fun = unit.scale),
+                `Pr(Death|ICU)` = color_bar('pink', fun = unit.scale),
+                `Pr(Death|Illness)` = color_bar('red', fun = unit.scale)
+            ))
+
+```
 
