@@ -2,8 +2,7 @@ name: "USC Predict COVID19"
 output_dir: "docs"
 exclude: ["code", "data", "results", "n_simul_tot_step1", "output_mcmc"]
 navbar:
-  title: "USC Predict COVID19"
-  logo: here("2-Line_KeckSOMofUSC_GoldOnCard.jpg")
+  title: '<div><img src="2-Line_KeckSOMofUSC_GoldOnCard.jpg" height = 50px></img>USC Predict COVID19</div>'
   left:
     - text: "Home"
       href: index.html
@@ -15,3 +14,6 @@ navbar:
       href: method.html
     - text: "About"
       href: about.html
+output:
+  html_document:
+    css: styles.css
