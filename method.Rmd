@@ -156,9 +156,9 @@ We develop a stochastic Eulerian discrete-valued epidemic model. In this model, 
 ### Flow diagram
 
 ```{r, echo=FALSE, fig.cap="Compartmental model flow diagram", out.width = '100%'}
-#knitr::include_graphics(here("data/flow_diagram_v2.png"))
+knitr::include_graphics(here("data/flow_diagram_v3.png"))
 ### TRY THIS FOR IMAGES
-knitr::include_graphics(path("flow_diagram_v2.png"))
+#knitr::include_graphics(path("flow_diagram_v3.png"))
 
 ```
 
@@ -440,10 +440,11 @@ grid.arrange(p2,p,ncol=2,nrow=1)
 **Reduction in mobility observed in LA County** 
 
 ```{r, echo=FALSE, fig.cap="encounter reduction", out.width = '100%'}
-knitr::include_graphics(here("Unacast.LA.redux.png"))
+knitr::include_graphics(here("data/Unacast.LA.redux.png"))
 ```
 
 **Sources**: 
+
 - [Unacast COVID-19 Social Distancing Scoreboard](https://www.unacast.com/covid19/social-distancing-scoreboard?view=county&fips=06037)
 - [Safegraph mobility data available for research](https://docs.safegraph.com/docs/neighborhood-patterns)
 
@@ -588,15 +589,22 @@ The data used in this version of the report includes counts up through `r Sys.Da
 
 **Data processing: Nursing home counts removed from LA County daily counts**
 
-- We are fitting our model to the general COVID-19 illness trends in L.A. County. At present, the burden of mortality of COVID-19 is led by cases from residents of Skilled Nursing Facilities (SNFs), more commonly referred to as Nursing Homes, a category of licensed healthcare residences for seniors who require a higher level of medical care than can be provided in an assisted living facility. As of `r Sys.Date()`, the percentage of all deaths in L.A. County that coming from SNFs is `r NH_total_per`%.
+We are fitting our model to the general COVID-19 illness trends in L.A. County. At present, the burden of mortality of COVID-19 is led by cases from residents of Skilled Nursing Facilities (SNFs), more commonly referred to as Nursing Homes, a category of licensed healthcare residences for seniors who require a higher level of medical care than can be provided in an assisted living facility. As of `r Sys.Date()`, the percentage of all deaths in L.A. County that coming from SNFs is `r NH_total_per`%.
 
-- Due to the differences in both (i) the prevalence of particularly high-risk profiles in SNFs (notably, the [average age of nursing home residents in California is 87](https://www.cahf.org/About/Consumer-Help/Facts-and-Statistics)) and (ii) the conditions of these close-quartered facilities for which social distancing and reductions in contact rate are less tenable, the dynamics of the outbreak and associated illness severity probabilities will be distinct in SNFs from the general community. Therefore, to fit a model for the general L.A. community we have removed the numbers of illnesses, hospitalizations, ventilations, and deaths coming from SNFs from the overall L.A. counts before the parameter estimation procedure. In other words, we fit our general population model to the data with the SNF cases removed, as illustrated below. Because case counts from SNFs are not available prior to April 21, 2020, we have estimated the epidemic trajectory in SNFs leading up to this date.
+Due to the differences in both (i) the prevalence of particularly high-risk profiles in SNFs (notably, the [average age of nursing home residents in California is 87](https://www.cahf.org/About/Consumer-Help/Facts-and-Statistics)) and (ii) the conditions of these close-quartered facilities for which social distancing and reductions in contact rate are less tenable, the dynamics of the outbreak and associated illness severity probabilities will be distinct in SNFs from the general community. Therefore, to fit a model for the general L.A. community we have removed the numbers of illnesses, hospitalizations, ventilations, and deaths coming from SNFs from the overall L.A. counts before the parameter estimation procedure. In other words, we fit our general population model to the data with the SNF cases removed, as illustrated below. Because case counts from SNFs are not available prior to April 21, 2020, we have estimated the epidemic trajectory in SNFs leading up to this date.
 
 ```{r plot-NH-removed, echo=FALSE}
 
 p.I + p.H + p.V + p.D + plot_annotation(title = "Skilled Nursing Facility Counts Estimated and Removed", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
 
 ```
+
+**Data processing: Removing nursing home counts in illnesses and deaths by race**
+
+To remove SNF cases by race for use in the relative risk of death rate comparison plots, we have taken two steps:
+
+1. Determine the total number of counts to remove, as described above;
+2. Distribute this number of removed counts by race according to statistics on the race distribution at care homes in California, as published by the [Public Policy Institute of California](https://www.ppic.org/publication/nursing-homes-in-california/).
 
 <br>
 

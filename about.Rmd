@@ -14,9 +14,6 @@ Biostatistics PhD Candidate
 [Emil Hvitfeldt, MS](https://www.hvitfeldt.me/)
 Research Programmer
 
-[Kayla de la Haye](https://www.kayladelahaye.net/)
-Assistant Professor of Preventive Medicine
-
 [Wendy Cozen](https://keck.usc.edu/faculty-search/wendy-cozen/)
 Professor of Preventive Medicine
 Leader, Translational Epidemiology
@@ -37,6 +34,11 @@ Director, Center for Health Impact Evaluation, LACDPH
 
 [Faith Washburn, MPH](http://publichealth.lacounty.gov/chie/who_we_are_2.htm)
 Epidemiology Analyst
+
+## Advisor, Health Disparities
+
+[Kayla de la Haye](https://www.kayladelahaye.net/)
+Assistant Professor of Preventive Medicine
 
 ## Acknowledgements
 

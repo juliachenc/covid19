@@ -466,6 +466,12 @@ p.Itot.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.
 
 <br>
 
+In the figures below:
+
+**A dashed line represents healthcare resource capacity limits.**
+
+**Black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+
 ### Scenario 0
 
 Equal to:
