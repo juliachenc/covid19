@@ -596,6 +596,8 @@ yesR.plot.all.variables.current.scenario.300days
 
 ```
 
+<br>
+
 ## Summary Table
 
 ### Posterior parameter estimates for key variables 
@@ -945,7 +947,7 @@ p.smoking<-
 
 # Projections for At-Risk Groups
 
-## By Risk Factors {.tabset}
+## By risk factors {.tabset}
 
 - These figures show the estimated proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within the L.A. County/SPA population, based on the population prevalence of the risk group in L.A. County/SPAs. 
 - The analyses are presented for each risk group, as well as stratified to the individual risk factors (age, comorbidities, obesity status, smoking status).
@@ -1850,7 +1852,7 @@ colnames(race_observed_D) <- colnames.race
 race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
 race_model_D <- relative.shares.races[,"prevalence.D"]
 
-D.dates.select <- c("2020-04-11","2020-04-16", "2020-05-01", "2020-05-11", "2020-05-17", "2020-05-20")
+D.dates.select <- c("2020-04-11","2020-04-16", "2020-05-01", "2020-05-11", "2020-05-17", "2020-05-20","2020-05-26")
 race_observed_D_select <- race_observed_D %>% select(D.dates.select)
 race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
 
@@ -2264,6 +2266,17 @@ RR.vec.DgivenI.obs
 #             ))
 
 ##################################################################
+##################################################################
+## BAR CHARTS
+##################################################################
+##################################################################
+
+labels.races.fit.bar <-c("Latino","White","Black","American \n Indian","Asian","Hawaiian","Other")
+
+ymax.bars <- 3
+breaks = seq(0, ymax.bars, by = 0.5)
+
+##################################################################
 ## BAR CHART RR.D.per.Pop
 
 RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
@@ -2277,8 +2290,8 @@ RR.D.per.Pop.barchart <-
   ggplot( aes(x=Race, y=value,fill=stage)) +
   geom_bar(position="dodge", stat = 'identity', width = 0.5)+
   labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
-  ylim(0,3)+
-  scale_x_discrete(labels = race.order)
+  scale_y_continuous(breaks = breaks) +
+  scale_x_discrete(labels = labels.races.fit.bar)
 
 
 ##################################################################
@@ -2292,11 +2305,11 @@ RR.DgivenI.melted <- RR.DgivenI.melted %>% mutate(Race=factor(Race,levels=c(race
 
 RR.DgivenI.barchart <-
   RR.DgivenI.melted %>%
-    ggplot( aes(x=Race, y=value,fill=stage)) +
-    geom_bar(position="dodge", stat = 'identity', width = 0.5)+
-    labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
-    ylim(0,3)+
-    scale_x_discrete(labels = race.order)
+  ggplot( aes(x=Race, y=value,fill=stage)) +
+  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
+  labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
+  scale_y_continuous(breaks = breaks) +
+  scale_x_discrete(labels = labels.races.fit.bar)
   
 ```
 
@@ -2371,6 +2384,15 @@ RR.vec.DgivenI.obs
 
 
 ##################################################################
+##################################################################
+## BAR CHARTS
+##################################################################
+##################################################################
+
+ymax.bars <- 5.5
+breaks = seq(0, ymax.bars, by = 0.5)
+
+##################################################################
 ## BAR CHART RR.D.per.Pop
 
 RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
@@ -2384,9 +2406,9 @@ RR.D.per.Pop.barchart.REMOVED <-
   ggplot( aes(x=Race, y=value,fill=stage)) +
   geom_bar(position="dodge", stat = 'identity', width = 0.5)+
   labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
-  ylim(0,5.5)+
-  scale_x_discrete(labels = race.order)
-
+  #ylim(0,5.5)+
+  scale_y_continuous(breaks = breaks) +
+  scale_x_discrete(labels = labels.races.fit.bar)
 
 ##################################################################
 ## BAR CHART RR.DgivenI
@@ -2399,11 +2421,11 @@ RR.DgivenI.melted <- RR.DgivenI.melted %>% mutate(Race=factor(Race,levels=c(race
 
 RR.DgivenI.barchart.REMOVED <-
   RR.DgivenI.melted %>%
-    ggplot( aes(x=Race, y=value,fill=stage)) +
-    geom_bar(position="dodge", stat = 'identity', width = 0.5)+
-    labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
-    ylim(0,5.5)+
-    scale_x_discrete(labels = race.order)
+  ggplot( aes(x=Race, y=value,fill=stage)) +
+  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
+  labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
+  scale_y_continuous(breaks = breaks) +
+  scale_x_discrete(labels = labels.races.fit.bar)
 
 ```
 
@@ -2414,6 +2436,16 @@ RR.DgivenI.barchart.REMOVED <-
 
 
 ### Death rates by race: model vs. observed
+
+```{r RR-to-White-plot}
+
+##################################################################
+## PLOTTING BOTH TOGETHER: RR.DgivenI
+
+RR.D.per.Pop.barchart + RR.DgivenI.barchart + plot_layout(guides = 'collect') + plot_annotation(tag_levels = c('A', '1'), title = "Risk of Death by Race Relative to White: \n Deaths per Population vs. Deaths Given Illness \n Model vs. Observed", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
+
+
+```
 
 Here we compare the relative risk (RR) of deaths per population for each race relative to deaths per population for whites, as given by our model based on risk factors for COVID-19 and the prevalence of these factors in L.A. County, with the observed COVID-19 illness and death rates in L.A. County.
 
@@ -2447,23 +2479,13 @@ $$
 RR_{White}(Death|Illness,Race_i)_{model} = \frac{Pr(Death|Illness,Race_i)}{Pr(Death|Illness,White)} \
 \end{equation*}
 $$
-Complex dynamics lead to exposure to COVID-19 and resulting illness. We have assumed a random-mixed model of transmission dynamics in L.A. and so do not account for these dynamics in our model. Because the probability $Pr(Death|Illness,Race_i)$ is by definition conditional upon an individual already having contracted COVID-19 illness, it does not depend on these factors leading to exposure to the virus. We therefore compare this with the $Pr(Death|Race_i)$, which will depend on the nature of the distribution of exposure. 
+Complex dynamics lead to exposure to COVID-19 and resulting illness. We have assumed a random-mixed model of transmission dynamics in L.A. and so do not account for these dynamics in our model. Because the probability $Pr(Death|Illness,Race_i)$ is by definition conditional upon an individual already having contracted COVID-19 illness, it does not depend on these factors leading to exposure to the virus. We therefore compare this with the $Pr(Death|Race_i)$, which will be determined by the nature of the distribution of exposure. 
 
-```{r RR-to-White-plot}
+**Interpretation**
 
-##################################################################
-## PLOTTING BOTH TOGETHER: RR.DgivenI
-
-RR.D.per.Pop.barchart + RR.DgivenI.barchart + plot_layout(guides = 'collect') + plot_annotation(tag_levels = c('A', '1'), title = "Risk of Death by Race Relative to White: \n Deaths per Population vs. Deaths Given Illness \n Model vs. Observed", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
-
-
-```
-
-We see from this chart that the death rate relative to that for whites is predicted by our model to be lower for Latinx population, based on prevalence of risk factors for COVID-19, and this lower risk is observed in the data, both for deaths per population and deaths given illness. The death rate relative to whites for blacks is predicted to be almost identical to whites, and is observed to be slightly higher than whites both for deaths per population and deaths over illnesses.
+We see from this chart that the death rate relative to that for whites is predicted to be lower for Latinx population by our model (based on prevalence of risk factors for COVID-19); a decreased risk relative to whites is also observed in the data, both for deaths per population and deaths given illness. The death rate relative to whites for blacks is predicted to be almost identical to whites, and is observed to be slightly higher than whites both for deaths per population and deaths over illnesses.
 
 ### Death rates by race: nursing home cases removed (illustrative)
-
-A different story emerges when we **remove from the observed numbers of illnesses and deaths the estimated numbers of counts** originating from outbreaks occurring in nursing homes (this serves as an illustration because exact numbers of illnesses and deaths by race are not available; for more details on how these cases are removed, see [Data](https://uscbiostats.github.io/COVID19/method.html#data)):
 
 ```{r RR-to-White-REMOVE-plot}
 
@@ -2475,6 +2497,10 @@ RR.D.per.Pop.barchart.REMOVED + RR.DgivenI.barchart.REMOVED + plot_layout(guides
 
 ```
 
-Because the majority of nursing home residents are white, once we remove the estimated counts from each race/ethnicity group from the overall numbers for deaths and illnesses, the relative share of deaths in the white population is greatly decreased and all other shares are proportionally increased. The result is a picture of the risk of death relative to whites which is significantly higher for all other races, both for overall risk of death and the risk of death conditioned upon illness. These large differences in risk are apparent even after conditioning by illnesses, effectively conditioning out the component of the risk accounted for by differences in exposure and spread dynamics. **In other words, all race/ethnicity groups are at significantly increased risk of death upon contracting the COVID-19 virus in comparison with whites. Most importantly, this significant increase in risk is not explainable by the risk factors for COVID-19 that are factored into our model, namely age, comorbidities, and health behaviors.**
+**Interpretation**
+
+A different story emerges when we **remove from the observed numbers of illnesses and deaths the estimated numbers of counts** originating from outbreaks occurring in nursing homes. *Note that this serves as an illustration because exact numbers of illnesses and deaths by race are not available; for more details on how these cases are removed, see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).*
+
+Because the majority of nursing home residents are white, once we remove the estimated counts from each race/ethnicity group from the overall numbers for deaths and illnesses, the relative share of deaths in the white population is greatly decreased and all other shares are proportionally increased. The result is a picture of the risk of death relative to whites which is significantly higher for all other races, both for overall risk of death and the risk of death conditioned upon illness. These large differences in risk are apparent even after conditioning by illnesses, effectively conditioning out the component of the risk accounted for by differences in exposure and spread dynamics. **In other words, after removing (an estimated number of) illnesses and deaths from nursing home residents from the data, all race/ethnicity groups are at significantly increased risk of death upon contracting the COVID-19 virus in comparison with whites. Most importantly, this significant increase in risk is not explainable by the risk factors for COVID-19 that are factored into our model: namely age, comorbidities, and health behaviors.**
 
 

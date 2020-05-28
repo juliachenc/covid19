@@ -156,7 +156,8 @@ We develop a stochastic Eulerian discrete-valued epidemic model. In this model, 
 ### Flow diagram
 
 ```{r, echo=FALSE, fig.cap="Compartmental model flow diagram", out.width = '100%'}
-knitr::include_graphics(here("data/flow_diagram_v3.png"))
+knitr::include_graphics(path("flow_diagram_v2.png"))
+#knitr::include_graphics(here("data/flow_diagram_v3.png"))
 ### TRY THIS FOR IMAGES
 #knitr::include_graphics(path("flow_diagram_v3.png"))
 
@@ -256,7 +257,7 @@ We use current numbers of **Infected (observed)**, **Hospitalized**, **ICU**, **
 
 
 
-<br>
+<br><br>
 
 ## Estimated Parameters {.tabset}
 
@@ -440,7 +441,7 @@ grid.arrange(p2,p,ncol=2,nrow=1)
 **Reduction in mobility observed in LA County** 
 
 ```{r, echo=FALSE, fig.cap="encounter reduction", out.width = '100%'}
-knitr::include_graphics(here("data/Unacast.LA.redux.png"))
+knitr::include_graphics(here("Unacast.LA.redux.png"))
 ```
 
 **Sources**: 
@@ -556,7 +557,6 @@ yesR.p.3d.r.redux
 
 ## {-}
 
-<br>
 <br>
 <br>
 
