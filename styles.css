@@ -1,7 +1,8 @@
 .navbar {
-  background: #991c1f;
+  background: black;
 }
 
 .navbar-brand {
   padding-top: 0px;
+  color: #ab9f9f !important;
 }

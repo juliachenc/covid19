@@ -148,7 +148,6 @@ data = obs.shift
 data.in.tmp.orig <- obs_cum_new_counts %>% dplyr::select(-c(H_capacity,Q_capacity,V_free,Q_free))
 
 length(data.in.tmp.orig)
-length(NH_counts)
 
 ```
 
@@ -158,6 +157,8 @@ length(NH_counts)
 snf_file <- sort(dir_ls(data.dir, regexp = "SNF_"), decreasing = TRUE)[1]
 
 NH_counts = t(read.csv(snf_file, sep=",",stringsAsFactors = FALSE))
+length(NH_counts)
+
 
 ### Process data
 NH_counts <- as.data.frame(NH_counts)
@@ -177,9 +178,12 @@ clean_SNF_remove <- path(code.dir, "clean_SNF_remove.R")
 #r_output(readLines(clean_SNF_remove))
 source(clean_SNF_remove)
 
+# CURRENT TOTAL % OF ILLNESSES COMING FROM SNF
+NH_total_frac_I <- ( last(NH_counts$I_resident_cum) + last(NH_counts$I_staff_cum) ) / last(data.in.tmp.orig$Idetectcum)
+
 # CURRENT TOTAL % OF DEATHS COMING FROM SNF -- FOR METHODS
-NH_total_frac <- last(NH_counts$D_resident_cum) / last(data.in.tmp.orig$D)
-NH_total_per <- round(NH_total_frac*100,1)
+NH_total_frac_D <- last(NH_counts$D_resident_cum) / last(data.in.tmp.orig$D)
+NH_total_per <- round(NH_total_frac_D*100,1)
 
 ```
 
@@ -2085,11 +2089,38 @@ p.shares.races.I.obs<-
 
 ## Across race/ethnicity {.tabset}
 
+### Probability of Severe Illness by Race/Ethnicity
+
+This table shows the model estimated $Pr(Hospital|Illness)$, $Pr(ICU|Hospital)$, $Pr(Death|ICU)$, and $Pr(Death|Illness)$ by race/ethnicity group, as given by the prevalence of the risk factors in each race/ethnicity group in L.A. County. These probabilities are conditional upon an individual already having contracted COVID-19 illness, and so do not depend on the spatial distribution of exposure to the virus. These help to highlight whether a higher burden of mortality is expected for certain races for the same level of illness / hospitalization / ICU admission.
+
+Although the nominal values of the probabilities do not differ significantly across races (for example, the probabilities for $Pr(Death|Illness)$ vary from a minimum of 0.05 to a maximum of 0.14), the relative differences between the race/ethnicity groups may translate to meaningful differences at the level of the population. To visualize these relative differences, we have depicted these probabilities using color bars sized to a normalized scale for which the color bar for the largest probability value in a column spans the column width and the lowest probability for that column is shown with a very thin bar of color.
+
+With the normalized scaling, this chart can be used to compare the probability of severe illness from COVID-19 across the race/ethnicity groups. Some insights this provides:
+
+* $Pr(Death|Illness)$ is lowest for the Latinx population, largely attributable to the lower age distribution in this group. 
+* $Pr(Death|Illness)$ is highest for the Native Hawaiian popualtion, driven mainly by higher prevalence of smoking and obesity rates in this population.
+* $Pr(Death|Illness)$ is almost equivalent for white and black populations. 
+
+```{r}
+
+Pr.D.I <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],3)
+risk.probs.table <- risk.probs.races  
+risk.probs.table$"Pr(Death|Illness)" <- Pr.D.I
+
+formattable(risk.probs.table,
+            list(
+              `Pr(Hospital|Illness)` = color_bar('cornflowerblue', fun = unit.scale),
+              `Pr(ICU|Hosptial)` = color_bar('violet', fun = unit.scale),
+                `Pr(Death|ICU)` = color_bar('red', fun = unit.scale),
+                `Pr(Death|Illness)` = color_bar('lightpink', fun = unit.scale)
+            ))
+
+```
+
+
 ### Illnesses by Race: Observed LA Data
 
 Here we plot the observed distribution of the relative shares of illnesses by race/ethnicity in L.A. County. The population prevalence of each race/ethnicity is also provided as a baseline (left-most bar).
-
-We do not provide a model-estimated distribution of illness by death because this is not accounted for in our model; we have assumed randomly-mixed population in which every individual has the risk of infection. This limitation is discussed further in [Methods](https://uscbiostats.github.io/COVID19/method.html).
 
 ```{r, echo=FALSE, message=FALSE}
 
@@ -2103,7 +2134,7 @@ This figure compares model projections of the relative share of deaths by race/e
 
 A key insight from this figure is that as the epidemic evolves, the trend of the distribution of deaths by race/ethnicity appears to be converging to the expected distribution based on the risk factors for COVID-19, as calculated by our model. 
 
-However because we have not accounted for the many complex factors leading to differences in illness exposure by race, other beyond risk factors could be influencing the results we see here. An additional important note is that the observed distribution of deaths by race for L.A. County (columns 2 - 6 below) includes cases from nursing homes (SNFs), whereas the model projections are fit to data with these cases removed. Because SNF deaths represent a significant portion of overall deaths, removing SNF numbers from the observed distribution may lead to a different distribution of deaths by race for the general L.A. County population than that plotted below.
+However because we have not accounted for the many complex factors leading to differences in illness exposure by race, other beyond risk factors could be influencing the results we see here. An additional important note is that the observed distribution of deaths by race for L.A. County (columns 2 - 6 below) includes cases from nursing homes (SNFs), whereas the model projections are fit to data with these cases removed. Because SNF deaths represent a significant portion of overall deaths, removing SNF numbers from the observed distribution may lead to a different distribution of deaths by race for the general L.A. County population than that plotted below. **This is demonstrated in the illustrative figures in the following section.**
 
 
 ```{r, echo=FALSE, message=FALSE}
@@ -2134,38 +2165,9 @@ p.traj.race.I + p.traj.race.H + p.traj.race.Q + p.traj.race.D +
 
 ## {-}
 
-## Death given Illness by Race {.tabset}
+## Death Rates by Race {.tabset}
 
-### Pr(Death|Illness) by Race/Ethnicity
-
-This table shows the model estimated $Pr(Hospital|Illness)$, $Pr(ICU|Hospital)$, $Pr(Death|ICU)$, and $Pr(Death|Illness)$ by race/ethnicity group, as given by the prevalence of the risk factors in each race/ethnicity group in L.A. County. These probabilities are conditional upon an individual already having contracted COVID-19 illness, and so do not depend on the spatial distribution of exposure to the virus. These help to highlight whether a higher burden of mortality is expected for certain races for the same level of illness / hospitalization / ICU admission.
-
-Although the nominal values of the probabilities do not differ significantly across races (for example, the probabilities for $Pr(Death|Illness)$ vary from a minimum of 0.05 to a maximum of 0.14), the relative differences between the race/ethnicity groups may translate to meaningful differences at the level of the population. To visualize these relative differences, we have depicted these probabilities using color bars sized to a normalized scale for which the color bar for the largest probability value in a column spans the column width and the lowest probability for that column is shown with a very thin bar of color.
-
-With the normalized scaling, this chart can be used to compare the probability of severe illness from COVID-19 across the race/ethnicity groups. Some insights this provides:
-
-* $Pr(Death|Illness)$ is lowest for the Latinx population, largely attributable to the lower age distribution in this group. 
-* $Pr(Death|Illness)$ is highest for the Native Hawaiian popualtion, driven mainly by higher prevalence of smoking and obesity rates in this population.
-* $Pr(Death|Illness)$ is almost equivalent for white and black populations. 
-
-```{r}
-
-Pr.D.I <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],3)
-risk.probs.table <- risk.probs.races  
-risk.probs.table$"Pr(Death|Illness)" <- Pr.D.I
-
-formattable(risk.probs.table,
-            list(
-              `Pr(Hospital|Illness)` = color_bar('cornflowerblue', fun = unit.scale),
-              `Pr(ICU|Hosptial)` = color_bar('violet', fun = unit.scale),
-                `Pr(Death|ICU)` = color_bar('red', fun = unit.scale),
-                `Pr(Death|Illness)` = color_bar('lightpink', fun = unit.scale)
-            ))
-
-```
-
-
-```{r, include=FALSE}
+```{r, RR-to-White, include=FALSE}
 
 ########################################################################################
 ## Function for RR calculation from "baseline race"
@@ -2184,121 +2186,295 @@ RR.calc <- function(probs.vec, baseline.race){
   return(RR.vec)
 }
 
-########################################################################################
-# ## Pr(Death | Population)
-# 
-# # ### POPULATION DISTRIBUTION
-# # RR.DgivenPop.pop <- RR.calc(race_prevalence_gen_pop,"White")
-# # RR.DgivenPop.pop
-# 
-# ### MODEL
-# RR.DgivenPop.Model <- RR.calc(race_model_D, "White") 
-# RR.DgivenPop.Model
-# 
-# ### OBS
-# race_observed_D_recent <- as.numeric(race_obs_D[,ncol(race_obs_D)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - SHARES
-# names(race_observed_D_recent) <- names(race_model_D)
-# RR.DgivenPop.Obs <- RR.calc(race_observed_D_recent, "White")
-# RR.DgivenPop.Obs
-# 
-# ### TABLE
-# # RR.DgivenPop.desc <- as.data.frame(cbind(RR.DgivenPop.Model,RR.DgivenPop.Obs))
-# # #RR.DgivenPop.desc <- RR.DgivenPop[order(-RR.DgivenPop$RR.DgivenPop.Model), , drop = FALSE]
-# # colnames(RR.DgivenPop.desc) <- c("Race to White: Model","Race to White: Data")
-# # max.RR <- max(RR.DgivenPop.desc)
-# # min.RR <- min(RR.DgivenPop.desc)
-# # mat.scale = function(x) (x) / (max.RR)
-# # RR.DgivenPop.table <- formattable(RR.DgivenPop.desc,
-# #             list(
-# #               #`Race to White: Pop` = color_bar('red', fun = mat.scale),
-# #               `Race to White: Model` = color_bar('lightblue', fun = mat.scale),
-# #               `Race to White: Data` = color_bar('violet', fun = mat.scale)
-# #             ))
 
+######################################################################################
+## Pr(Death | Population) per Population
+
+#####################
+### OBSERVATION
+race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
+#.5 * sum(race_observed_D_recent.nominal)
+#race_observed_D_recent.nominal <- c(700, 225, 200, 2, 150, 15, 27)
+
+D.per.Pop.obs <- race_observed_D_recent.nominal / Pr.pop #as.vector(t(race_obs_I_recent))/Pr.pop
+names(D.per.Pop.obs) <- names(race_model_D)
+
+RR.D.per.Pop.obs <- RR.calc(D.per.Pop.obs, "White") 
+RR.D.per.Pop.obs
+
+#####################
+### MODEL
+Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
+
+# (Note that Pr(Illness | race_i) according to our model is equivalent across the races, so for doing relative risks, we don't need to include this constant)
+D.per.Pop.model <- Pr.DgivenI.model  #(Pr.pop/sum(Pr.pop)) * Pr.DgivenI.model
+names(D.per.Pop.model) <- names(race_model_D)
+
+RR.D.per.Pop.model <- RR.calc(D.per.Pop.model, "White") 
+RR.D.per.Pop.model
+
+#####################
+### TABLE
+# RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
+# colnames(RR.D.per.Pop) <- c("RR_White(Death|Race): Model","RR_White(Death|Race): Data")
+# max.RR <- max(RR.D.per.Pop)
+# min.RR <- min(RR.D.per.Pop)
+# mat.scale = function(x) (x) / 3#(max.RR)
+# 
+# RR.D.per.Pop.table <- 
+#   formattable(RR.D.per.Pop,
+#             list(
+#               #`Race to White: Pop` = color_bar('red', fun = mat.scale),
+#               `RR_White(Death|Race): Model` = color_bar('lightpink', fun = mat.scale),
+#               `RR_White(Death|Race): Data` = color_bar('navajowhite', fun = mat.scale)
+#             ))
 
 ########################################################################################
 ## Pr(Death | Illness)
 
+##################################
 ### MODEL
-Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
+#Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
 names(Pr.DgivenI.model) <- names(race_model_D)
 RR.vec.DgivenI.model <- RR.calc(Pr.DgivenI.model, "White") 
 RR.vec.DgivenI.model
 
+##################################
 ### OBS
-race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
+#race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
 Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal / race_obs_I_recent))
 names(Pr.DgivenI.obs) <- names(race_model_D)
 RR.vec.DgivenI.obs <- RR.calc(Pr.DgivenI.obs, "White") 
 RR.vec.DgivenI.obs
 
-# ### TABLE
-# RR.DgivenI.desc <- as.data.frame(cbind(RR.vec.DgivenI.model,RR.vec.DgivenI.obs))
-# colnames(RR.DgivenI.desc) <- c("Race to White: Model","Race to White: Data")
-# max.RR <- max(RR.DgivenI.desc)
-# min.RR <- min(RR.DgivenI.desc)
-# mat.scale = function(x) (x) / (max.RR)
+##################################
+### TABLE
+# RR.D.given.I <- as.data.frame(cbind(RR.vec.DgivenI.model, RR.vec.DgivenI.obs))
+# #RR.DgivenI.desc <- RR.DgivenI[order(-RR.DgivenI$RR.vec.DgivenI.model), , drop = FALSE]
+# colnames(RR.D.given.I) <- c("RR_White(Death|Illness): Model","RR_White(Death|Illness): Data")
+# max.RR <- max(RR.D.given.I)
+# min.RR <- min(RR.D.given.I)
+# mat.scale = function(x) (x) / 3 #(max.RR)
 # 
-# RR.DgivenI.table <- formattable(RR.DgivenI.desc,
+# RR.D.give.I.table <- 
+#   formattable(RR.D.given.I,
 #             list(
-#               `Race to White: Model` = color_bar('lightpink', fun = mat.scale),
-#               `Race to White: Data` = color_bar('salmon', fun = mat.scale)
+#               `RR_White(Death|Illness): Model` = color_bar('lightpink', fun = mat.scale),
+#               `RR_White(Death|Illness): Data` = color_bar('navajowhite', fun = mat.scale)
 #             ))
 
-# ######################
-# ## BAR CHART (PROBABLY DELETE THIS)
-# 
-# RR.DgivenI.melted <- melt(as.matrix(RR.DgivenI))
-# colnames(RR.DgivenI.melted) <- c("Race","stage","value")
-# RR.DgivenI.melted <- RR.DgivenI.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.DgivenI))) 
-# 
-#   RR.DgivenI.melted %>%
-#   ggplot( aes(x=Race, y=value,fill=stage)) +
-#   geom_bar(position="dodge", stat = 'identity')+
-#   labs(title = "Relative Risk Death given Illness: \n Races to White", x = NULL, y = "Relative Risk to White", legend="Model vs. Obs")
+##################################################################
+## BAR CHART RR.D.per.Pop
+
+RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
+colnames(RR.D.per.Pop) <- c("Model","Observation")
+RR.D.per.Pop.melted <- melt(as.matrix(RR.D.per.Pop))
+colnames(RR.D.per.Pop.melted) <- c("Race","stage","value")
+RR.D.per.Pop.melted <- RR.D.per.Pop.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.D.per.Pop)))
+
+RR.D.per.Pop.barchart <-
+  RR.D.per.Pop.melted %>%
+  ggplot( aes(x=Race, y=value,fill=stage)) +
+  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
+  labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
+  ylim(0,3)+
+  scale_x_discrete(labels = race.order)
+
+
+##################################################################
+## BAR CHART RR.DgivenI
+
+RR.DgivenI <- as.data.frame(cbind(RR.vec.DgivenI.model,RR.vec.DgivenI.obs))
+colnames(RR.DgivenI) <- c("Model","Observation")
+RR.DgivenI.melted <- melt(as.matrix(RR.DgivenI))
+colnames(RR.DgivenI.melted) <- c("Race","stage","value")
+RR.DgivenI.melted <- RR.DgivenI.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.DgivenI)))
+
+RR.DgivenI.barchart <-
+  RR.DgivenI.melted %>%
+    ggplot( aes(x=Race, y=value,fill=stage)) +
+    geom_bar(position="dodge", stat = 'identity', width = 0.5)+
+    labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
+    ylim(0,3)+
+    scale_x_discrete(labels = race.order)
+  
+```
 
 
 
+
+
+```{r RR-to-White-REMOVE, include=FALSE}
+
+
+######################################################################################
+## FRACTION REMOVED FROM ILLNESSES AND DEATHS DUE TO SNF
+
+SNF.race.distribution <- c(.18, .5, .11, 0, .19, 0.01,.01)
+names(SNF.race.distribution) <- race.order
+
+### Removing SNF from I by race
+num.to.remove.I.tot <- NH_total_frac_I * sum(race_obs_I_recent)
+num.to.remove.I.race <- round(SNF.race.distribution * num.to.remove.I.tot)
+race_obs_I_recent.REMOVED <- race_obs_I_recent - num.to.remove.I.race
+
+### Removing SNF from D by race
+race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) 
+num.to.remove.D.tot <- NH_total_frac_D * sum(race_observed_D_recent.nominal)
+num.to.remove.D.race <- round(SNF.race.distribution * num.to.remove.D.tot)
+race_observed_D_recent.nominal.REMOVED <- race_observed_D_recent.nominal - num.to.remove.D.race
+                                             
+                                             
+                                             
+######################################################################################
+## Pr(Death | Population) per Population
+
+#####################
+### OBSERVATION
+race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED               ### SNF REMOVED 
+
+D.per.Pop.obs <- race_observed_D_recent.nominal / Pr.pop #as.vector(t(race_obs_I_recent))/Pr.pop
+names(D.per.Pop.obs) <- names(race_model_D)
+
+RR.D.per.Pop.obs <- RR.calc(D.per.Pop.obs, "White") 
+RR.D.per.Pop.obs
+
+#####################
+### MODEL
+Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
+
+# (Note that Pr(Illness | race_i) according to our model is equivalent across the races, so for doing relative risks, we don't need to include this constant)
+D.per.Pop.model <- Pr.DgivenI.model  #(Pr.pop/sum(Pr.pop)) * Pr.DgivenI.model
+names(D.per.Pop.model) <- names(race_model_D)
+
+RR.D.per.Pop.model <- RR.calc(D.per.Pop.model, "White") 
+RR.D.per.Pop.model
+
+
+########################################################################################
+## Pr(Death | Illness)
+
+##################################
+### MODEL
+#Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
+names(Pr.DgivenI.model) <- names(race_model_D)
+RR.vec.DgivenI.model <- RR.calc(Pr.DgivenI.model, "White") 
+RR.vec.DgivenI.model
+
+##################################
+### OBS
+race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED           ### SNF REMOVED 
+Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal / race_obs_I_recent))
+names(Pr.DgivenI.obs) <- names(race_model_D)
+RR.vec.DgivenI.obs <- RR.calc(Pr.DgivenI.obs, "White") 
+RR.vec.DgivenI.obs
+
+
+##################################################################
+## BAR CHART RR.D.per.Pop
+
+RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
+colnames(RR.D.per.Pop) <- c("Model","Observation")
+RR.D.per.Pop.melted <- melt(as.matrix(RR.D.per.Pop))
+colnames(RR.D.per.Pop.melted) <- c("Race","stage","value")
+RR.D.per.Pop.melted <- RR.D.per.Pop.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.D.per.Pop)))
+
+RR.D.per.Pop.barchart.REMOVED <-
+  RR.D.per.Pop.melted %>%
+  ggplot( aes(x=Race, y=value,fill=stage)) +
+  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
+  labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
+  ylim(0,5.5)+
+  scale_x_discrete(labels = race.order)
+
+
+##################################################################
+## BAR CHART RR.DgivenI
+
+RR.DgivenI <- as.data.frame(cbind(RR.vec.DgivenI.model,RR.vec.DgivenI.obs))
+colnames(RR.DgivenI) <- c("Model","Observation")
+RR.DgivenI.melted <- melt(as.matrix(RR.DgivenI))
+colnames(RR.DgivenI.melted) <- c("Race","stage","value")
+RR.DgivenI.melted <- RR.DgivenI.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.DgivenI)))
+
+RR.DgivenI.barchart.REMOVED <-
+  RR.DgivenI.melted %>%
+    ggplot( aes(x=Race, y=value,fill=stage)) +
+    geom_bar(position="dodge", stat = 'identity', width = 0.5)+
+    labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
+    ylim(0,5.5)+
+    scale_x_discrete(labels = race.order)
 
 ```
 
-### Model vs. Observed Relative Risk by Race
 
-This table compares the observed vs. model estimated **Relative Risk (RR)** of the probability of death given illness, $Pr(Death|Illness)$ for each race/ethnicity group relative to $Pr(Death|Illness)$ for whites in L.A. County, i.e.
+
+
+
+
+
+### Death rates by race: model vs. observed
+
+Here we compare the relative risk (RR) of deaths per population for each race relative to deaths per population for whites, as given by our model based on risk factors for COVID-19 and the prevalence of these factors in L.A. County, with the observed COVID-19 illness and death rates in L.A. County.
+
+**Figure A** (left) shows the observed rate of **deaths per population by race** relative to **deaths per population for whites** in L.A. County, i.e.
 
 $$
 \begin{equation*}
-RR_{White}(Death|Illness) = \frac{Pr(Death|Illness,Race_i)}{Pr(Death|Illness,White)} \
+RR_{White}(Death|Race_i)_{observed} = \frac{Deaths(Race_i)}{Deaths(White)} \
 \end{equation*}
 $$
 
-The model estimated $Pr(Death|Illness,Race_i)$ is calculated based on the prevalence of the risk factors in each race/ethnicity group in L.A. County. The observed $Pr(Death|Illness,Race_i)$ is calculated as the number of deaths over the number of illnesses for each race in the official L.A. County statistics. 
+compared with the **probability of death by race** relative to the **probability of death for $race_i = White$**, as given by our model based on risk factors for COVID-19 and the prevalence of these factors in L.A. County, i.e.
 
-Complex dynamics lead to exposure to COVID-19 and resulting illness. We have assumed a random-mixed model of transmission dynamics in L.A. and so do not account for these dynamics in our model. Because the probability $Pr(Death|Illness,Race_i)$ is by definition conditional upon an individual already having contracted COVID-19 illness, it does not depend on these factors leading to exposure to the virus. We illustrate here the Relative Risk of $Pr(Death | Illness)$ for each race/ethnicity group to that for whites in order to make clear the difference in expected vs. observed mortality rate between race/ethnicity groups given the same level of illness or exposure pattern. Some insights this analysis by RR provides:
+$$
+\begin{equation*}
+RR_{White}(Death|Race_i)_{model} = \frac{Pr(Death|Race_i)}{Pr(Death|White)} \
+\end{equation*}
+$$
 
-* The observed $RR_{White}(Death|Illness)$ is slightly lower for the Latinx population than calculated by our model, meaning slightly fewer deaths than expected based on the prevalence of risk factors alone.
-* The observed $RR_{White}(Death|Illness)$ is slightly higher for the black population than calculated by our model, meaning slightly more deaths than expected based on the prevalence of risk factors alone. 
-* The observed $RR_{White}(Death|Illness)$ is higher for the Asian population than calculated by our model, meaning more deaths (by around 33%) than expected based on the prevalence of risk factors alone.
+**Figure B** (right) compares the observed rate of **deaths given illness by race** relative to **deaths given illness for whites** in L.A. County, i.e.
 
-Lastly, it is important to note that the observed distribution of deaths by race for L.A. County includes cases from nursing homes (SNFs), whereas the model projections are based on the general population. Because SNF deaths represent a significant portion of overall deaths, removing SNF numbers from the observed distribution may lead to a different observed $RR_{White}(Death|Illness)$ than that shown in the table below.
+$$
+\begin{equation*}
+RR_{White}(Death|Illness)_{observed} = \frac{\frac{Deaths(Race_i)}{Illnesses(Race_i)}}{\frac{Deaths(White)}{Illnesses(White)}} \
+\end{equation*}
+$$
+with the **probability of death given illness** by race relative to the **probability of death given illness** for $race_i = White$, as given by our model based on risk factors for COVID-19 and the prevalence of these factors in L.A. County, i.e.
 
+$$
+\begin{equation*}
+RR_{White}(Death|Illness,Race_i)_{model} = \frac{Pr(Death|Illness,Race_i)}{Pr(Death|Illness,White)} \
+\end{equation*}
+$$
+Complex dynamics lead to exposure to COVID-19 and resulting illness. We have assumed a random-mixed model of transmission dynamics in L.A. and so do not account for these dynamics in our model. Because the probability $Pr(Death|Illness,Race_i)$ is by definition conditional upon an individual already having contracted COVID-19 illness, it does not depend on these factors leading to exposure to the virus. We therefore compare this with the $Pr(Death|Race_i)$, which will depend on the nature of the distribution of exposure. 
 
-```{r}
+```{r RR-to-White-plot}
 
-RR.DgivenI.desc <- as.data.frame(cbind(RR.vec.DgivenI.model,RR.vec.DgivenI.obs))
-#RR.DgivenI.desc <- RR.DgivenI[order(-RR.DgivenI$RR.vec.DgivenI.model), , drop = FALSE]
-colnames(RR.DgivenI.desc) <- c("RR_White(Death|Illness): Model","RR_White(Death|Illness): Data")
-max.RR <- max(RR.DgivenI.desc)
-min.RR <- min(RR.DgivenI.desc)
-mat.scale = function(x) (x) / (max.RR)
+##################################################################
+## PLOTTING BOTH TOGETHER: RR.DgivenI
 
-formattable(RR.DgivenI.desc,
-            list(
-              `RR_White(Death|Illness): Model` = color_bar('lightpink', fun = mat.scale),
-              `RR_White(Death|Illness): Data` = color_bar('navajowhite', fun = mat.scale)
-            ))
+RR.D.per.Pop.barchart + RR.DgivenI.barchart + plot_layout(guides = 'collect') + plot_annotation(tag_levels = c('A', '1'), title = "Risk of Death by Race Relative to White: \n Deaths per Population vs. Deaths Given Illness \n Model vs. Observed", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
+
 
 ```
 
-{-}
+We see from this chart that the death rate relative to that for whites is predicted by our model to be lower for Latinx population, based on prevalence of risk factors for COVID-19, and this lower risk is observed in the data, both for deaths per population and deaths given illness. The death rate relative to whites for blacks is predicted to be almost identical to whites, and is observed to be slightly higher than whites both for deaths per population and deaths over illnesses.
+
+### Death rates by race: nursing home cases removed (illustrative)
+
+A different story emerges when we **remove from the observed numbers of illnesses and deaths the estimated numbers of counts** originating from outbreaks occurring in nursing homes (this serves as an illustration because exact numbers of illnesses and deaths by race are not available; for more details on how these cases are removed, see [Data](https://uscbiostats.github.io/COVID19/method.html#data)):
+
+```{r RR-to-White-REMOVE-plot}
+
+##################################################################
+## PLOTTING BOTH TOGETHER: RR.DgivenI
+
+RR.D.per.Pop.barchart.REMOVED + RR.DgivenI.barchart.REMOVED + plot_layout(guides = 'collect') + plot_annotation(tag_levels = c('A', '2'), title = "Risk of Death by Race Relative to White: \n Deaths per Population vs. Deaths Given Illness \n Model vs. Observed \n ESTIMATED SNF COUNTS REMOVED", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
+
+
+```
+
+Because the majority of nursing home residents are white, once we remove the estimated counts from each race/ethnicity group from the overall numbers for deaths and illnesses, the relative share of deaths in the white population is greatly decreased and all other shares are proportionally increased. The result is a picture of the risk of death relative to whites which is significantly higher for all other races, both for overall risk of death and the risk of death conditioned upon illness. These large differences in risk are apparent even after conditioning by illnesses, effectively conditioning out the component of the risk accounted for by differences in exposure and spread dynamics. **In other words, all race/ethnicity groups are at significantly increased risk of death upon contracting the COVID-19 virus in comparison with whites. Most importantly, this significant increase in risk is not explainable by the risk factors for COVID-19 that are factored into our model, namely age, comorbidities, and health behaviors.**
+
 
