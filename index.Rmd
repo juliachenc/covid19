@@ -2290,7 +2290,7 @@ RR.D.per.Pop.barchart <-
   ggplot( aes(x=Race, y=value,fill=stage)) +
   geom_bar(position="dodge", stat = 'identity', width = 0.5)+
   labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
-  scale_y_continuous(breaks = breaks) +
+  scale_y_continuous(breaks = breaks, limits=c(0,ymax.bars)) +
   scale_x_discrete(labels = labels.races.fit.bar)
 
 
@@ -2308,7 +2308,7 @@ RR.DgivenI.barchart <-
   ggplot( aes(x=Race, y=value,fill=stage)) +
   geom_bar(position="dodge", stat = 'identity', width = 0.5)+
   labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
-  scale_y_continuous(breaks = breaks) +
+  scale_y_continuous(breaks = breaks, limits=c(0,ymax.bars)) +
   scale_x_discrete(labels = labels.races.fit.bar)
   
 ```
@@ -2406,8 +2406,8 @@ RR.D.per.Pop.barchart.REMOVED <-
   ggplot( aes(x=Race, y=value,fill=stage)) +
   geom_bar(position="dodge", stat = 'identity', width = 0.5)+
   labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
-  #ylim(0,5.5)+
-  scale_y_continuous(breaks = breaks) +
+  scale_y_continuous(breaks = breaks, limits=c(0,ymax.bars)) +
+  #ylim(0,ymax.bars)+
   scale_x_discrete(labels = labels.races.fit.bar)
 
 ##################################################################
@@ -2424,7 +2424,8 @@ RR.DgivenI.barchart.REMOVED <-
   ggplot( aes(x=Race, y=value,fill=stage)) +
   geom_bar(position="dodge", stat = 'identity', width = 0.5)+
   labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
-  scale_y_continuous(breaks = breaks) +
+  scale_y_continuous(breaks = breaks,limits=c(0,ymax.bars)) +
+  #ylim(0,ymax.bars)+
   scale_x_discrete(labels = labels.races.fit.bar)
 
 ```

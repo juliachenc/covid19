@@ -99,7 +99,9 @@ summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.da
   Alpha.posterior.CI <- posterior.CI(ABC_out$param[,6])
   Kappa.posterior.CI <- posterior.CI(ABC_out$param[,7])
   Delta.posterior.CI <- posterior.CI(ABC_out$param[,5])
+  #Pr.D.given.I.CI <- posterior.CI(ABC_out$param[,6]*ABC_out$param[,7]*ABC_out$param[,5])
 
+  #posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI,Pr.D.given.I.CI) %>% mutate_if(is.numeric, round, digits=4)
   posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI) %>% mutate_if(is.numeric, round, digits=4)
   rownames(posterior.vars) <- c("r, fraction obs. illnesses", "R0", "R0 fraction reduction", "Pr(Hospital|Illness)", "Pr(ICU|Hospital)", "Pr(Death|ICU)")
 
