@@ -1,0 +1,19 @@
+---
+title: "Findings"
+---
+
+## Findings from the USC Predict COVID19 Model
+
+<br>
+
+### Epidemic Predictions for Los Angeles
+
+* L.A. County has succeeded in mitigating a large initial epidemic wave due to early action and strong adherence to social distancing (the model-estimated reduction in contact rate from pre-pandemic times to that seen in the months of April and May is >70%). However the slight but steady increase in mobility and social encounters observed in the mobility data (around a 25% increase from beginning of May to beginning of June) translates into a long plateaued epidemic curve over the upcoming months.
+* Model predictions suggest that the average population contact rate may be increased by as much as a 50-100% increase in social encounters above the behavior observed in the first phase of response (Level 1, April), while still keeping the epidemic at controllable levels in terms of heathcare resource capacity. However, if social encounters increase beyond 100% from that initial phase, a resurgence and second wave of the epidemic can and will be seen. What exactly does an 50% (or equivalently, a two-fold) increase in contact rate from Level 1 social distancing translate to? Does this mean people can spend time with twice as many contacts as they were in April? Questions of this specificity cannot be answered by the single-population model developed in this work. Finer-resolution micro-simulation models combined with analysis of near-real-time mobility data will be needed to provide practical answers to questions at this level of detail.
+
+<br>
+
+### Risk Factors and the Los Angeles Population
+
+* Our model predicts that higher risk groups -- characterized not only by advanced age but also combinations of existing health conditions -- will make up the overwhelming majority of those afflicted with severe disease. Our model breaks down risk for all combinations of risk factors considered (age, comorbidities, smoking status, obesity status). The results of this analysis shows that advance age in combination with multiple comorbidities leads the burden of morbidity and mortality for COVID-19. Based on the prevalence of these risk factors in L.A. and within the different race/ethnicity groups, we provide projections for expected illness patterns in at-risk groups in L.A. and within the different race/ethnicity populations. 
+* The COVID case count data in L.A. has demonstrated large disparities in COVID-19 severe illness and death rates by race/ethnicity groups. Our work answers the question of what is driving these disparities, and specifically, whether existing comorbidities in combination with other risk factors in the race/ethnicity groups can explain the differences in death rates between groups. We show that the expected differences due to risk factors do not explain the difference in severe illness and death rates for these populations -- that is, if the illness and death counts for L.A. are examined without including cases from nursing homes. Death rates are higher for these populations than can be explained by the risk factors alone. We are able to answer this question directly because we differentiate between the probability of death *given* having become infected, and the probability of death overall, for individuals having a set of risk factors / being of a specific risk/race group. The latter of these two probabilities lumps together disparities in exposure pattern with outcome given exposure. The former looks only at the risk of severe illness given having been infected and so can be used to directly compare differences in risk factor combinations.

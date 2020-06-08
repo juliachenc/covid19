@@ -463,6 +463,8 @@ initDatePlot <- startObservedData-start_time
 intervention_date <- as.Date(intervention_date)
 intervention_date_numeric <- as.numeric(intervention_date - as.Date("2020-03-01"))
 date_to_start_easing <- as.numeric(as.Date("2020-04-25")-as.Date("2020-03-01"))
+todays_date_numeric = as.numeric(Sys.Date() - as.Date("2020-03-01"))
+
 
 ## MODEL INPUTS REQUIRED HERE
 d_IH <- 10   #days between illness onset and hospitalization
@@ -472,25 +474,6 @@ Br <- R0 * ( 1 / ( (r/ ((Alpha/d_IH) + ((1-Alpha)/d_IR)))  + (1-r)*d_IR ))
 # Beta_t<- c(0, (start_time+intervention_date_numeric), (start_time+intervention_date_numeric+15), 180, 260, 500) #c(0, 79, 80, 260, 270, 500)
 # Beta_y<- c(Br, Br, Br*R0_redux, Br*R0_redux, Br*R0_redux, Br*R0_redux )
 
-# Beta_t<- c(
-#   0,                              #1 
-#   (start_time),                #2
-#   (start_time+1),                #3
-#   (start_time+intervention_date_numeric),       #4 
-#   (start_time+intervention_date_numeric+15),
-#   (start_time+intervention_date_numeric+50),
-#   (start_time+intervention_date_numeric+51),
-#   (start_time+intervention_date_numeric+70))         #5
-# 
-# Beta_y<- c(
-#   Br, #1
-#   Br, #2
-#   Br,
-#   Br,
-#   (Br*R0_redux), #5
-#   (Br*R0_redux), #6
-#   (Br*R0_redux), #7
-#   (Br*R0_redux)) #8
 
 Beta_t<- c(
   0,                              #1
@@ -499,8 +482,8 @@ Beta_t<- c(
   (start_time+intervention_date_numeric),       #4
   (start_time+intervention_date_numeric+15),
   (start_time+date_to_start_easing),
-  (start_time+date_to_start_easing+1),
-  (start_time+intervention_date_numeric+70))         #5
+  (start_time+todays_date_numeric-5),
+  (start_time+intervention_date_numeric+150))         #5
 
 Beta_y<- c(
   Br, #1
@@ -509,8 +492,9 @@ Beta_y<- c(
   Br,
   (Br*R0_redux), #5
   (Br*R0_redux), #6
-  (Br*R0_redux*1.2), #7
-  (Br*R0_redux*1.2)) #8
+  (Br*R0_redux*1.3), #7
+  (Br*R0_redux*1.3)) #8
+
 
 ## Plot of R0(t)
 R0_t_plot <- data.frame(
@@ -639,16 +623,22 @@ We use mobility data to narrow the specification of the reduction in the average
 
 <br><br><br>
 
-# Conclusions
+# 
 
 <br>
 
-### Model Limitations
+# Limitations and Next Steps
+
+Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19. However, the findings and projections from the model must be interpreted relative to the input data and modeling decisions or assumptions. Below we list some of the key assumptions and limitations of this model. Some of these will be addressed in future work.
+
+**Epidemic Predictions**
 
 * **Dynamics**: We develop a simplistic modeling dynamics that assumes homogeneous mixing and a single population, whereas there are many different subpopulations with different contact structures and types. As such, this model does not account for differences in contact patterns within and across key groups, such as workplaces, schools, and communities; or of group-specific social distancing scenarios. Future work should stratify contact rates to specific risk groups. In addition, high resolution models are available and are being used to simulate at a micro level the different policies and interventions that can be implemented; this should be the direction of future work to predict the effect the portfolio of options for reopening society.
 * This model does not account for the role of interventions beyond social distancing, such as contact tracing and surveillance testing, which are critical to identifying and limiting the spread of the virus.
 * This model does not account for unanticipated behavioral responses to the effects of interventions or mitigation strategies
-* The accuracy of the parameter estimation depends on the accuracy of the prior specifications and any fixed parameters employed, including the incubation and recovery period. As new information about the epidemiological characteristics of COVID-19 continues to arise, model estimation will need to be continuously updated.
+* The accuracy of the parameter estimation depends on the accuracy of the prior specifications and any fixed parameters employed, including the incubation and recovery period. As new information about the epidemiological characteristics of COVID-19 continues to arise, model estimation will need to be continuously updated. Incorporating the latest information into our models will be key to maintaining its relevance for policy and analysis. 
+
+**Risk Factor Predictions**
 
 * **Probability of severe illness**: Our risk model provides estimates of COVID-19 illness severity probabilities due to risk factors for COVID alone (age, comorbidities, obesity, smoking). This can be seen as a "baseline" risk model, whereas a multitude of exogenous factors may impact what we observe on the epidemic, including:
   * **Differences in dynamics among subpopulations**: Different dynamics at different scales due to different types of contact patterns and structures, and abilities to adhere social distancing guidance/guidelines, which translate to different rates of infection and subsequent stages of illness. 
@@ -657,14 +647,3 @@ We use mobility data to narrow the specification of the reduction in the average
   * **Testing**: Disparities in who is getting tested and at what stage of disease
 * Additionally, these probabilities are only as accurate as the data used to produce these estimates, coming from early published clinical studies of COVID-19. These input data are likely to differ across study populations, and can also vary based on study definitions.
 
-
-<br> 
-
-### Initial Findings
-
-* Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19.
-* L.A. County has succeeded in mitigating the epidemic curve due to early action and strong adherence to social distancing (model-estimated reduction in contact rate of >70%).
-* Our model suggests that social distancing may be relaxed to levels even up to an 100% increase of social encounters beyond that enforced in the first phase of response (Level 1), while still keeping the epidemic under control. However beyond a certain level of increase, a major resurgence will be seen. What exactly does an 100% increase from Level 1 social distancing translate to? Finer-resolution micro-simulation models combined with analysis of near-real-time mobility data may help to answer these questions.
-* Our model predicts that higher risk groups -- characterized not only by advanced age but also combinations of existing health conditions -- will make up the overwhelming majority of those afflicted with severe disease. Our model breaks down risk to the various combinations of various risk factors. The results of this analysis show that advance age in combination with multiple comorbidities leads the burden of morbidity and mortality for COVID-19.
-* We analyze how these risk factors project onto race/ethnicity groups and project expected illness patterns based on population size and prevalence of these risk factors. Thus far, the observed risk of death by race in L.A. is consistent with what we would expect based on risk factors alone. This will need to be further analyzed and interpreted, but as an initial analysis, may suggest that LA may be an outlier compared with other major U.S. cities in terms of the disproportionate burden of morbidity and mortality on more marginalized groups.
-* Incorporating the latest information into our models will be key to maintaining its relevance for policy and analysis. 
