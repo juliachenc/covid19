@@ -62,10 +62,10 @@ formattable(scenarios_table,
 R0_redux_eval = R0_redux_scenarios
 
 scenario = 2
-intervention_date = "2020-05-16"
+intervention_date = Sys.Date()
 ABC.out.mat <- ABC.out.mat.yesR
 number.pars.to.use = 400
-iter = 20
+iter = 30
 time.steps=600
 
 sd.redux = R0_redux_eval[1]
@@ -123,7 +123,7 @@ ymax.nice.Itot <- ymax.nice(traj.2.May1.6, var.to.plot = "Itot",time.steps.4plot
 ## Htot
 
 scenario=2
-intervention_date = "2020-05-16"
+intervention_date = Sys.Date()
 use.title=TRUE
 plot.capacity=TRUE
 time.steps.4plot = 400
@@ -462,7 +462,7 @@ p.Itot.2.May1.6 <- plot.model.single(traj.CI=traj.CI, data.in=data.in.tmp, init.
 ```
 
 
-## Increase contact rate on May 16th, 2020 by variable amounts {.tabset}
+## Increase contact rate on `r intervention_date` by variable amounts {.tabset}
 
 <br>
 

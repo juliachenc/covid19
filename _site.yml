@@ -10,6 +10,8 @@ navbar:
       href: scenarios.html
     - text: "Risk Table"
       href: risk_table.html
+    - text: "Findings"
+      href: findings.html
     - text: "Methods"
       href: method.html
     - text: "About"

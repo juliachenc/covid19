@@ -355,7 +355,7 @@ tolerance=c(15,4) # defining the sequence of tolerance levels
 
 # Specifiying the prior for r to be close to sero study
 #prior.r <- c("unif",0.00013,0.0125) #c("unif", .02, .036)  #c("unif", .017, .052) #  #c("unif", .028, .05) 
-prior.r <- c("unif",0.02, 0.04)
+prior.r <- c("unif",0.02, 0.05)
 #prior.r <- c("unif",0.0002,0.0125)
 prior.par <- list(prior.R0, prior.r,prior.st,prior.R0.redux,prior.Delta,prior.Alpha,prior.Kappa,prior.p_V)
 
@@ -434,7 +434,7 @@ vars.to.plot <- vars.plus.R
 
 traj.0 <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot, init.date.data="2020-03-01", all=TRUE, scenario.selection = 4,intervention_date=intervention_date,sd.redux=NULL)
 
-time.steps.4.plot = 150
+time.steps.4.plot = 200
 #data.in <- data.in.tmp
 data.in <- data.in.tmp
 vars.to.plot <- vars.plus.R
@@ -1852,7 +1852,7 @@ colnames(race_observed_D) <- colnames.race
 race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
 race_model_D <- relative.shares.races[,"prevalence.D"]
 
-D.dates.select <- c("2020-04-11","2020-04-16", "2020-05-01", "2020-05-11", "2020-05-17", "2020-05-20","2020-05-26")
+D.dates.select <- c("2020-04-11","2020-04-16", "2020-05-01", "2020-05-11", "2020-05-17", "2020-05-20","2020-05-26","2020-05-31","2020-06-03")
 race_observed_D_select <- race_observed_D %>% select(D.dates.select)
 race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
 
@@ -2040,10 +2040,12 @@ no.obs.race <- ncol(race_observed_I)
 step.race <- seq(1:no.obs.race)
 colnames.race <- start.date.race + step.race
 colnames(race_observed_I) <- colnames.race
-I.dates.select <- "2020-05-20"
-race_obs_I_recent <- race_observed_I %>% select(I.dates.select)
-race_obs_I <- apply(race_obs_I_recent, 2, function(x) round(x/sum(x),4))
 
+## IF SETTING THE DATE FOR ILLNESSES FROM RR MANUALLY
+#I.dates.select <- "2020-06-03"
+#race_obs_I_recent <- race_observed_I %>% select(I.dates.select)
+#race_obs_I_recent <- race_observed_I %>% select(ncol(race_observed_I)) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
+#race_obs_I <- apply(race_obs_I_recent, 2, function(x) round(x/sum(x),4))
 
 ##############################################################################################################################
 ## Plot Ill shares by race over time
@@ -2198,7 +2200,7 @@ race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_o
 #.5 * sum(race_observed_D_recent.nominal)
 #race_observed_D_recent.nominal <- c(700, 225, 200, 2, 150, 15, 27)
 
-D.per.Pop.obs <- race_observed_D_recent.nominal / Pr.pop #as.vector(t(race_obs_I_recent))/Pr.pop
+D.per.Pop.obs <- race_observed_D_recent.nominal / Pr.pop 
 names(D.per.Pop.obs) <- names(race_model_D)
 
 RR.D.per.Pop.obs <- RR.calc(D.per.Pop.obs, "White") 
@@ -2244,6 +2246,7 @@ RR.vec.DgivenI.model
 ##################################
 ### OBS
 #race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
+race_obs_I_recent <- race_observed_I %>% select(ncol(race_observed_I)) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
 Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal / race_obs_I_recent))
 names(Pr.DgivenI.obs) <- names(race_model_D)
 RR.vec.DgivenI.obs <- RR.calc(Pr.DgivenI.obs, "White") 
@@ -2326,14 +2329,16 @@ RR.DgivenI.barchart <-
 SNF.race.distribution <- c(.18, .5, .11, 0, .19, 0.01,.01)
 names(SNF.race.distribution) <- race.order
 
-### Removing SNF from I by race
-num.to.remove.I.tot <- NH_total_frac_I * sum(race_obs_I_recent)
+### Removing SNF from I by race   
+num.to.remove.I.tot <- NH_total_frac_I * sum(race_obs_I_recent)   
+# NH_total_frac_I is the most recent
 num.to.remove.I.race <- round(SNF.race.distribution * num.to.remove.I.tot)
 race_obs_I_recent.REMOVED <- race_obs_I_recent - num.to.remove.I.race
 
 ### Removing SNF from D by race
 race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) 
-num.to.remove.D.tot <- NH_total_frac_D * sum(race_observed_D_recent.nominal)
+# NH_total_frac_D is the most recent
+num.to.remove.D.tot <- NH_total_frac_D * sum(race_observed_D_recent.nominal)    
 num.to.remove.D.race <- round(SNF.race.distribution * num.to.remove.D.tot)
 race_observed_D_recent.nominal.REMOVED <- race_observed_D_recent.nominal - num.to.remove.D.race
                                              

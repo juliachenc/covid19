@@ -592,6 +592,7 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
       intervention_date <- as.Date(intervention_date)
       intervention_date_numeric <- as.numeric(intervention_date - as.Date("2020-03-01"))
       date_to_start_easing <- as.numeric(as.Date("2020-04-25")-as.Date("2020-03-01"))
+      todays_date_numeric = as.numeric(Sys.Date() - as.Date("2020-03-01"))
 
       Beta_t<- c(
         0,                              #1
@@ -600,7 +601,7 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
         (start_time+intervention_date_numeric),       #4
         (start_time+intervention_date_numeric+15),
         (start_time+date_to_start_easing),
-        (start_time+date_to_start_easing+1),
+        (start_time+todays_date_numeric-5),
         (start_time+date_to_start_easing+500))         #5
 
       Beta_y<- c(
@@ -610,8 +611,9 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
         Br,
         (Br*R0_redux), #5
         (Br*R0_redux), #6
-        (Br*R0_redux*1), #7
-        (Br*R0_redux*1)) #8
+        (Br*R0_redux*1.3), #7
+        (Br*R0_redux*1.3)) #8
+
 
     }
 
@@ -829,8 +831,10 @@ model.1sim.stats.yes.R <- function(par){
   ### R(t) FUNCTION
   ## Data time step 0 is March 1, 2020
 
+  #intervention_date="2020-03-12"
   intervention_date <- as.Date(intervention_date)
   intervention_date_numeric <- as.numeric(intervention_date - as.Date("2020-03-01"))
+  todays_date_numeric = as.numeric(Sys.Date() - as.Date("2020-03-01"))
   date_to_start_easing <- start_time+intervention_date_numeric
 
   #
@@ -856,9 +860,9 @@ model.1sim.stats.yes.R <- function(par){
     (start_time+1),                #3
     (start_time+intervention_date_numeric),       #4
     (start_time+intervention_date_numeric+15),
-    (start_time+intervention_date_numeric+45),
-    (start_time+intervention_date_numeric+46),
-    (start_time+intervention_date_numeric+500))         #5
+    (as.numeric(start_time+as.Date("2020-04-26")-as.Date("2020-03-01"))),   #April 26
+    (start_time+todays_date_numeric-5),
+    (start_time+500))
 
   Beta_y<- c(
     Br, #1
@@ -867,8 +871,8 @@ model.1sim.stats.yes.R <- function(par){
     Br,
     (Br*R0_redux), #5
     (Br*R0_redux), #6
-    (Br*R0_redux), #7
-    (Br*R0_redux)) #8
+    (Br*R0_redux*1.3), #7
+    (Br*R0_redux*1.3)) #8
 
   ### GENERATE SIMULATION
   x <- seihqdr_generator(Beta_t=Beta_t, Beta_y=Beta_y, S_ini=1e7, E_ini=10, r=r, Delta=Delta, Alpha=Alpha, Kappa=Kappa, p_QV=p_V)
