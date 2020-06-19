@@ -79,7 +79,7 @@ summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.da
   ## GET TODAY'S DATE
   CFR.today<- traj.CI %>% filter(date==Sys.Date()) %>% select(-c(date,N)) %>% mutate_if(is.numeric, round, digits=4)
   #rownames(CFR.today) <- c("Case Fatality Rate: Observed", "Case Fatality Rate: True, Estimated")
-  rownames(CFR.today) <- c("Case Fatality Rate: Observed", "Case Fatality Rate: True, Estimated")
+  rownames(CFR.today) <- c("Case Fatality Rate", "Infection Fatality Rate")
   CFR.today <- select(CFR.today, -c(1))
 
   # GET QUANTILES FOR VARIABLE

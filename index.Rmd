@@ -179,10 +179,17 @@ clean_SNF_remove <- path(code.dir, "clean_SNF_remove.R")
 source(clean_SNF_remove)
 
 # CURRENT TOTAL % OF ILLNESSES COMING FROM SNF
-NH_total_frac_I <- ( last(NH_counts$I_resident_cum) + last(NH_counts$I_staff_cum) ) / last(data.in.tmp.orig$Idetectcum)
+#NH_total_frac_I <- ( last(NH_counts$I_resident_cum) + last(NH_counts$I_staff_cum) ) / last(data.in.tmp.orig$Idetectcum)
+current_I <- last(data.in.tmp.orig$Idetectcum)
+SNF_removed_I <- last(cum_counts_NH_update$Idetectcum)
+NH_total_frac_I <- (current_I-SNF_removed_I) / current_I
 
 # CURRENT TOTAL % OF DEATHS COMING FROM SNF -- FOR METHODS
-NH_total_frac_D <- last(NH_counts$D_resident_cum) / last(data.in.tmp.orig$D)
+#NH_total_frac_D <- last(NH_counts$D_resident_cum) / last(data.in.tmp.orig$D)
+#NH_total_per <- round(NH_total_frac_D*100,1)
+current_D <- last(data.in.tmp.orig$D)
+SNF_removed_D <- last(cum_counts_NH_update$D)
+NH_total_frac_D <- (current_D-SNF_removed_D) / current_D
 NH_total_per <- round(NH_total_frac_D*100,1)
 
 ```
@@ -509,7 +516,9 @@ yesR.p.Itot.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.dat
 
 ## By Key Compartments {.tabset}
 
-Here we provide model projections for the SEIR+Risk model in L.A. County. Projections are shown as the median number in compartments over time, with the 50% and 95% Confidence Intervals. Observed data is depicted for variables where data is available. Key healthcare capacity limits (hospital beds, ICU beds, ventilators) in L.A. County are also indicated.
+Here we provide model projections for the SEIR+Risk model in L.A. County. Model fits are estimated based on counts of the number of infected (observed), hospitalized, ventilated, and deaths, *with counts from outbreaks in nursing homes removed* (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).  
+
+Projections are shown as the median number in compartments over time, with the 50% and 95% Confidence Intervals. Observed counts are depicted for variables with available data. Key healthcare capacity limits (hospital beds, ICU beds, ventilators) in L.A. County are also indicated.
 
 ### Current in Hospital
 
@@ -602,9 +611,15 @@ yesR.plot.all.variables.current.scenario.300days
 
 ### Posterior parameter estimates for key variables 
 
+Here we provide a summary of key parameters estimated by the SEIR+Risk model in L.A. County (for more details on parameter estimation see [Estimated Parameters](https://uscbiostats.github.io/COVID19/method.html#estimated_parameters)). Model fits are estimated based on counts of the number of infected (observed), hospitalized, ventilated, and deaths, *with counts from outbreaks in nursing homes removed* (for more details on data inputs and removal of nursing home cases see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).  
+
 Median and 95% CI displayed.
 
-Note: $Pr(Hospital|Illness)$ is the probability of hospitalization given **observed** illnesses.
+Note: 
+
+* **Case Fatality Rate** is the model-estimated number of deaths over the number of *observed* illnesses 
+* **Infection Fatality Rate** is the model-estimated number of deaths over the number of *total illnesses, observed + unobserved*
+* **$Pr(Hospital|Illness)$** is the model-estimated probability of hospitalization given *observed* illnesses
 
 ```{r, echo=FALSE}
 
@@ -614,8 +629,8 @@ Note: $Pr(Hospital|Illness)$ is the probability of hospitalization given **obser
 summary_table2 <- as.data.frame(t(summary_table))
 formattable(summary_table2,
             align=rep("c",NCOL(summary_table2)),
-            list(`Case Fatality Rate: Observed` = percent,
-                 `Case Fatality Rate: True, Estimated` = percent,
+            list(`Case Fatality Rate` = percent,
+                 `Infection Fatality Rate` = percent,
                  `r, fraction obs. illnesses` = percent,
                  `R0 fraction reduction` = percent,
                  `Pr(Hospital|Illness)` = percent,
@@ -1846,13 +1861,13 @@ race_observed_D = read.csv(race_file_D, sep=",", header=TRUE,row.names = 1 )
 start.date.race <- as.Date("2020-03-28")
 no.obs.race <- ncol(race_observed_D)
 step.race <- seq(1:no.obs.race)
-colnames.race <- start.date.race + step.race
+colnames.race <- start.date.race + step.race - 1
 colnames(race_observed_D) <- colnames.race
 
 race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
 race_model_D <- relative.shares.races[,"prevalence.D"]
 
-D.dates.select <- c("2020-04-11","2020-04-16", "2020-05-01", "2020-05-11", "2020-05-17", "2020-05-20","2020-05-26","2020-05-31","2020-06-03")
+D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-15")
 race_observed_D_select <- race_observed_D %>% select(D.dates.select)
 race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
 
@@ -2038,7 +2053,7 @@ race_observed_I = read.csv(race_file_I, sep=",", header=TRUE,row.names = 1 )
 start.date.race <- as.Date("2020-03-28")
 no.obs.race <- ncol(race_observed_I)
 step.race <- seq(1:no.obs.race)
-colnames.race <- start.date.race + step.race
+colnames.race <- start.date.race + step.race - 1
 colnames(race_observed_I) <- colnames.race
 
 ## IF SETTING THE DATE FOR ILLNESSES FROM RR MANUALLY
@@ -2326,7 +2341,7 @@ RR.DgivenI.barchart <-
 ######################################################################################
 ## FRACTION REMOVED FROM ILLNESSES AND DEATHS DUE TO SNF
 
-SNF.race.distribution <- c(.18, .5, .11, 0, .19, 0.01,.01)
+SNF.race.distribution <- c(.18, .5, .12, 0, .19, 0,.01)
 names(SNF.race.distribution) <- race.order
 
 ### Removing SNF from I by race   
@@ -2509,4 +2524,124 @@ A different story emerges when we **remove from the observed numbers of illnesse
 
 Because the majority of nursing home residents are white, once we remove the estimated counts from each race/ethnicity group from the overall numbers for deaths and illnesses, the relative share of deaths in the white population is greatly decreased and all other shares are proportionally increased. The result is a picture of the risk of death relative to whites which is significantly higher for all other races, both for overall risk of death and the risk of death conditioned upon illness. These large differences in risk are apparent even after conditioning by illnesses, effectively conditioning out the component of the risk accounted for by differences in exposure and spread dynamics. **In other words, after removing (an estimated number of) illnesses and deaths from nursing home residents from the data, all race/ethnicity groups are at significantly increased risk of death upon contracting the COVID-19 virus in comparison with whites. Most importantly, this significant increase in risk is not explainable by the risk factors for COVID-19 that are factored into our model: namely age, comorbidities, and health behaviors.**
 
+
+
+```{r}
+############################################################################################################
+############################################################################################################
+### CFR observed with estimated SNF removed
+############################################################################################################
+############################################################################################################
+
+### I by race with SNF removed
+race_obs_I_recent.REMOVED
+
+### D by race with SNF removed
+race_observed_D_recent.nominal.REMOVED       
+                                             
+### Current counts with SNF removed
+I_current <- last(cum_counts_NH_update$Idetectcum)
+D_current <- last(cum_counts_NH_update$D)
+
+###
+
+race_obs_I_recent.REMOVED.frac <- apply(race_obs_I_recent, 2, function(x) round(x/sum(x),4))
+race_obs_I_est.final <- round(I_current * race_obs_I_recent.REMOVED.frac)
+
+race_obs_D_recent.REMOVED.frac <- apply(as.data.frame(race_observed_D_recent.nominal.REMOVED), 2, function(x) round(x/sum(x),4))
+race_obs_D_est.final <- round(D_current * race_obs_D_recent.REMOVED.frac)
+
+### CFR observed with estimated SNF removed
+CFR_obs_with_SNF_removed <- round(race_obs_D_est.final / race_obs_I_est.final , 4)
+
+```
+
+```{r}
+
+############################################################################################################
+############################################################################################################
+### CFR model with estimated SNF removed
+############################################################################################################
+############################################################################################################
+
+# summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.date.data="2020-03-01") {
+# 
+#   library(data.table)
+#   
+#   D.percent.races <- as.data.frame(race_model_D)
+# 
+#   D.obs.white.percent <- race_model_D$White
+# 
+#   ## MODEL OUTPUT TO PLOT
+#   TEST.out <- correlated.param.SIM(ABC.out.mat[1:par.vec.length,],iter=iter,time.steps=time.steps, startObservedData = 0, scenario=4, intervention_date="2020-03-12",sd.redux=NULL)
+# 
+#   traj <- dplyr::mutate(TEST.out, CFRobs=(D/Idetectcum), CFRactual=(D/(Itotcum)), CFRobs.white <-  )
+#   traj <-  dplyr::select(traj,c(1:4,CFRobs,CFRactual))
+# 
+#   ## TO SAVE MEMORY
+#   rm(TEST.out)
+# 
+#   print("Starting CI calc")
+# 
+#   ### MELTING AND APPLYING SUMMARY STAT FUNCTIONS
+#   df.traj <- reshape2::melt(traj, measure.vars = c(5:ncol(traj)), variable.name = "state.name")
+# 
+#   library(data.table)
+#   df.traj_dt <- as.data.table(df.traj)
+# 
+#   traj.CI <- df.traj_dt[, list(
+#     N=.N,
+#     median = quantile(value, c(.5), na.rm=TRUE),
+#     low_95 = quantile(value, c(.025), na.rm=TRUE),
+#     #low_50 = quantile(value,.25, na.rm=TRUE),
+#     #up_50 = quantile(value,.75, na.rm=TRUE),
+#     up_95 = quantile(value, c(.975), na.rm=TRUE)),
+#     by = c("date", "state.name")]
+#   traj.CI <- as.data.frame(traj.CI)
+# 
+#   ## TO ALIGN DATES: MODEL
+#   init.date = init.date.data #"2020-01-03"
+#   init.date <- as.Date(init.date) #as.Date(lubridate::ydm(init.date))
+#   traj.CI[["date"]] <- traj.CI[["date"]] + init.date
+# 
+#   ## GET TODAY'S DATE
+#   CFR.today<- traj.CI %>% filter(date==Sys.Date()) %>% select(-c(date,N)) %>% mutate_if(is.numeric, round, digits=4)
+#   #rownames(CFR.today) <- c("Case Fatality Rate: Observed", "Case Fatality Rate: True, Estimated")
+#   rownames(CFR.today) <- c("Case Fatality Rate", "Infection Fatality Rate")
+#   CFR.today <- select(CFR.today, -c(1))
+# 
+#   # GET QUANTILES FOR VARIABLE
+# 
+#   posterior.CI <- function(posterior.var){
+#     median = quantile(posterior.var, c(.5), na.rm=TRUE)
+#     low_95 = quantile(posterior.var, c(.025), na.rm=TRUE)
+#     #mean = mean(posterior.var)
+#     up_95 = quantile(posterior.var, c(.975), na.rm=TRUE)
+#     posterior.CI <- as.data.frame(cbind(low_95,median,up_95))
+#     return(posterior.CI)
+#   }
+# 
+#   R0.posterior.CI <- round(posterior.CI(ABC_out$param[,1]),digits=2)
+#   r.posterior.CI <- posterior.CI(ABC_out$param[,2])
+#   R0redux.posterior.CI <- posterior.CI(ABC_out$param[,4])
+#   Alpha.posterior.CI <- posterior.CI(ABC_out$param[,6])
+#   Kappa.posterior.CI <- posterior.CI(ABC_out$param[,7])
+#   Delta.posterior.CI <- posterior.CI(ABC_out$param[,5])
+#   #Pr.D.given.I.CI <- posterior.CI(ABC_out$param[,6]*ABC_out$param[,7]*ABC_out$param[,5])
+# 
+#   #posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI,Pr.D.given.I.CI) %>% mutate_if(is.numeric, round, digits=4)
+#   posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI) %>% mutate_if(is.numeric, round, digits=4)
+#   rownames(posterior.vars) <- c("r, fraction obs. illnesses", "R0", "R0 fraction reduction", "Pr(Hospital|Illness)", "Pr(ICU|Hospital)", "Pr(Death|ICU)")
+# 
+#   all.posterior.vars <- rbind(CFR.today, posterior.vars)
+#   colnames(all.posterior.vars) <- c("Median", "Lower 95% CI", "Upper 95% CI")
+# 
+#   return(all.posterior.vars)
+# 
+# }
+
+#summary_table <- summary.table(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, init.date.data="2020-03-01")
+
+
+```
 

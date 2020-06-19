@@ -441,7 +441,7 @@ grid.arrange(p2,p,ncol=2,nrow=1)
 **Reduction in mobility observed in LA County** 
 
 ```{r, echo=FALSE, fig.cap="encounter reduction", out.width = '100%'}
-knitr::include_graphics(here("Unacast.LA.redux.png"))
+knitr::include_graphics(here("Unacast.LA.redux.2.png"))
 ```
 
 **Sources**: 
