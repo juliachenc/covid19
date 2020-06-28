@@ -103,7 +103,7 @@ summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.da
 
   #posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI,Pr.D.given.I.CI) %>% mutate_if(is.numeric, round, digits=4)
   posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI) %>% mutate_if(is.numeric, round, digits=4)
-  rownames(posterior.vars) <- c("r, fraction obs. illnesses", "R0", "R0 fraction reduction", "Pr(Hospital|Illness)", "Pr(ICU|Hospital)", "Pr(Death|ICU)")
+  rownames(posterior.vars) <- c("r, fraction obs. illnesses", "R0 Initial", "R0 fraction reduction", "Pr(Hospital|Illness)", "Pr(ICU|Hospital)", "Pr(Death|ICU)")
 
   all.posterior.vars <- rbind(CFR.today, posterior.vars)
   colnames(all.posterior.vars) <- c("Median", "Lower 95% CI", "Upper 95% CI")
@@ -601,7 +601,7 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
         (start_time+intervention_date_numeric),       #4
         (start_time+intervention_date_numeric+15),
         (start_time+date_to_start_easing),
-        (start_time+todays_date_numeric-5),
+        (start_time+todays_date_numeric  +20),#  -5),
         (start_time+date_to_start_easing+500))         #5
 
       Beta_y<- c(
@@ -611,8 +611,8 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps,startObservedData,s
         Br,
         (Br*R0_redux), #5
         (Br*R0_redux), #6
-        (Br*R0_redux*1.3), #7
-        (Br*R0_redux*1.3)) #8
+        (Br*R0_redux*2.2), #7
+        (Br*R0_redux*2.2)) #8
 
 
     }
@@ -861,7 +861,7 @@ model.1sim.stats.yes.R <- function(par){
     (start_time+intervention_date_numeric),       #4
     (start_time+intervention_date_numeric+15),
     (as.numeric(start_time+as.Date("2020-04-26")-as.Date("2020-03-01"))),   #April 26
-    (start_time+todays_date_numeric-5),
+    (start_time+todays_date_numeric +20),# -5),
     (start_time+500))
 
   Beta_y<- c(
@@ -871,8 +871,8 @@ model.1sim.stats.yes.R <- function(par){
     Br,
     (Br*R0_redux), #5
     (Br*R0_redux), #6
-    (Br*R0_redux*1.3), #7
-    (Br*R0_redux*1.3)) #8
+    (Br*R0_redux*2.2), #7
+    (Br*R0_redux*2.2)) #8
 
   ### GENERATE SIMULATION
   x <- seihqdr_generator(Beta_t=Beta_t, Beta_y=Beta_y, S_ini=1e7, E_ini=10, r=r, Delta=Delta, Alpha=Alpha, Kappa=Kappa, p_QV=p_V)

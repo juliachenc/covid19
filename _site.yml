@@ -8,7 +8,7 @@ navbar:
       href: index.html
     - text: "Scenarios"
       href: scenarios.html
-    - text: "Risk Table"
+    - text: "Risk Tables"
       href: risk_table.html
     - text: "Findings"
       href: findings.html

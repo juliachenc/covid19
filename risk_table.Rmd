@@ -1,10 +1,15 @@
 ---
 title: "Projections by Risk Factors and At-Risk Groups"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
 editor_options: 
   chunk_output_type: console
 ---
 
-### Risk Profiles, Risk Factors, and Risk Groups
+# Risk Profiles, Factors, and Groups
 
 We use previous studies to narrow the specification of the probability of hospitalization given illness, admittance to the intensive care unit (ICU) given being in hospital, and death given being in ICU by incorporating risk factors:
 
@@ -14,6 +19,8 @@ We use previous studies to narrow the specification of the probability of hospit
 - **Other comorbidities**: hypertension, diabetes, cardiovascular disease, cerebrovascular disease / stroke, cancer, COPD, and athsma.
 
 Using studies reporting the risk of severe COVID-19 outcomes given **individual** risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with *combinations* of risk factors. We call specific combinations of risk factors **risk profiles**. We group these risk profiles into 5 **risk groups** based on similar within-group probabilities of severe illness. 
+
+## Severe illness probabilities table
 
 The table presents the model-estimated probability of hospitalization given illness, $Pr(Hospital | Illness,Profile_i)$, probability of admittance to the intensive care unit (ICU) given being in hospital, $Pr(ICU | Hospital,Profile_i)$, and probability of death given being in ICU, $Pr(Death | ICU,Profile_i)$ for each risk profile (or combination of risk factors), as well as the prevalence of these risk profiles in the general L.A. County Population (Population Prevalence in L.A. County). Census data is used to estimate age distributions and Los Angeles County Health Survey and other publically available data is used to estimate the prevalence of underlying health conditions. For details see [Methods and Data](https://uscbiostats.github.io/COVID19/method.html).
 
@@ -26,3 +33,13 @@ You can use the **Search** bar to search for your own risk profile by inputting 
 risk_table
 ```
 
+
+## CFR and IFR table
+
+This table presents, for each risk profile, the model-estimated **Case Fatality Rate (CFR)** -- the ratio of the cumulative number of deaths over observed cases, and the model-estimated **Infection Fatality Rate (IFR)** -- the ratio of the cumulative number of deaths over total estimated infections. The 95% confidence interval for the model-estimated CFR and IFR for each risk profile is also presented. 
+
+The large variance in these risk-stratified CFR and IFR, and for single risk factors, demonstrate why it is important to consider these parameters as dependent on combinations of risk factors. For example, the CFR for risk profiles including 65+ ranges from 0.08, for individuals with BMI<30, no smoking history, and no comorbidities, to 0.77, for individuals with 30<BMI<40 who smoke and have comorbidities.
+
+```{r, echo=FALSE}
+risk_table_CFR.ft
+```
