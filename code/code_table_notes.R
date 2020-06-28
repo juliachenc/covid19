@@ -109,3 +109,170 @@ formattable(table.ex,
 
 
 
+
+
+
+
+
+
+
+
+########################################################################################
+########################################################################################
+########################################################################################
+
+```{r}
+
+############################################################################################################
+############################################################################################################
+### CFR model with estimated SNF removed
+############################################################################################################
+############################################################################################################
+
+
+
+summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.date.data="2020-03-01") {
+
+  library(data.table)
+
+  D.percent.races <- as.data.frame(race_model_D)
+
+  D.obs.white.percent <- race_model_D$White
+
+  ## MODEL OUTPUT TO PLOT
+
+  par.vec.length <- 100
+  iter = 30
+  time.steps = 500
+
+  TEST.out <- correlated.param.SIM(ABC.out.mat[1:par.vec.length,],iter=iter,time.steps=time.steps, startObservedData = 0, scenario=4, intervention_date="2020-03-12",sd.redux=NULL)
+
+
+
+
+  traj <- dplyr::mutate(TEST.out, CFRobs=(D/Idetectcum), CFRactual=(D/(Itotcum)))
+  traj <-  dplyr::select(traj,c(1:4,CFRobs,CFRactual))
+
+  ## TO SAVE MEMORY
+  rm(TEST.out)
+
+  print("Starting CI calc")
+
+  ### MELTING AND APPLYING SUMMARY STAT FUNCTIONS
+  df.traj <- reshape2::melt(traj, measure.vars = c(5:ncol(traj)), variable.name = "state.name")
+
+  library(data.table)
+  df.traj_dt <- as.data.table(df.traj)
+
+  traj.CI <- df.traj_dt[, list(
+    N=.N,
+    median = quantile(value, c(.5), na.rm=TRUE),
+    low_95 = quantile(value, c(.025), na.rm=TRUE),
+    #low_50 = quantile(value,.25, na.rm=TRUE),
+    #up_50 = quantile(value,.75, na.rm=TRUE),
+    up_95 = quantile(value, c(.975), na.rm=TRUE)),
+    by = c("date", "state.name")]
+  traj.CI <- as.data.frame(traj.CI)
+
+  ## TO ALIGN DATES: MODEL
+  init.date = init.date.data #"2020-01-03"
+  init.date <- as.Date(init.date) #as.Date(lubridate::ydm(init.date))
+  traj.CI[["date"]] <- traj.CI[["date"]] + init.date
+
+  ## GET TODAY'S DATE
+  CFR.today<- traj.CI %>% filter(date==Sys.Date()) %>% select(-c(date,N)) %>% mutate_if(is.numeric, round, digits=4)
+  #rownames(CFR.today) <- c("Case Fatality Rate: Observed", "Case Fatality Rate: True, Estimated")
+  rownames(CFR.today) <- c("Case Fatality Rate", "Infection Fatality Rate")
+  CFR.today <- select(CFR.today, -c(1))
+
+  # GET QUANTILES FOR VARIABLE
+
+  posterior.CI <- function(posterior.var){
+    median = quantile(posterior.var, c(.5), na.rm=TRUE)
+    low_95 = quantile(posterior.var, c(.025), na.rm=TRUE)
+    #mean = mean(posterior.var)
+    up_95 = quantile(posterior.var, c(.975), na.rm=TRUE)
+    posterior.CI <- as.data.frame(cbind(low_95,median,up_95))
+    return(posterior.CI)
+  }
+
+  R0.posterior.CI <- round(posterior.CI(ABC_out$param[,1]),digits=2)
+  r.posterior.CI <- posterior.CI(ABC_out$param[,2])
+  R0redux.posterior.CI <- posterior.CI(ABC_out$param[,4])
+  Alpha.posterior.CI <- posterior.CI(ABC_out$param[,6])
+  Kappa.posterior.CI <- posterior.CI(ABC_out$param[,7])
+  Delta.posterior.CI <- posterior.CI(ABC_out$param[,5])
+  #Pr.D.given.I.CI <- posterior.CI(ABC_out$param[,6]*ABC_out$param[,7]*ABC_out$param[,5])
+
+  #posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI,Pr.D.given.I.CI) %>% mutate_if(is.numeric, round, digits=4)
+  posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI) %>% mutate_if(is.numeric, round, digits=4)
+  rownames(posterior.vars) <- c("r, fraction obs. illnesses", "R0", "R0 fraction reduction", "Pr(Hospital|Illness)", "Pr(ICU|Hospital)", "Pr(Death|ICU)")
+
+  all.posterior.vars <- rbind(CFR.today, posterior.vars)
+  colnames(all.posterior.vars) <- c("Median", "Lower 95% CI", "Upper 95% CI")
+
+  return(all.posterior.vars)
+
+}
+
+summary_table <- summary.table(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, init.date.data="2020-03-01")
+
+
+```
+########################################################################################
+########################################################################################
+########################################################################################
+
+
+
+```{r}
+############################################################################################################
+############################################################################################################
+### CFR *observed* with and without estimated SNF removed
+############################################################################################################
+############################################################################################################
+
+
+### I by race with SNF removed
+#race_obs_I_recent.nominal.REMOVED
+
+### D by race with SNF removed
+#race_observed_D_recent.nominal.REMOVED
+
+### Current counts with SNF removed
+I_current <- last(cum_counts_NH_update$Idetectcum)
+D_current <- last(cum_counts_NH_update$D)
+
+############################################################################################################
+### CFR *observed* WITHOUT SNF removed
+############################################################################################################
+
+### Get the estimated nominal number of I by race, current
+race_obs_I_recent.frac <- apply(race_obs_I_recent.nominal, 2, function(x) round(x/sum(x),4))
+race_obs_I_est.final <- round(I_current * race_obs_I_recent.frac)
+
+race_obs_D_recent.frac <- apply(as.data.frame(race_observed_D_recent.nominal), 2, function(x) round(x/sum(x),4))
+race_obs_D_est.final <- round(D_current * race_obs_D_recent.frac)
+
+### CFR observed without estimated SNF removed
+CFR_obs_WITHOUT_SNF_removed <- round( race_obs_D_est.final / race_obs_I_est.final , 4)
+
+############################################################################################################
+### CFR *observed* WITH SNF removed
+############################################################################################################
+
+### Get the estimated nominal number of I by race, current, with the appropriate number and distribution of races after SNF cases removed
+race_obs_I_recent.REMOVED.frac <- apply(race_obs_I_recent.nominal.REMOVED, 2, function(x) round(x/sum(x),4))
+race_obs_I_est.final.REMOVED <- round(I_current * race_obs_I_recent.REMOVED.frac)
+
+race_obs_D_recent.REMOVED.frac <- apply(as.data.frame(race_observed_D_recent.nominal.REMOVED), 2, function(x) round(x/sum(x),4))
+race_obs_D_est.final.REMOVED <- round(D_current * race_obs_D_recent.REMOVED.frac)
+
+### CFR observed with estimated SNF removed
+CFR_obs_WITH_SNF_removed <- round(race_obs_D_est.final.REMOVED / race_obs_I_est.final.REMOVED , 4)
+
+
+
+```
+
+

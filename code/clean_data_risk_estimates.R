@@ -186,6 +186,9 @@ data <- merge(data, Pr.H, by = "Profile")
 data <- merge(data, Pr.Q, by = "Profile")
 data <- merge(data, Pr.D, by = "Profile")
 
+## 4) FILTER PROFILES TO SHOW IN THE TABLE TO ONLY THOSE > 0 PREVALENCE
+
+#data <- filter(data, `LA County` > 0.0004)
 
 ## 4) Create Risk Profile Groupings ##################################################################
 ### NOTE: Grouping done by death risk level
@@ -202,7 +205,130 @@ data$riskprofile[(data$Pr.D>.24)] <- "Risk 1"
 # data$riskprofile[(data$Pr.D>.3)] <- "Risk 1"
 data$riskprofile <- factor(data$riskprofile, levels = c("Risk 1", "Risk 2", "Risk 3", "Risk 4", "Risk 5" ))
 
-## Round all numeric variable to 3 digits
+## Round all numeric variable to 4 digits
 data <- data %>%
-  mutate_if(is.numeric, round, digits = 3)
+  mutate_if(is.numeric, round, digits = 4)
+
+
+
+##############################################################################################################
+##############################################################################################################
+## Create dataframe summarizing risk profile info, prevalence of risk profile in general population,
+##    and prevalence of risk profile in deceased population
+##############################################################################################################
+##############################################################################################################
+
+data.pop.prev <- data[,c(1,10:18)]
+names(data.pop.prev)[names(data.pop.prev) == "LA County"] <- "pop.prev"
+
+data.D.prev <- dataD[,c(9:10)]
+names(data.D.prev)[names(data.D.prev) == "LA County"] <- "D.prev"
+
+data.prev <- merge(data.pop.prev, data.D.prev, by = "Profile")
+data.prev <- arrange(data.prev, data.prev$Profile)
+
+
+##############################################################################################################
+## Function for risk table with CFR and IFR
+##############################################################################################################
+
+risk.table.CFR.fn <- function(ABC.out.mat, time.steps, par.vec.length, iter, data.prev) {
+
+  ## MODEL OUTPUT TO PLOT
+
+  #print("Starting model.out calc")
+
+  model.out <- correlated.param.SIM(ABC.out.mat[1:par.vec.length,],iter=iter,time.steps=time.steps, startObservedData = 0, scenario=4, intervention_date="2020-03-12",sd.redux=NULL)
+
+  ## FILTER OUTPUT TO TODAY'S DATE
+  dates.to.filter <- Sys.Date() #c("2020-04-01")
+  filter.dates = TRUE
+
+  # Align dates
+  init.date = "2020-01-03"
+  init.date <- as.Date(init.date) #as.Date(lubridate::ydm(init.date))
+  model.out[["date"]] <- model.out[["date"]] + init.date
+
+  # Filter if
+  if (filter.dates==TRUE){
+    ## Filter to today's date
+    model.out <- model.out %>% filter(date==c(dates.to.filter))
+  }
+
+  ########################################
+  ## Get CFR and IFR for each iteration
+  ########################################
+
+  ## Function to multiply each value of I / D by the prevalence of each profile
+  prev.multiply <- function(model.out, model.var, data.prev, prev.var) {
+    prev.vec <- data.prev[,prev.var]
+    var.matrix <- matrix(model.out[,model.var], nrow=nrow(model.out), ncol=length(prev.vec), byrow = FALSE)  ## Replicate the variable (I or D) n.profiles times
+    out.prev <- sweep(var.matrix, MARGIN=2, prev.vec, `*`)
+    return(out.prev)
+  }
+
+  n.profiles <- nrow(data.prev)
+
+  I.prev <- prev.multiply(model.out, "Idetectcum", data.prev, "pop.prev")
+  Itot.prev <- prev.multiply(model.out, "Itotcum", data.prev, "pop.prev")
+  D.prev <- prev.multiply(model.out, "D", data.prev, "D.prev")
+
+  CFR <- D.prev / I.prev
+  CFR[!is.finite(CFR)] <- 0
+  CFR[CFR>1] <- 1
+  colnames(CFR) <- paste0("CFR.", c(1:n.profiles))
+
+  IFR <- D.prev / Itot.prev
+  IFR[!is.finite(IFR)] <- 0
+  colnames(IFR) <- paste0("IFR.", c(1:n.profiles))
+
+  ########################################
+  ## Get CI for CFR and IFR
+  ########################################
+
+  ## Combine into a single dataframe
+  traj <- as.data.frame(cbind(model.out[,1:4],CFR,IFR))
+  melt.traj <- reshape2::melt(traj, measure.vars = c(5:ncol(traj)), variable.name = "Rate.Profile")
+  traj.dt <- as.data.table(melt.traj)
+
+  ## TO SAVE MEMORY
+  rm(model.out)
+
+  #print("Starting CI calc")
+
+  traj.CI <- traj.dt[, list(
+    median = quantile(value, c(.5), na.rm=TRUE),
+    low_95 = quantile(value, c(.025), na.rm=TRUE),
+    up_95 = quantile(value, c(.975), na.rm=TRUE)),
+    by = c("date", "Rate.Profile")]
+  traj.CI <- as.data.frame(traj.CI) %>% mutate_if(is.numeric, round, digits=4)
+
+  ## Separate out into CFR and IFR
+
+  CFR.CI <- traj.CI[1:n.profiles,c(3:5)]
+  colnames(CFR.CI) <- paste0("CFR.",colnames(CFR.CI))
+  CFR.CI$Profile <- c(1:n.profiles)
+
+  IFR.CI <- traj.CI[(n.profiles+1):(2*n.profiles), c(3:5)]
+  colnames(IFR.CI) <- paste0("IFR.", colnames(IFR.CI))
+  IFR.CI$Profile <- c(1:n.profiles)
+
+  ########################################
+  ## Create risk table
+  ########################################
+
+  risk_table_CFR <- subset(data, select = c(Profile, riskprofile,  age, BMI, smoking, comorbidity, `LA County`))
+  risk_table_CFR <- merge(risk_table_CFR, CFR.CI, by = "Profile")
+  risk_table_CFR <- merge(risk_table_CFR, IFR.CI, by = "Profile")
+
+  # FILTER PROFILES TO SHOW IN THE TABLE TO ONLY THOSE > 0 PREVALENCE
+  risk_table_CFR <- filter(risk_table_CFR, `LA County` > 0.0004)
+
+  ##### Arrange
+  risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.median"))
+
+  return(risk_table_CFR)
+
+}
+
 

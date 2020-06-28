@@ -15,6 +15,8 @@ Updated with data available as of `r Sys.Date()`
 
 ``` {r setup, include=FALSE}
 
+#rmarkdown::render_site()
+
 ### Install necessary packages and get started
 
 library(reshape2)
@@ -243,7 +245,7 @@ source(supporting_functions)
 
 ## Inputs
 pop.size <- 1e7
-frac.obs <- c(0.02,0.1) # Best estimate from model
+frac.obs <- c(0.02,0.04) # Best estimate from model
 #frac.obs <- c(0.0002,0.0125)
 # Dates 1 to 3 weeks before seroprevalence study
 sero.date <- as.Date("2020-04-05")
@@ -310,14 +312,14 @@ summarydata.yes.R <- c(summarydata,interpolated.R)
 ###################################################################################################
 ## DEFINING PRIORS
 iter = 500
-R0 <- 4.3 #3.25
-r <- 0.03 #0.05
+R0 <- 4.1 #3.25
+r <- 0.035 #0.05
 start_time <- 45
 R0_redux <- .205 #.2  #Br(t)=Br*R0_redux
-Delta <- .55 #.75
-Alpha <- .18#.2
-Kappa <- .35 #.25
-p_V <- .5#.7
+Delta <- .35 #.75
+Alpha <- .15#.2
+Kappa <- .7 #.25
+p_V <- .85#.7
 intervention_date="2020-03-12"
 
 ABC.out.mat <- as.data.frame(t(rep(0,8)))
@@ -337,7 +339,7 @@ ABC.out.mat[8] <- p_V
 ###################################################################################################
 ## PRIOR DISTRIBUTIONS
 ## A list joining the prior for each parameter
-prior.R0 <- c("normal",R0,.1) 
+prior.R0 <- c("normal",R0,.025) 
 #prior.r <- c("unif", .005, .035) # c("normal",r,0.01)
 prior.st <- c("unif",40,50) 
 prior.R0.redux <- c("unif", R0_redux - 0.2, R0_redux + 0.2)  #c("normal",R0_redux, 0.05) 
@@ -379,7 +381,7 @@ model.R <- model.1sim.stats.yes.R
 
 ### FOR QUICK TESTS
 ABC_Marjoram<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
-                       summary_stat_target=summarydata, n_calibration=100000,
+                       summary_stat_target=summarydata, n_calibration=10000,
                        tolerance_quantile=0.1,verbose=TRUE,progress=TRUE, n_rec=1000) #, dist_weights=dist_weights )
 
 ABC_out <- ABC_Marjoram
@@ -713,6 +715,52 @@ options = list(pageLength = 10,
 )
 
 ```
+
+
+```{r risk_table_CFR, include=FALSE}
+
+ABC.out.mat <- ABC_out$param
+time.steps = 500
+par.vec.length=500
+iter <- 20
+
+
+########################################################################
+## risk.table.CFR.fn code found in clean_data_risk_estimates.R
+########################################################################
+
+risk_table_CFR <- risk.table.CFR.fn(ABC.out.mat = ABC.out.mat, time.steps = time.steps, par.vec.length = par.vec.length, iter=iter, data.prev = data.prev)
+
+#risk_table_CFR <- filter(risk_table_CFR, "LA County" > 0.0004)
+#risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.median"))
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table_CFR.ft <- as.datatable(formattable(risk_table_CFR, align="r",
+            align = c(rep("c", 9)),
+            list(
+  `age`= color_tile('yellow', 'darkorange'),
+  `BMI`= color_tile('lightblue', 'pink'),
+  `smoking`= color_tile('grey', 'transparent'),
+  `comorbidity`= color_tile('darkgrey', 'transparent'),
+  `riskprofile`= color_tile('red', 'green'),
+  `LA County`= color_bar('cornflowerblue', fun = unit.scale),
+  `CFR.median`= color_bar('violet', fun = unit.scale),
+  `CFR.low_95`= color_bar('violet', fun = unit.scale),
+  `CFR.up_95`= color_bar('violet', fun = unit.scale),
+  `IFR.median`= color_bar('lightpink', fun = unit.scale),
+  `IFR.low_95`= color_bar('lightpink', fun = unit.scale),
+  `IFR.up_95`= color_bar('lightpink', fun = unit.scale)
+)), rownames = FALSE, colnames = c('Population Prevalence in L.A.County' = 'LA County', 'Age' = 'age', 'BMI status' = 'BMI', 'Smoking status' = 'smoking', 'Existing comorbidities' = 'comorbidity', 'Risk Group' = 'riskprofile', 'CFR Median' = 'CFR.median', 'CFR Lower 95%CI'='CFR.low_95', 'CFR Upper 95%CI'='CFR.up_95', 'IFR Median' = 'IFR.median', 'IFR Lower 95%CI' = 'IFR.low_95', 'IFR Upper 95%CI'='IFR.up_95'), 
+#filter = 'bottom', 
+options = list(pageLength = 10, 
+               autoWidth = TRUE) 
+)
+
+
+```
+
 
 ```{r plotting-stacked-bars, include=FALSE}
 
@@ -1867,7 +1915,7 @@ colnames(race_observed_D) <- colnames.race
 race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
 race_model_D <- relative.shares.races[,"prevalence.D"]
 
-D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-15")
+D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-19","2020-06-24")
 race_observed_D_select <- race_observed_D %>% select(D.dates.select)
 race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
 
@@ -2261,8 +2309,8 @@ RR.vec.DgivenI.model
 ##################################
 ### OBS
 #race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
-race_obs_I_recent <- race_observed_I %>% select(ncol(race_observed_I)) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
-Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal / race_obs_I_recent))
+race_obs_I_recent.nominal <- race_observed_I %>% select(ncol(race_observed_I)) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
+Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal / race_obs_I_recent.nominal))
 names(Pr.DgivenI.obs) <- names(race_model_D)
 RR.vec.DgivenI.obs <- RR.calc(Pr.DgivenI.obs, "White") 
 RR.vec.DgivenI.obs
@@ -2291,7 +2339,7 @@ RR.vec.DgivenI.obs
 
 labels.races.fit.bar <-c("Latino","White","Black","American \n Indian","Asian","Hawaiian","Other")
 
-ymax.bars <- 3
+ymax.bars <- 4 #3
 breaks = seq(0, ymax.bars, by = 0.5)
 
 ##################################################################
@@ -2340,15 +2388,21 @@ RR.DgivenI.barchart <-
 
 ######################################################################################
 ## FRACTION REMOVED FROM ILLNESSES AND DEATHS DUE TO SNF
+## NOTE: that to remove SNF cases from race/ethnicity counts, we would need to know how many 
+## SNF cases there are, and how many of these appear in the overall race/ethnicity counts.
+## Without further knowledge, we can just assume that the % of SNF that is missing r/e data is = the % of general population that is missing r/e data.
+## So we remove a fraction of the SNF cases from the race/ethnicity data equal to the fraction of overall missing r/e data.
+
 
 SNF.race.distribution <- c(.18, .5, .12, 0, .19, 0,.01)
 names(SNF.race.distribution) <- race.order
 
 ### Removing SNF from I by race   
-num.to.remove.I.tot <- NH_total_frac_I * sum(race_obs_I_recent)   
+assumed.frac.SNF.reported.in.race.data.ill <- sum(race_obs_I_recent.nominal) / last(data.in.tmp.orig$Idetectcum) # = total in r/e / total overall
+num.to.remove.I.tot <- NH_total_frac_I * sum(race_obs_I_recent.nominal) * assumed.frac.SNF.reported.in.race.data.ill
 # NH_total_frac_I is the most recent
 num.to.remove.I.race <- round(SNF.race.distribution * num.to.remove.I.tot)
-race_obs_I_recent.REMOVED <- race_obs_I_recent - num.to.remove.I.race
+race_obs_I_recent.nominal.REMOVED <- race_obs_I_recent.nominal - num.to.remove.I.race
 
 ### Removing SNF from D by race
 race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) 
@@ -2364,9 +2418,8 @@ race_observed_D_recent.nominal.REMOVED <- race_observed_D_recent.nominal - num.t
 
 #####################
 ### OBSERVATION
-race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED               ### SNF REMOVED 
-
-D.per.Pop.obs <- race_observed_D_recent.nominal / Pr.pop #as.vector(t(race_obs_I_recent))/Pr.pop
+#race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED               ### SNF REMOVED 
+D.per.Pop.obs <- race_observed_D_recent.nominal.REMOVED / Pr.pop #as.vector(t(race_obs_I_recent))/Pr.pop
 names(D.per.Pop.obs) <- names(race_model_D)
 
 RR.D.per.Pop.obs <- RR.calc(D.per.Pop.obs, "White") 
@@ -2396,8 +2449,8 @@ RR.vec.DgivenI.model
 
 ##################################
 ### OBS
-race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED           ### SNF REMOVED 
-Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal / race_obs_I_recent))
+#race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED           ### SNF REMOVED 
+Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal.REMOVED / race_obs_I_recent.nominal.REMOVED))
 names(Pr.DgivenI.obs) <- names(race_model_D)
 RR.vec.DgivenI.obs <- RR.calc(Pr.DgivenI.obs, "White") 
 RR.vec.DgivenI.obs
@@ -2409,7 +2462,7 @@ RR.vec.DgivenI.obs
 ##################################################################
 ##################################################################
 
-ymax.bars <- 5.5
+ymax.bars <- 4 #5.5
 breaks = seq(0, ymax.bars, by = 0.5)
 
 ##################################################################
@@ -2522,126 +2575,11 @@ RR.D.per.Pop.barchart.REMOVED + RR.DgivenI.barchart.REMOVED + plot_layout(guides
 
 A different story emerges when we **remove from the observed numbers of illnesses and deaths the estimated numbers of counts** originating from outbreaks occurring in nursing homes. *Note that this serves as an illustration because exact numbers of illnesses and deaths by race are not available; for more details on how these cases are removed, see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).*
 
-Because the majority of nursing home residents are white, once we remove the estimated counts from each race/ethnicity group from the overall numbers for deaths and illnesses, the relative share of deaths in the white population is greatly decreased and all other shares are proportionally increased. The result is a picture of the risk of death relative to whites which is significantly higher for all other races, both for overall risk of death and the risk of death conditioned upon illness. These large differences in risk are apparent even after conditioning by illnesses, effectively conditioning out the component of the risk accounted for by differences in exposure and spread dynamics. **In other words, after removing (an estimated number of) illnesses and deaths from nursing home residents from the data, all race/ethnicity groups are at significantly increased risk of death upon contracting the COVID-19 virus in comparison with whites. Most importantly, this significant increase in risk is not explainable by the risk factors for COVID-19 that are factored into our model: namely age, comorbidities, and health behaviors.**
+Because the majority of nursing home residents are white, once we remove the estimated counts from each race/ethnicity group from the overall numbers for deaths and illnesses, the relative share of deaths in the white population is decreased and all other shares are proportionally increased. The result is a picture of the risk of death relative to whites which is significantly higher for all other races, both for overall risk of death and the risk of death conditioned upon illness. These large differences in risk are apparent even after conditioning by illnesses, effectively conditioning out the component of the risk accounted for by differences in exposure and spread dynamics. **In other words, after removing (an estimated number of) illnesses and deaths from nursing home residents from the data, all race/ethnicity groups are at significantly increased risk of death upon contracting the COVID-19 virus in comparison with whites. Most importantly, this significant increase in risk is not explainable by the risk factors for COVID-19 that are factored into our model: namely age, comorbidities, and health behaviors.**
 
 
 
-```{r}
-############################################################################################################
-############################################################################################################
-### CFR observed with estimated SNF removed
-############################################################################################################
-############################################################################################################
-
-### I by race with SNF removed
-race_obs_I_recent.REMOVED
-
-### D by race with SNF removed
-race_observed_D_recent.nominal.REMOVED       
-                                             
-### Current counts with SNF removed
-I_current <- last(cum_counts_NH_update$Idetectcum)
-D_current <- last(cum_counts_NH_update$D)
-
-###
-
-race_obs_I_recent.REMOVED.frac <- apply(race_obs_I_recent, 2, function(x) round(x/sum(x),4))
-race_obs_I_est.final <- round(I_current * race_obs_I_recent.REMOVED.frac)
-
-race_obs_D_recent.REMOVED.frac <- apply(as.data.frame(race_observed_D_recent.nominal.REMOVED), 2, function(x) round(x/sum(x),4))
-race_obs_D_est.final <- round(D_current * race_obs_D_recent.REMOVED.frac)
-
-### CFR observed with estimated SNF removed
-CFR_obs_with_SNF_removed <- round(race_obs_D_est.final / race_obs_I_est.final , 4)
-
-```
-
-```{r}
-
-############################################################################################################
-############################################################################################################
-### CFR model with estimated SNF removed
-############################################################################################################
-############################################################################################################
-
-# summary.table <- function(ABC.out.mat, par.vec.length, iter, time.steps, init.date.data="2020-03-01") {
-# 
-#   library(data.table)
-#   
-#   D.percent.races <- as.data.frame(race_model_D)
-# 
-#   D.obs.white.percent <- race_model_D$White
-# 
-#   ## MODEL OUTPUT TO PLOT
-#   TEST.out <- correlated.param.SIM(ABC.out.mat[1:par.vec.length,],iter=iter,time.steps=time.steps, startObservedData = 0, scenario=4, intervention_date="2020-03-12",sd.redux=NULL)
-# 
-#   traj <- dplyr::mutate(TEST.out, CFRobs=(D/Idetectcum), CFRactual=(D/(Itotcum)), CFRobs.white <-  )
-#   traj <-  dplyr::select(traj,c(1:4,CFRobs,CFRactual))
-# 
-#   ## TO SAVE MEMORY
-#   rm(TEST.out)
-# 
-#   print("Starting CI calc")
-# 
-#   ### MELTING AND APPLYING SUMMARY STAT FUNCTIONS
-#   df.traj <- reshape2::melt(traj, measure.vars = c(5:ncol(traj)), variable.name = "state.name")
-# 
-#   library(data.table)
-#   df.traj_dt <- as.data.table(df.traj)
-# 
-#   traj.CI <- df.traj_dt[, list(
-#     N=.N,
-#     median = quantile(value, c(.5), na.rm=TRUE),
-#     low_95 = quantile(value, c(.025), na.rm=TRUE),
-#     #low_50 = quantile(value,.25, na.rm=TRUE),
-#     #up_50 = quantile(value,.75, na.rm=TRUE),
-#     up_95 = quantile(value, c(.975), na.rm=TRUE)),
-#     by = c("date", "state.name")]
-#   traj.CI <- as.data.frame(traj.CI)
-# 
-#   ## TO ALIGN DATES: MODEL
-#   init.date = init.date.data #"2020-01-03"
-#   init.date <- as.Date(init.date) #as.Date(lubridate::ydm(init.date))
-#   traj.CI[["date"]] <- traj.CI[["date"]] + init.date
-# 
-#   ## GET TODAY'S DATE
-#   CFR.today<- traj.CI %>% filter(date==Sys.Date()) %>% select(-c(date,N)) %>% mutate_if(is.numeric, round, digits=4)
-#   #rownames(CFR.today) <- c("Case Fatality Rate: Observed", "Case Fatality Rate: True, Estimated")
-#   rownames(CFR.today) <- c("Case Fatality Rate", "Infection Fatality Rate")
-#   CFR.today <- select(CFR.today, -c(1))
-# 
-#   # GET QUANTILES FOR VARIABLE
-# 
-#   posterior.CI <- function(posterior.var){
-#     median = quantile(posterior.var, c(.5), na.rm=TRUE)
-#     low_95 = quantile(posterior.var, c(.025), na.rm=TRUE)
-#     #mean = mean(posterior.var)
-#     up_95 = quantile(posterior.var, c(.975), na.rm=TRUE)
-#     posterior.CI <- as.data.frame(cbind(low_95,median,up_95))
-#     return(posterior.CI)
-#   }
-# 
-#   R0.posterior.CI <- round(posterior.CI(ABC_out$param[,1]),digits=2)
-#   r.posterior.CI <- posterior.CI(ABC_out$param[,2])
-#   R0redux.posterior.CI <- posterior.CI(ABC_out$param[,4])
-#   Alpha.posterior.CI <- posterior.CI(ABC_out$param[,6])
-#   Kappa.posterior.CI <- posterior.CI(ABC_out$param[,7])
-#   Delta.posterior.CI <- posterior.CI(ABC_out$param[,5])
-#   #Pr.D.given.I.CI <- posterior.CI(ABC_out$param[,6]*ABC_out$param[,7]*ABC_out$param[,5])
-# 
-#   #posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI,Pr.D.given.I.CI) %>% mutate_if(is.numeric, round, digits=4)
-#   posterior.vars <- rbind(r.posterior.CI, R0.posterior.CI, R0redux.posterior.CI,Alpha.posterior.CI,Kappa.posterior.CI,Delta.posterior.CI) %>% mutate_if(is.numeric, round, digits=4)
-#   rownames(posterior.vars) <- c("r, fraction obs. illnesses", "R0", "R0 fraction reduction", "Pr(Hospital|Illness)", "Pr(ICU|Hospital)", "Pr(Death|ICU)")
-# 
-#   all.posterior.vars <- rbind(CFR.today, posterior.vars)
-#   colnames(all.posterior.vars) <- c("Median", "Lower 95% CI", "Upper 95% CI")
-# 
-#   return(all.posterior.vars)
-# 
-# }
-
-#summary_table <- summary.table(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, init.date.data="2020-03-01")
 
 
-```
+
 

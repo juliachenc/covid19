@@ -160,9 +160,13 @@ for (idx in 1:nrow(Pop.prevalence)) {
 
 }
 
-### For displaying the population prevalence by SPA
+### For displaying the population prevalence by SPA and LA County
+### NOTE: THIS TABLE profile.cnt.SPAs IS WHAT IS USED IN THE data.prev TABLE (it is read in as "data" and merged with other tables)
 colnames(profile.cnt.SPAs) = SPA.order
-profile.cnt.SPAs<-round(profile.cnt.SPAs,digits=3)
+profile.cnt.SPAs<-round(profile.cnt.SPAs,digits=4)
+
+
+
 profile.cnt.SPAs<-cbind(profile.cnt.SPAs,profiles)
 kable(profile.cnt.SPAs) %>%
   kable_styling(bootstrap_options = "striped", full_width = F)
