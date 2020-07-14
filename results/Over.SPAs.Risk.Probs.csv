@@ -1,10 +1,10 @@
 "","Pr(Hospital|Illness)","Pr(ICU|Hosptial)","Pr(Death|ICU)"
-"Antelope Valley",0.201,0.288,0.14
-"San Fernando",0.188,0.282,0.14
-"San Gabriel",0.187,0.277,0.134
-"Metro",0.196,0.282,0.133
-"West",0.181,0.275,0.133
-"South",0.192,0.273,0.127
-"East",0.184,0.274,0.131
-"South Bay",0.2,0.285,0.14
-"LA County",0.187,0.28,0.137
+"Antelope Valley",0.198,0.288,0.138
+"San Fernando",0.189,0.281,0.138
+"San Gabriel",0.19,0.278,0.137
+"Metro",0.193,0.281,0.134
+"West",0.183,0.275,0.132
+"South",0.191,0.275,0.129
+"East",0.177,0.272,0.132
+"South Bay",0.192,0.282,0.138
+"LA County",0.183,0.276,0.131

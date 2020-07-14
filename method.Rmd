@@ -482,8 +482,8 @@ Beta_t<- c(
   (start_time+intervention_date_numeric),       #4
   (start_time+intervention_date_numeric+15),
   (start_time+date_to_start_easing),
-  (start_time+todays_date_numeric +20), #-5),
-  (start_time+intervention_date_numeric+150))         #5
+  (start_time+todays_date_numeric -5), #-5),
+  (start_time+todays_date_numeric+5))         #5
 
 Beta_y<- c(
   Br, #1
@@ -492,8 +492,8 @@ Beta_y<- c(
   Br,
   (Br*R0_redux), #5
   (Br*R0_redux), #6  Date to start easing
-  (Br*R0_redux*1.5), #7  Ease until today's date
-  (Br*R0_redux*1.5)) #8  Stay at this rate going forward
+  (Br*R0_redux*.5), #7  Ease until today's date
+  (Br*R0_redux*.5)) #8  Stay at this rate going forward
 
 
 ## Plot of R0(t)
@@ -504,7 +504,7 @@ R0_t_plot <- data.frame(
 p <- ggplot(R0_t_plot, aes(x=day, y=R0_t)) +
   geom_line() + 
   xlab("Date") + ylab("R0(t)") + ylim(0,6) +
-  scale_x_date(date_breaks = "2 weeks",limit=c(as.Date("2020-03-01"),Sys.Date())) + ggtitle("R0(t), with model-estimated reduction trend")
+  scale_x_date(date_breaks = "2 weeks",limit=c(as.Date("2020-03-01"),Sys.Date()+10)) + ggtitle("R0(t), with model-estimated reduction trend")
 p
 ```
 

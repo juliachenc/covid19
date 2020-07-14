@@ -318,7 +318,7 @@ start_time <- 45
 R0_redux <- .205 #.2  #Br(t)=Br*R0_redux
 Delta <- .35 #.75
 Alpha <- .15#.2
-Kappa <- .7 #.25
+Kappa <- .85 #.25
 p_V <- .85#.7
 intervention_date="2020-03-12"
 
@@ -339,7 +339,7 @@ ABC.out.mat[8] <- p_V
 ###################################################################################################
 ## PRIOR DISTRIBUTIONS
 ## A list joining the prior for each parameter
-prior.R0 <- c("normal",R0,.025) 
+prior.R0 <- c("normal",R0,.03) 
 #prior.r <- c("unif", .005, .035) # c("normal",r,0.01)
 prior.st <- c("unif",40,50) 
 prior.R0.redux <- c("unif", R0_redux - 0.2, R0_redux + 0.2)  #c("normal",R0_redux, 0.05) 
@@ -364,7 +364,7 @@ tolerance=c(15,4) # defining the sequence of tolerance levels
 
 # Specifiying the prior for r to be close to sero study
 #prior.r <- c("unif",0.00013,0.0125) #c("unif", .02, .036)  #c("unif", .017, .052) #  #c("unif", .028, .05) 
-prior.r <- c("unif",0.02, 0.05)
+prior.r <- c("unif",0.025, 0.05)
 #prior.r <- c("unif",0.0002,0.0125)
 prior.par <- list(prior.R0, prior.r,prior.st,prior.R0.redux,prior.Delta,prior.Alpha,prior.Kappa,prior.p_V)
 
@@ -595,15 +595,16 @@ yesR.plot.all.variables.current.scenario.150days
 
 ```
 
-### Longer time horizon
-
-**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
-
-**The dashed line represents healthcare resource capacity limits.**
 
 ```{r all-300days, echo=FALSE}
 
-yesR.plot.all.variables.current.scenario.300days
+### Longer time horizon
+
+#**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see #[Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+
+#**The dashed line represents healthcare resource capacity limits.**
+
+#yesR.plot.all.variables.current.scenario.300days
 
 ```
 
@@ -1915,7 +1916,7 @@ colnames(race_observed_D) <- colnames.race
 race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
 race_model_D <- relative.shares.races[,"prevalence.D"]
 
-D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-19","2020-06-24")
+D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-19","2020-06-24","2020-07-01","2020-07-08")
 race_observed_D_select <- race_observed_D %>% select(D.dates.select)
 race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
 
@@ -2339,7 +2340,7 @@ RR.vec.DgivenI.obs
 
 labels.races.fit.bar <-c("Latino","White","Black","American \n Indian","Asian","Hawaiian","Other")
 
-ymax.bars <- 4 #3
+ymax.bars <- 6 #3
 breaks = seq(0, ymax.bars, by = 0.5)
 
 ##################################################################
