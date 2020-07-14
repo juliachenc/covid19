@@ -339,7 +339,7 @@ ABC.out.mat[8] <- p_V
 ###################################################################################################
 ## PRIOR DISTRIBUTIONS
 ## A list joining the prior for each parameter
-prior.R0 <- c("normal",R0,.03) 
+prior.R0 <- c("normal",R0,.025) 
 #prior.r <- c("unif", .005, .035) # c("normal",r,0.01)
 prior.st <- c("unif",40,50) 
 prior.R0.redux <- c("unif", R0_redux - 0.2, R0_redux + 0.2)  #c("normal",R0_redux, 0.05) 
@@ -381,7 +381,7 @@ model.R <- model.1sim.stats.yes.R
 
 ### FOR QUICK TESTS
 ABC_Marjoram<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
-                       summary_stat_target=summarydata, n_calibration=10000,
+                       summary_stat_target=summarydata, n_calibration=100000,
                        tolerance_quantile=0.1,verbose=TRUE,progress=TRUE, n_rec=1000) #, dist_weights=dist_weights )
 
 ABC_out <- ABC_Marjoram
@@ -2463,7 +2463,7 @@ RR.vec.DgivenI.obs
 ##################################################################
 ##################################################################
 
-ymax.bars <- 4 #5.5
+ymax.bars <- 6 #5.5
 breaks = seq(0, ymax.bars, by = 0.5)
 
 ##################################################################
