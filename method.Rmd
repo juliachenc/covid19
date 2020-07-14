@@ -492,8 +492,8 @@ Beta_y<- c(
   Br,
   (Br*R0_redux), #5
   (Br*R0_redux), #6  Date to start easing
-  (Br*R0_redux*.5), #7  Ease until today's date
-  (Br*R0_redux*.5)) #8  Stay at this rate going forward
+  (Br*.5), #(Br*R0_redux*.5), #7  Ease until today's date
+  (Br*.5)) #(Br*R0_redux*.5)) #8  Stay at this rate going forward
 
 
 ## Plot of R0(t)
