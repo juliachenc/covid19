@@ -68,11 +68,11 @@ R0_redux_eval = R0_redux_scenarios
 scenario = 2
 intervention_date = Sys.Date()
 ABC.out.mat <- ABC.out.mat.yesR
-number.pars.to.use = 400
-iter = 30
+# number.pars.to.use = 400
+# iter = 30
 
-# number.pars.to.use = 100
-# iter = 10
+number.pars.to.use = 100
+iter = 10
 
 time.steps=600
 
