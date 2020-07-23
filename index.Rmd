@@ -316,8 +316,8 @@ R0 <- 4.1 #3.25
 r <- 0.035 #0.05
 start_time <- 45
 R0_redux <- .205 #.2  #Br(t)=Br*R0_redux
-Delta <- .35 #.75
-Alpha <- .15#.2
+Delta <- .5 #.75
+Alpha <- .25#.2
 Kappa <- .85 #.25
 p_V <- .85#.7
 intervention_date="2020-03-12"
@@ -343,10 +343,10 @@ prior.R0 <- c("normal",R0,.025)
 #prior.r <- c("unif", .005, .035) # c("normal",r,0.01)
 prior.st <- c("unif",40,50) 
 prior.R0.redux <- c("unif", R0_redux - 0.2, R0_redux + 0.2)  #c("normal",R0_redux, 0.05) 
-prior.Delta <- c("normal",0.55,0.03) 
+prior.Delta <- c("normal",0.55,0.01) 
 prior.Alpha <- c("normal",Alpha, 0.03) 
 prior.Kappa <- c("normal",Kappa, 0.03)
-prior.p_V <- c("unif", p_V-0.1, p_V+0.1 ) #c("normal",p_V, 0.08)
+prior.p_V <- c("unif", p_V-0.01, p_V+0.01 ) #c("normal",p_V, 0.08)
 
 #prior.par <- list(prior.R0, prior.r,prior.st,prior.R0.redux,prior.Delta,prior.Alpha,prior.Kappa,prior.p_V)
 intervention_date="2020-03-12"
@@ -1916,7 +1916,7 @@ colnames(race_observed_D) <- colnames.race
 race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
 race_model_D <- relative.shares.races[,"prevalence.D"]
 
-D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-19","2020-06-24","2020-07-01","2020-07-08")
+D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-19","2020-06-24","2020-07-01","2020-07-08","2020-07-15","2020-07-20")
 race_observed_D_select <- race_observed_D %>% select(D.dates.select)
 race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
 
@@ -2340,7 +2340,7 @@ RR.vec.DgivenI.obs
 
 labels.races.fit.bar <-c("Latino","White","Black","American \n Indian","Asian","Hawaiian","Other")
 
-ymax.bars <- 6 #3
+ymax.bars <- 3 #3
 breaks = seq(0, ymax.bars, by = 0.5)
 
 ##################################################################
@@ -2463,7 +2463,7 @@ RR.vec.DgivenI.obs
 ##################################################################
 ##################################################################
 
-ymax.bars <- 6 #5.5
+ymax.bars <- 8 #5.5
 breaks = seq(0, ymax.bars, by = 0.5)
 
 ##################################################################
