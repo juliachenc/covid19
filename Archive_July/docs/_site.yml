@@ -1,0 +1,21 @@
+name: "USC Predict COVID19"
+output_dir: "docs"
+exclude: ["code", "data", "results", "n_simul_tot_step1", "output_mcmc"]
+navbar:
+  title: '<div><img src="2-Line_KeckSOMofUSC_GrayOnBlack.jpg" height = 50px></img>USC Predict COVID19</div>'
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Scenarios"
+      href: scenarios.html
+    - text: "Risk Tables"
+      href: risk_table.html
+    - text: "Findings"
+      href: findings.html
+    - text: "Methods"
+      href: method.html
+    - text: "About"
+      href: about.html
+output:
+  html_document:
+    css: styles.css
