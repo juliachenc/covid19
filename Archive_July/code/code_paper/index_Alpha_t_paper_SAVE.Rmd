@@ -1,0 +1,796 @@
+---
+title: "USC Predict COVID Project"
+subtitle: "Predictive Epidemic Model for COVID-19 in Los Angeles County"
+author: "University of Southern California, Department of Preventive Medicine"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# GENERAL IDEA: Use markdown as the wrapper code, that can also produce the plots we want to see.
+# Question: 
+- How to do inputs and outputs? Do I want to have all plots coming at the end? Or within their section? I think within their section makes sense.
+- Inputs: Clean data for epidemic model using a function. Need to write that function, save in a supplemental file, and then read in to apply it to the data. 
+- Functions to run vs. processing scripts. Those to be done separately. 
+- Need to think through how I want to do the data processing.
+
+# OUTLINE
+## Read in and clean data
+
+## Epidemic model
+### Fit epidemic model
+### Epidemic model parameter estimates (output -- save a output file and also have it render here in markdown)
+### OUTPUT: Epidemic model plot with all variables (output)
+### OUTPUT: Plot codes for R(t), alpha kappa delta, Infections, Hospitalizations
+
+## Risk model
+### INPUTS: Read in JAM inputs (RR), prevalence in LA (since it's just a vector can manually input)
+### OUTPUT: Profiles as a table (output)
+### Read in profiles
+### Estimate frequency of profiles
+### Integrated model
+### OUTPUTS: probability tables, RR tables 
+
+## Scenarios
+
+# Initialize
+
+## Install packages
+
+``` {r setup, include=FALSE}
+
+#rmarkdown::render_site()
+
+### Install necessary packages and get started
+
+library(reshape2)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(ggrepel)
+library(bindata)
+library(odin)
+library(fitR)
+library(knitr)
+library(EasyABC)
+library(gridExtra)
+library(odin)
+library(lubridate)
+library(EasyABC)
+library(gridExtra)
+library(kableExtra)
+library(plyr)
+library(dplyr)
+library(data.table)
+library(scales)
+library(EasyABC)
+library(patchwork)
+
+library(tidyr)
+library(readr)
+library(purrr)
+library(tibble)
+library(stringr)
+library(forcats)
+library(network)
+library(tidygraph)
+library(ggraph)
+library(visNetwork)
+library(networkD3)
+library(ggmosaic)
+library(formattable)
+library(DT)
+library(reshape)
+library(here)
+library(fs)
+
+library(MASS)
+library(plotly)
+
+lang_output <- function(x, lang) {
+  cat(c(sprintf("```%s", lang), x, "```"), sep = "\n")
+}
+r_output <- function(x) lang_output(x, "r")
+
+knitr::opts_chunk$set(
+  fig.width = 9.5,
+  fig.height = 8,
+  echo=FALSE,
+  warning=FALSE,
+  cache=FALSE,
+  message=FALSE)
+
+
+code.dir=here("code/")
+data.dir=here("data/")
+result.dir = here("results/")
+fig.dir = here("figs/")
+output.dir = here("output/")
+code.paper.dir=here("code/code_paper")
+
+```
+
+<br>
+
+## Read in data
+
+## SCRIPTS TO CLEAN THE DATA -- clean all epidemic data (SNF and case counts)
+
+```{r read-in-current-COVID-data, include=FALSE}
+
+###################################################################################################
+## COVID INPUT DATA
+# obs_cum_new_counts: cumulative counts for "Htotcum","D","Vcum","Idetectcum","H_new","D_new"
+# no_obs: number of observation days
+## Read and process the data
+
+cum_file <- sort(dir_ls(data.dir, regexp = "cum_counts_"), decreasing = TRUE)[1] #paste0(data.dir,"cum_counts_051120.csv")
+
+obs_cum_new_counts = t(read.csv(cum_file, sep=",",stringsAsFactors = FALSE))
+#import.date <- as.Date("2020-05-06")
+
+colnames<-c("Htotcum","D","Vcum","Idetectcum","H_new","D_new","I_new","V_new","H_capacity","Q_capacity", "V_free", "Q_free")
+
+nvars <- ncol(obs_cum_new_counts)
+colnames(obs_cum_new_counts) <- colnames
+obs_cum_new_counts <- as.data.frame(obs_cum_new_counts)
+obs_cum_new_counts <- obs_cum_new_counts[-1,]
+obs_cum_new_counts[1:nvars] <- sapply(obs_cum_new_counts[1:nvars],as.character)
+obs_cum_new_counts[1:nvars] <- sapply(obs_cum_new_counts[1:nvars],as.numeric)
+no_obs <- nrow(obs_cum_new_counts)
+
+## Change date to number
+step <- c(1:no_obs)
+obs.shift <- cbind(step,obs_cum_new_counts)
+data = obs.shift
+
+data.in.tmp.orig <- obs_cum_new_counts %>% dplyr::select(-c(H_capacity,Q_capacity,V_free,Q_free))
+
+```
+
+
+## Estimate and remove number of infected, hospitalizated, ventilator supported, and deceased patients from SNF
+```{r SNF-data-frac-calc, include=FALSE}
+
+## Read in SNF counts (available from April 21 - May 20 2020)
+snf_file <- sort(dir_ls(data.dir, regexp = "SNF_"), decreasing = TRUE)[1] 
+
+NH_counts = t(read.csv(snf_file, sep=",",stringsAsFactors = FALSE))
+NH_counts <- as.data.frame(NH_counts)
+NH_counts <- NH_counts[-1,]
+colnames(NH_counts) <-c("I_staff_cum","I_resident_cum","D_resident_cum")
+nvars <- ncol(NH_counts)
+NH_counts[1:nvars] <- sapply(NH_counts[1:nvars],as.character)
+NH_counts[1:nvars] <- sapply(NH_counts[1:nvars],as.numeric)
+no_obs_NH <- nrow(NH_counts)
+step <- c(1:no_obs_NH)
+obs.shift <- cbind(step,NH_counts)
+data_NH = obs.shift
+
+
+
+## Estimate and remove
+clean_SNF_remove <- path(code.dir, "clean_SNF_remove.R")
+source(clean_SNF_remove)
+
+data.in.tmp <- cum_counts_NH_update %>% select(-c(V_new))
+no_obs <- nrow(data.in.tmp)
+
+```
+
+
+# EPIDEMIC MODEL
+
+## Read in supporting functions 
+
+```{r read-in-model-supporting-functions, include=FALSE}
+
+###################################################################################################
+## LOAD EPIDEMIC MODEL
+
+path_seihqdr_model <- path(code.paper.dir, "stochastic_SEIAHQDR_Alpha_t_paper.R")
+#r_output(readLines(path_seihqdr_model))
+
+## Compile the model
+seihqdr_generator <- odin::odin(path_seihqdr_model)
+
+###################################################################################################
+## LOAD SUPPORTING FUNCTIONS
+
+supporting_functions <- path(code.paper.dir, "supporting_fns_Alpha_t_paper.R")
+#r_output(readLines(supporting_functions))
+source(supporting_functions)
+
+# FUNCTIONS INCLUDED:
+
+## FOR ABC
+### sum.stats: A function specifying the data to COVID-19 data to fit the model to
+### model.1sim.stats: A function implementing the model to be simulated
+
+## FUNCTIONS FOR PLOTTING
+### correlated.param: SPECIFYING EPIDEMIC MODEL TO BE SIMULATED AND SCENARIOS
+### model.output.to.plot: ETTING MODEL OUTPUT + SUMMARY STATISTICS FUNCTION
+
+## SUMMARY TABLE GENERATING FUNCTIONS
+
+## PLOTTING FUNCTIONS
+### plot.model.data.all: PLOTTING ALL FACETED FUNCTION
+
+```
+
+
+
+```{r}
+
+# prior.st <- c("unif",40,50)
+# 
+# R0 <- 3.9 #3.25
+# R0_redux1 <- .205 #.2  #Br(t)=Br*R0_redux
+# R0_redux2 <- .5
+# 
+# prior.R0 <- c("normal",R0,.2)
+# prior.R0.redux1 <- c("unif", R0_redux1 - 0.1, R0_redux1 + 0.1)  #c("normal",R0_redux, 0.05)
+# prior.R0.redux2 <- c("unif", R0_redux2 - 0.1, R0_redux2 + 0.1)
+# prior.r <- c("unif",0.052, 0.058)
+# 
+# p_V <- .2#.7
+# prior.p_V <- c("unif", p_V-0.01, p_V+0.01 ) #c("normal",p_V, 0.08)
+# 
+# Alpha1 <- .21#.2
+# Kappa1 <- 0.65 #.65 
+# Delta1 <- .47 
+# 
+# Alpha2 <- .09 #.05
+# Kappa2 <- .3 #.25
+# Delta2 <- .43 #.75
+# 
+# prior.Delta1 <- c("normal",Delta1, .001) #0.01)
+# prior.Alpha1 <- c("normal",Alpha1, .001) #0.003)
+# prior.Kappa1 <- c("normal",Kappa1, .001) # 0.03)
+# 
+# prior.Delta2 <- c("normal",Delta2, 0.001)
+# prior.Alpha2 <- c("normal",Alpha2, 0.001)
+# prior.Kappa2 <- c("normal",Kappa2, 0.001)
+# 
+# prior.Delta1 <- c("normal",Delta1, .002) #0.01)
+# prior.Alpha1 <- c("normal",Alpha1, .002) #0.003)
+# prior.Kappa1 <- c("normal",Kappa1, .002) # 0.03)
+# 
+# prior.Delta2 <- c("normal",Delta2, .002)
+# prior.Alpha2 <- c("normal",Alpha2, .001)
+# prior.Kappa2 <- c("normal",Kappa2, .002)
+# 
+# prior.par <- list(
+#   prior.R0, 
+#   prior.r,
+#   prior.st,
+#   prior.R0.redux1,
+#   prior.Delta1,
+#   prior.Alpha1,
+#   prior.Kappa1,
+#   prior.p_V,
+#   prior.R0.redux2,
+#   prior.Delta2,
+#   prior.Alpha2,
+#   prior.Kappa2)
+
+
+prior.st <- c("unif",40,50)
+
+R0 <- 3.8 #3.25
+prior.R0 <- c("normal",R0,0.0002)
+
+R0_redux1 <- .205 
+prior.R0.redux1 <- c("unif", R0_redux1 - 0.1, R0_redux1 + 0.1)  
+
+R0_redux2 <- .5
+prior.R0.redux2 <- c("unif", R0_redux2 - 0.1, R0_redux2 + 0.1)
+
+prior.r <- c("unif",0.052, 0.058)
+#prior.r <- c("unif",0.03, 0.06) #c("unif",0.052, 0.058)
+
+Alpha1 <- .21
+Kappa1 <- 0.65 
+Delta1 <- .47 
+prior.Delta1 <- c("normal",Delta1, .002) 
+prior.Alpha1 <- c("normal",Alpha1, .002) 
+prior.Kappa1 <- c("normal",Kappa1, .002) 
+
+Alpha2 <- .09 
+Kappa2 <- .3 
+Delta2 <- .43
+prior.Delta2 <- c("normal",Delta2, .002)
+prior.Alpha2 <- c("normal",Alpha2, .001)
+prior.Kappa2 <- c("normal",Kappa2, .002)
+
+p_V <- .2 
+prior.p_V <- c("unif", p_V-0.01, p_V+0.01 ) #c("normal",p_V, 0.08)
+
+
+## PRIOR DISTRIBUTION LIST
+## A list joining the prior for each parameter
+prior.par <- list(
+  prior.R0, 
+  prior.r,
+  prior.st,
+  prior.R0.redux1,
+  prior.Delta1,
+  prior.Alpha1,
+  prior.Kappa1,
+  prior.p_V,
+  prior.R0.redux2,
+  prior.Delta2,
+  prior.Alpha2,
+  prior.Kappa2)
+
+## Prior time distributions are read in directly in the model fitting and model simulation code
+#intervention_date="2020-03-12"
+
+
+###############
+###############
+
+prior.st <- c("unif",40,50)
+
+R0 <- 3.9 #3.25
+prior.R0 <- c("normal",R0,0.2)
+
+R0_redux1 <- .205 
+prior.R0.redux1 <- c("unif", R0_redux1 - 0.1, R0_redux1 + 0.1)  
+
+R0_redux2 <- .5
+prior.R0.redux2 <- c("unif", R0_redux2 - 0.1, R0_redux2 + 0.1)
+
+prior.r <- c("unif",0.052, 0.058)
+#prior.r <- c("unif",0.03, 0.06) #c("unif",0.052, 0.058)
+
+Alpha1 <- .21
+Kappa1 <- 0.65 
+Delta1 <- .47 
+prior.Delta1 <- c("normal",Delta1, .002) 
+prior.Alpha1 <- c("normal",Alpha1, .002) 
+prior.Kappa1 <- c("normal",Kappa1, .002) 
+
+Alpha2 <- .09 
+Kappa2 <- .3 
+Delta2 <- .43
+prior.Delta2 <- c("normal",Delta2, .002)
+prior.Alpha2 <- c("normal",Alpha2, .001)
+prior.Kappa2 <- c("normal",Kappa2, .002)
+
+p_V <- .2 
+prior.p_V <- c("unif", p_V-0.01, p_V+0.01 ) #c("normal",p_V, 0.08)
+
+
+## PRIOR DISTRIBUTION LIST
+## A list joining the prior for each parameter
+prior.par <- list(
+  prior.R0, 
+  prior.r,
+  prior.st,
+  prior.R0.redux1,
+  prior.Delta1,
+  prior.Alpha1,
+  prior.Kappa1,
+  prior.p_V,
+  prior.R0.redux2,
+  prior.Delta2,
+  prior.Alpha2,
+  prior.Kappa2)
+
+## Prior time distributions are read in directly in the model fitting and model simulation code
+#intervention_date="2020-03-12"
+
+
+```
+
+
+
+
+
+## Prior parameter distributions
+
+```{r setup-ABC}
+
+prior.st <- c("unif",44,46)
+
+R0 <- 3.7
+prior.R0 <- c("normal",R0,.0001)
+
+R0_redux1 <- .25
+R0_redux2 <- .318 #.318
+
+prior.R0.redux1 <- c("unif", R0_redux1 - 0.005, R0_redux1 + 0.005)
+prior.R0.redux2 <- c("unif", R0_redux2 - 0.01, R0_redux2 + 0.01) 
+
+prior.r <- c("unif",0.078, 0.08) # 0.079
+#prior.r2 <- c("unif",0.316, 0.318) #0.318
+
+
+
+Alpha1 <- .2#.2
+Kappa1 <- 0.6 #.65 
+Delta1 <- .53 
+
+Alpha2 <- .0667 #.05
+Kappa2 <- .53 #.25
+Delta2 <- .516 #.75
+
+prior.Delta1 <- c("normal",Delta1, .001) #0.01)
+prior.Alpha1 <- c("normal",Alpha1, .001) #0.003)
+prior.Kappa1 <- c("normal",Kappa1, .001) # 0.03)
+
+prior.Delta2 <- c("normal",Delta2, 0.001)
+prior.Alpha2 <- c("normal",Alpha2, 0.001)
+prior.Kappa2 <- c("normal",Kappa2, 0.001)
+
+prior.Delta1 <- c("normal",Delta1, .001) #0.01)
+prior.Alpha1 <- c("normal",Alpha1, .001) #0.003)
+prior.Kappa1 <- c("normal",Kappa1, .001) # 0.03)
+
+prior.Delta2 <- c("normal",Delta2, .001)
+prior.Alpha2 <- c("normal",Alpha2, .001)
+prior.Kappa2 <- c("normal",Kappa2, .001)
+
+p_V <- .35#.7
+prior.p_V <- c("unif", p_V-0.01, p_V+0.01 ) #c("normal",p_V, 0.08)
+
+
+## PRIOR DISTRIBUTION LIST
+## A list joining the prior for each parameter
+prior.par <- list(
+  prior.R0, 
+  prior.r,
+  prior.st,
+  prior.R0.redux1,
+  prior.Delta1,
+  prior.Alpha1,
+  prior.Kappa1,
+  prior.p_V,
+  prior.R0.redux2,
+  prior.Delta2,
+  prior.Alpha2,
+  prior.Kappa2)
+
+## Prior time distributions are read in directly in the model fitting and model simulation code
+#intervention_date="2020-03-12"
+
+
+```
+
+
+
+## Parameter fitting
+
+```{r}
+
+supporting_functions <- path(code.paper.dir, "supporting_fns_Alpha_t_paper.R")
+#r_output(readLines(supporting_functions))
+source(supporting_functions)
+
+## SUMMARY STATISTICS COMPUTED ON DATA
+#summarydata <- sum.stats.SIMTEST(data.in.tmp,include.R = FALSE)
+
+summarydata <- sum.stats.SIMTEST(cum_counts_NH_update,include.R = FALSE)
+
+
+summarydata.no.R <- summarydata
+model.R <- model.1sim.stats.no.R  # From supporting_functions
+
+ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
+                       summary_stat_target=summarydata, n_calibration=100,
+                       tolerance_quantile=0.1,verbose=TRUE,progress=TRUE, n_rec=100)
+
+### FOR QUICK TESTS
+# ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
+#                        summary_stat_target=summarydata, n_calibration=10000,
+#                        tolerance_quantile=0.1,verbose=TRUE,progress=TRUE, n_rec=1000) #, dist_weights=dist_weights )
+
+ABC.par.out <- as.data.frame(ABC_out$param)
+ABC.out.mat <- ABC_out$param
+
+## STATS ON POSTERIOR PARAMETER DISTRIBUTIONS
+ABC.mean <- ABC.par.out %>% summarise_if(is.numeric, mean) %>% mutate_if(is.numeric,round,digits=4)
+ABC.sd <- ABC.par.out %>% summarise_if(is.numeric, sd) %>% mutate_if(is.numeric,round,digits=4)
+ABC.par.stats <- as.data.frame(rbind(ABC.mean,ABC.sd))
+colnames(ABC.par.stats)<-c("R0","Prop. cases detected (r)","Start time", "Frac R0 Mar11", "Pr(D|Q)1", "Pr(H|I)1", "Pr(Q|H)1", "Pr(Ventilation|ICU)", "Frac R0 July5", "Pr(D|Q)2", "Pr(H|I)2", "Pr(Q|H)2" )
+rownames(ABC.par.stats)<-c("mean","sd")
+ABC.par.stats
+#ABC.par.stats %>% round(ABC.par.stats,4)
+
+##
+traj.0 <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot)
+
+
+plot.all.variables <- 
+plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 15, time.steps.4plot=time.steps.4.plot, 
+                    vars.to.plot=vars.plus.R)
+plot.all.variables
+
+
+
+```
+
+## Simulate model to calculate CFR/IFR
+
+```{r}
+###################################################################################################
+## GET MODEL OUTPUT: traj.0
+
+ABC.out.mat <- ABC_out$param[1:1000,]
+par.vec.length <- 100
+iter <- 10
+time.steps <- 300
+vars.to.plot <- vars.plus.R
+
+## FUNCTION MODEL.OUTPUT.TO.PLOT.SIM
+## Calculates mean and CI of each estimated parameter & CFR/IFR
+## Uses correlated.param.SIM
+## Reads in Beta, Alpha, Kappa, Delta from file
+traj.0 <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot)
+
+```
+
+
+## Get population-average parameter estimates
+
+```{r}
+###################################################################################################
+## GET MODEL OUTPUT: summary
+
+summary.tables <- summary.table.param.CFR.IFR(traj.CI=traj.0, ABC_out=ABC_out)
+AlphaCFR_table <- summary.tables[[1]]
+R.r.mu_table <- summary.tables[[2]]
+
+```
+
+
+### $R0, r, \mu(t=Mar.12), \mu(t=Jul.5)$
+```{r}
+
+formattable(R.r.mu_table)
+write.csv(R.r.mu_table, file = path(output.dir, "R.r.mu_table.csv"))
+
+```
+
+### Severe illness probabilities, CFR, IFR
+
+```{r}
+
+formattable(AlphaCFR_table)
+write.csv(AlphaCFR_table, file = path(output.dir, "AlphaCFR_table.csv"))
+
+```
+
+
+## Plotting all variables
+
+```{r}
+
+###################################################################################################
+## Plot all variables faceted
+time.steps.4.plot = 160 
+data.in <- data.in.tmp
+vars.to.plot <- vars.plus.R
+
+plot.all.variables <- 
+plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 15, time.steps.4plot=time.steps.4.plot, 
+                    vars.to.plot=vars.plus.R)
+
+```
+
+
+## **Figure 2.** Summarizes the epidemic model fit with COVID-19 data for LAC from March 1 through July 20 2020 for all disease states across multiple views: New cases, representing new daily incidence; the current number in a compartment at a specific date, relevant for understanding current prevalence rates and comparing with healthcare capacity limitations; and cumulative counts until a specific date. Observed data for available compartments with cases attributable to nursing home residents removed, are plotted as black dots. The figure demonstrates that good model fits are achieved in all compartments across time.
+
+```{r, echo=FALSE, message=FALSE}
+
+plot.all.variables
+
+pdf(file = path(output.dir, "plot.all.variables.pdf"), width=10, height =10)
+plot.all.variables
+dev.off()
+
+```
+
+## **Figure 3.**
+
+### **Figure 3a.**
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+```{r printing prior and posterior risk probs}
+
+ABC.par.stats
+
+
+risk.probs.PRIORS <-
+  data.frame(H.risk.all.DATES,Q.risk.all.DATES,D.risk.all.DATES) %>%
+  mutate(H.risk.all.DATES = round(H.risk.all.DATES,3),
+         Q.risk.all.DATES = round(Q.risk.all.DATES,3),
+         D.risk.all.DATES = round(D.risk.all.DATES,3))
+
+rownames(risk.probs.PRIORS) <- colnames(freq.LAC.obs.age)
+names(risk.probs.PRIORS) <- c("Pr(H|I)","Pr(Q|H)","Pr(D|Q)")
+
+formattable(risk.probs.PRIORS)
+
+#risk.probs.POSTERIORS <- matrix(nrow=2,ncol=3)
+risk.probs.POSTERIORS.1 <- ABC.par.stats[1,] %>% select(c("Pr(H|I)1", "Pr(Q|H)1", "Pr(D|Q)1" ))
+risk.probs.POSTERIORS.2 <- as.data.frame(ABC.par.stats[1,] %>% select(c("Pr(H|I)2", "Pr(Q|H)2", "Pr(D|Q)2" )))
+risk.probs.POSTERIORS <- rbind(as.list(risk.probs.POSTERIORS.1),as.list(risk.probs.POSTERIORS.2))
+rownames(risk.probs.POSTERIORS) <- c("Apr.20","Jul.20")
+colnames(risk.probs.POSTERIORS) <- c("Alpha","Kappa","Delta")
+# risk.probs.POSTERIORS <- as.data.frame(risk.probs.POSTERIORS) %>% 
+#   mutate("Alpha" = round("Alpha",3) ,
+#          "Kappa" = round("Kappa",3),
+#          "Delta" = round("Delta",3))
+formattable(as.data.frame(risk.probs.POSTERIORS))
+
+
+```
+
+
+```{r SHIELDING-SCENARIO}
+
+###################################################################################################
+## GET TRAJ.SHIELD
+
+ABC.out.mat <- ABC_out$param[1:1000,]
+#par.vec.length <- 400
+par.vec.length <- 100
+iter <- 10
+time.steps <- 300
+vars.to.plot <- vars.plus.R
+scenario.selection = 3
+
+# Alpha.filter <- Alpha.filter.prior.mean
+# Kappa.filter <- Kappa.filter.prior.mean
+# Delta.filter <- Delta.filter.prior.mean
+
+traj.SHIELD <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot, init.date.data="2020-03-01", all=TRUE, scenario.selection = scenario.selection,intervention_date=intervention_date,sd.redux=NULL)
+
+init.date.data="2020-03-01"
+plot.thru.curr.date = as.numeric(Sys.Date() - as.Date(init.date.data))
+time.steps.4.plot = 160 #175 #plot.thru.curr.date
+data.in <- data.in.tmp
+vars.to.plot <- vars.plus.R
+## Plot all
+
+plot.SHIELD <- 
+plot.model.data.all(traj.CI = traj.SHIELD, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 15, time.steps.4plot=time.steps.4.plot, 
+                    vars.to.plot=vars.plus.R)
+plot.SHIELD
+
+
+
+```
+
+
+
+```{r plot-output}
+
+# pdf(file = path(code.dir, "integrated/figs/4x4_integrated.pdf"), width=10, height =10)
+# yesR.plot.all.variables.current.scenario.current.date
+# dev.off()
+#
+
+
+```
+
+
+
+<br>
+
+
+## Against Data {.tabset}
+
+**Summarizing model fit against COVID-19 data for Los Angeles, for all variables/compartments. Each variable/compartment can be tracked according to three views:**
+
+* **New = new daily incidence**. Unstable but relevant for interpreting immediate trends.
+* **Current = current census in compartment**. Relevant for comparing with healthcare capacity limitations.
+* **Cumulative = running total over time**. Provides understanding of longer term trends.
+
+These figures provide a summarizing view across all model variables. More detailed projections of key variables are provided in the section above.
+
+### Short time horizon
+
+**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+
+**The dashed line represents healthcare resource capacity limits.**
+
+```{r all-150days, echo=FALSE}
+
+yesR.plot.all.variables.current.scenario.current.date
+
+```
+
+
+<br>
+
+## Summary Table
+
+### Posterior parameter estimates for key variables 
+
+Here we provide a summary of key parameters estimated by the SEIR+Risk model in L.A. County (for more details on parameter estimation see [Estimated Parameters](https://uscbiostats.github.io/COVID19/method.html#estimated_parameters)). Model fits are estimated based on counts of the number of infected (observed), hospitalized, ventilated, and deaths, *with counts from outbreaks in nursing homes removed* (for more details on data inputs and removal of nursing home cases see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).  
+
+Median and 95% CI displayed.
+
+Note: 
+
+* **Case Fatality Rate** is the model-estimated number of deaths over the number of *observed* illnesses 
+* **Infection Fatality Rate** is the model-estimated number of deaths over the number of *total illnesses, observed + unobserved*
+* **$Pr(Hospital|Illness)$** is the model-estimated probability of hospitalization given *observed* illnesses
+
+```{r, echo=FALSE}
+
+# kable(summary_table) %>%
+#   kable_styling(bootstrap_options = "striped", full_width = F)
+
+summary_table2 <- as.data.frame(t(summary_table))
+
+formattable(summary_table2,
+            align=rep("c",NCOL(summary_table2)),
+            list(`Case Fatality Rate` = percent,
+                 `Infection Fatality Rate` = percent,
+                 `r, fraction obs. illnesses` = percent,
+                 `R0 fraction reduction` = percent,
+                 `Pr(Hospital|Illness)` = percent,
+                 `Pr(ICU|Hospital)` = percent,
+                 `Pr(Death|ICU)` = percent)
+)
+
+```
+
+
+
+
+# Saved outputs I could want later ... 
+
+```{r}
+
+## Current total number of deaths coming from SNF
+current_D <- last(data.in.tmp.orig$D)
+SNF_removed_D <- last(cum_counts_NH_update$D)
+NH_total_frac_D <- (current_D-SNF_removed_D) / current_D
+NH_total_per <- round(NH_total_frac_D*100,1)
+
+```
+
+
+
+
+
+# APPENDIX FIGURES
+
+## Appendix Figure 1
+Figure 1. The estimated timeseries of the number of infected, hospitalized, mechanical ventilator supported, and deceased from Skilled Nursing Facilities (SNFs) in LAC (in blue), the observed overall counts for LAC in each compartment (in red), and the resulting removed counts from each compartment used in model estimation (in green).
+```{r}
+# p.I + p.H + p.V + p.D + plot_annotation(title = "Skilled Nursing Facility Counts Estimated and Removed", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
+# 
+# pdf(file = path(code.dir, "integrated/figs/use_in_paper/SNF_fig.pdf"), width=15, height =10)
+# p.I + p.H + p.V + p.D #+ plot_annotation(title = "Estimated counts at Skilled Nursing Facilities (SNFs) in LAC", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
+# dev.off()
+
+
+```
+
+

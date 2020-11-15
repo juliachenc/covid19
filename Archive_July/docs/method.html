@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Methods and Data</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/htmlwidgets-1.5.1/htmlwidgets.js"></script>
+<script src="site_libs/plotly-binding-4.9.2/plotly.js"></script>
+<script src="site_libs/typedarray-0.1/typedarray.min.js"></script>
+<link href="site_libs/crosstalk-1.1.0.1/css/crosstalk.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.1.0.1/js/crosstalk.min.js"></script>
+<link href="site_libs/plotly-htmlwidgets-css-1.52.2/plotly-htmlwidgets.css" rel="stylesheet" />
+<script src="site_libs/plotly-main-1.52.2/plotly-latest.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html"><div><img src="2-Line_KeckSOMofUSC_GrayOnBlack.jpg" height = 50px></img>USC Predict COVID19</div></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="scenarios.html">Scenarios</a>
+</li>
+<li>
+  <a href="risk_table.html">Risk Tables</a>
+</li>
+<li>
+  <a href="findings.html">Findings</a>
+</li>
+<li>
+  <a href="method.html">Methods</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Methods and Data</h1>
+
+</div>
+
+
+<div id="aims" class="section level1">
+<h1>Aims</h1>
+<p>The USC Predict COVID project has developed the <strong>SEIR+RISK</strong> epidemic model to estimate and gain insight into the impact of COVID-19 in Los Angeles County and on its residents.</p>
+<p>The key aims we are addressing are:</p>
+<p><strong>Aim 1</strong>: Project the peak of the epidemic and its impact on health care capacity</p>
+<p><strong>Aim 2</strong>: Project the dynamics of the epidemic when social distancing is reduced or returns to pre-pandemic levels</p>
+<p><strong>Aim 3</strong>: Evaluate the influence of the epidemic on different at-risk groups</p>
+<div id="information-provided-by-each-aim" class="section level2">
+<h2>Information provided by each aim</h2>
+<p><strong>Aim 1: Project the peak of the epidemic and its impact on health care capacity</strong></p>
+<p>We estimate counts of the numbers of individuals over time, including the peak occurrence, for the following:</p>
+<table>
+<colgroup>
+<col width="7%" />
+<col width="92%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(I\)</span></td>
+<td>Infected, detected and observed with testing</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Itot\)</span></td>
+<td>Total number of infected cases including both the number detected and observed with testing, and the undetected/untested cases</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(H\)</span></td>
+<td>In Hospital</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Q\)</span></td>
+<td>In ICU</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(V\)</span></td>
+<td>On ventilator</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(D\)</span></td>
+<td>Deaths</td>
+</tr>
+</tbody>
+</table>
+<p>We estimate a number of key epidemic parameters, including:</p>
+<table>
+<colgroup>
+<col width="26%" />
+<col width="73%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(R0\)</span></td>
+<td>Basic reproductive number</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Frac_{R0}\)</span> Mar.12-May 12</td>
+<td>Factor reduction in initial <span class="math inline">\(R0\)</span> Mar.12-May12</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Frac_{R0}\)</span> May.12-May 25</td>
+<td>Factor reduction in initial <span class="math inline">\(R0\)</span> May 12-25</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(r\)</span></td>
+<td>Proportion of illnesses that are detected and reported out of all illnesses</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Pr(Hospital|Illness)\)</span></td>
+<td>probability infected (I) requires hospitalization (vs. recovers)</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Pr(ICU|Hospital)\)</span></td>
+<td>probability hospitalized (H) requires ICU (vs. recovers)</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Pr(Death|ICU)\)</span></td>
+<td>probability ICU (Q) patient dies</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Pr(Ventilation|ICU)\)</span></td>
+<td>probability ventilation (V) required given ICU</td>
+</tr>
+</tbody>
+</table>
+<p>Model estimates realting to Aim 1 are found on the <a href="https://uscbiostats.github.io/COVID19/#model_projections">Model Projections</a> page.</p>
+<p><br></p>
+<p><strong>Aim 2: Project the dynamics of the epidemic when social distancing is reduced or returns to pre-pandemic levels</strong></p>
+<p>We provide predictions for the impact on counts and corresponding time periods under various social distancing scenarios in which restrictions are eased. We evaluate the impact of 7 scenarios, each corresponding to a different contact rate. These scenarios can be understood in terms of:</p>
+<ul>
+<li>The <strong>Effective <span class="math inline">\(R0\)</span></strong>: The effective R0 this % decrease corresponds to</li>
+<li>The <strong>% of original <span class="math inline">\(R0\)</span></strong>: Percent of the original (pre-social-distancing) <span class="math inline">\(R0\)</span> the effective <span class="math inline">\(R0\)</span> this scenario represents</li>
+<li>The <strong>% increase from current</strong>: Percent increase from current (as of 2020-07-23) level of social distancing / contact rate</li>
+</ul>
+<p>Model estimates realting to Aim 2 are found on the <a href="https://uscbiostats.github.io/COVID19/scenarios.html">Scenarios Page</a>.</p>
+<p><br></p>
+<p><strong>Aim 3: Evaluate the influence of the epidemic on different at-risk groups</strong></p>
+<ul>
+<li><p>We provide projections of illness severity trajectories in L.A. County as a whole and for race/ethnicity groups, based on prevalence of known COVID-19 risk factors.</p></li>
+<li><p>We provide estimates of the probability of hospitalization given illness, <span class="math inline">\(Pr(Hospital | Illness)\)</span>, probability of admittance to the intensive care unit (ICU) given being in hospital, <span class="math inline">\(Pr(ICU | Hospital)\)</span>, and probability of death given being in ICU, <span class="math inline">\(Pr(Death | ICU)\)</span> for each combination of risk factors, or <em>risk profiles</em>. These estimated probabilities are provided on the <a href="https://uscbiostats.github.io/COVID19/risk_table.html">Risk Table</a> page.</p></li>
+</ul>
+<p>Based on the prevalence of these <em>risk profiles</em> in the general L.A. County population, we provide projections of illness severity trajectories in L.A. County as a whole and for race/ethnicity groups.</p>
+<p>These projections are provided on the <a href="https://uscbiostats.github.io/COVID19/#model_projections">Home</a> page.</p>
+<p><br></p>
+</div>
+</div>
+<div id="model-contributions" class="section level1">
+<h1>Model Contributions</h1>
+<div id="why-our-model-is-unique" class="section level2">
+<h2>Why our model is unique</h2>
+<p>Contributions to each aim:</p>
+<p><strong>Aim 1: Projecting the peak of the epidemic and its impact on health care capacity</strong></p>
+<ul>
+<li>We develop an SEIR model that also incorporates healthcare utilization variables: Hospitalization, Ventilation, and Death compartments. This enables us to provide projections for these compartments, which are important for planning. It also enables better specification of our model and more accurate parameter estimation because these counts are more reliable than Illness counts.</li>
+<li>We also include a variable and parameter enabling us to estimate Unobserved Illnesses. This is combined with external information to specify a prior on the true number of undetected cases, coming from seroprevalence studies</li>
+<li>Our epidemic compartmental model uses stochastic differential equations and approximate Bayes calculation techniques for parameter estimation, enabling presentation of the uncertainty in all estimations and predictions.</li>
+<li>This Bayesian approach allows us to influence parameter estimates through prior specification. We utilize diverse, reliable data streams to specify these priors:
+<ul>
+<li>Mobility data to inform the change in contact rates or R0</li>
+<li>Seroprevalence studies to inform the fraction of illnesses that are detected vs. undetected</li>
+<li>Published studies on COVID-19 illness trajectories to inform the probability of severe illness given risk factors, and local prevalence data to inform the rates of individuals in the population with combinations of these risk factors.</li>
+</ul></li>
+</ul>
+<p><strong>Aim 2: Projecting the dynamics of the epidemic when social distancing is reduced or returns to pre-pandemic levels</strong></p>
+<ul>
+<li>We modify parameters at different time points, providing better model specification and estimation for a rapidly developing epidemic and behavioral responses, incorporating evolving trends e.g. in testing.</li>
+<li>Time-varying parameters also enable the specification of interventions for scenario analysis and future planning, e.g. social distancing scenarios.</li>
+<li>Mobility data which we incorporate helps to specify the observed changes in contact rate, which can inform behavioral response to various social distancing scenarios.</li>
+</ul>
+<p><strong>Aim 3: Evaluating the influence of the epidemic on different at-risk groups</strong></p>
+<ul>
+<li>The particular contribution of our model over existing models estimating hospital resource demand is that it accounts for combinations of risk factors (age, existing comorbidities and combinations of comorbidities), including area-level differences in prevalence of these risk factors, in determining COVID intensity.</li>
+<li>Using studies reporting the risk of severe COVID-19 outcomes for <strong>individual</strong> risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for given <strong>combinations</strong> of risk factors.</li>
+<li>Accounting for differential risk for specific populations is important both for model projections, helping to factor in local prevalence rates of risk factors in estimating the scale of the epidemic.</li>
+<li>It also enables us to provide projections based on specific at-risk groups, informing the prioritization of specific populations for protection.</li>
+<li>Additionally, the integration in this model between risk factors and illness projections allows for actionable policy analysis not possible if these are independently, for example in determining a portfolio of health factor priorities that would most effectively reduce disease incidence and severity.</li>
+</ul>
+<p><br><br></p>
+</div>
+</div>
+<div id="methods" class="section level1">
+<h1>Methods</h1>
+<div id="seirrisk-epidemic-model" class="section level2 tabset">
+<h2>SEIR+Risk epidemic model</h2>
+<p>In the following we provide an overview of the stochastic differential equation epidemic model developed in this work. We have called this the <strong>SEIR+Risk</strong> model because we incorporate risk probabilities into the model specification.</p>
+<div id="overview" class="section level3">
+<h3>Overview</h3>
+<p><strong>Model compartments</strong></p>
+<p>We develop a model of COVID-19 transmission in a single, fully-mixed population. The transmission process we develop reflects transitions known to be important to COVID-19 transmission, and includes Susceptible, Exposed (latent but not yet infectious), Infectious, and Recovered compartments. We also include healthcare utilization variables: Hospitalization, Ventilation, and Death compartments. This enables us to provide projections for these compartments, which are important for planning. It also enables better specification of our model and more accurate parameter estimation because these counts are more reliable than Illness counts. We additionally include a variable and parameter enabling us to estimate the Unobserved Infectious class. This is combined with external information to specify a prior on the true number of undetected cases, coming from seroprevalence studies.</p>
+<p><strong>Time-varying factor reduction in <span class="math inline">\(R0\)</span></strong></p>
+<p>In addition to the compartments, we include time-varying parameters. Currently, we specify a parameter encoding a reduction in contact rate. Changes in contact rate translate directly changes in the basic reproductive number <span class="math inline">\(R0\)</span> and the infectivitity rate <span class="math inline">\(\beta\)</span> because all of these quantities are directly proportional. Because <span class="math inline">\(R0\)</span> is a more commonly discussed quantity, and a parameter estimated by our model, in the following we discuss changes in contact rate in terms of the equivalent changes in <span class="math inline">\(R0\)</span>, i.e. <span class="math inline">\(Frac_{R0}(t)\)</span>. For shorthand we also refer to this parameter as <span class="math inline">\(\mu\)</span> in the system of equations. This time varying parameter allows us to explicitly model the change in contact rate, or equivalently, change in <span class="math inline">\(R0\)</span>, with time due to different policy interventions / social distancing scenarios. We are able to specify the prior for this parameter using reliable mobility data. This time varying parameter allows us to perform better model estimates, as well as to do scenario analysis and planning for the future.</p>
+</div>
+<div id="stochasticity" class="section level3">
+<h3>Stochasticity</h3>
+<p><strong>The difference between a deterministic model and a stochastic model</strong>:</p>
+<ul>
+<li>Deterministic model: For given values of parameters, dynamics across compartments will be fixed.</li>
+<li>Stochastic model: Probability distributions are used model the transfer of individuals between compartments.</li>
+</ul>
+<p><strong>Benefits of a stochastic model</strong>:</p>
+<ul>
+<li>Reflects the stochasticity inherent in the disease transmission and evolution process</li>
+<li>For parameter estimation: Provides a better framework for parameter estimation, based on observed data</li>
+<li>For projections and scenario analysis: Enables forecasts with confidence bounds that account for variability in parameters and the stochasticity of the disease process.</li>
+</ul>
+<p><strong>How stochasticity is included in our model</strong></p>
+<p>We develop a stochastic Eulerian discrete-valued epidemic model. In this model, individuals move between compartments with transitions mathematically defined by Poisson, binomial, and multinomial distributions. Each evaluation of the model with the same parameter values and initial conditions will result in an ensemble of epidemic realizations. In addition to the stochasticity of the disease transmission and evolution process, we bring in stochasticity in the parameter estimates. We simulate trajectories across distributions of likely parameter values instead of reducing parameters to a fixed estimate.</p>
+</div>
+<div id="flow-diagram" class="section level3">
+<h3>Flow diagram</h3>
+<div class="figure">
+<img src="flow_diagram_v2.png" alt="Compartmental model flow diagram" width="100%" />
+<p class="caption">
+Compartmental model flow diagram
+</p>
+</div>
+</div>
+<div id="system-of-equations" class="section level3">
+<h3>System of Equations</h3>
+<p><span class="math display">\[
+\begin{align*}
+    dS/dt &amp;= -\beta \mu(t)S(I+A)\\
+    dE/dt &amp;= \beta \mu(t) S(I+A) - \tfrac{1}{d_{EI}}E\\
+    dA/dt &amp;= \tfrac{1-r}{d_{EI}}E - \tfrac{1}{d_{IR}}A\\
+    dI/dt &amp;= \tfrac{r}{d_{EI}}E - (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I\\
+    dH/dt &amp;= \alpha (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I - (\tfrac{\kappa}{d_{HQ}}\tfrac{1-\kappa}{d_{HR}})H \\
+    dQ/dt &amp;= \kappa (\tfrac{\kappa}{d_{HQ}}\tfrac{1-\kappa}{d_{HR}})H - (\tfrac{\delta}{d_{QD}}\tfrac{1-\delta}{d_{QR}})Q \\
+    dV/dt &amp;= p_V Q\\
+    dD/dt &amp;= \delta (\tfrac{\delta}{d_{QD}}\tfrac{1-\delta}{d_{QR}})Q\\
+    dR/dt &amp;= (1-\alpha) (\tfrac{\alpha}{d_{IH}}\tfrac{1-\alpha}{d_{IR}})I + (1-\kappa) (\tfrac{\kappa}{d_{HQ}}\tfrac{1-\kappa}{d_{HR}})H + (1-\delta)(\tfrac{\delta}{d_{QD}}\tfrac{1-\delta}{d_{QR}})Q + \tfrac{1}{d_{IR}}A   \
+\end{align*}
+\]</span></p>
+<p><span class="math display">\[
+R0 = \beta \mu(t) ({\frac{r}{\tfrac{\alpha}{d_{IH}}+\tfrac{1-\alpha}{d_{IR}}}+ (1-r){d_{IR}}})
+\\
+N=S+E+A+I+H+Q+D+R
+\]</span></p>
+</div>
+<div id="model-compartments" class="section level3">
+<h3>Model Compartments</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(N\)</span></td>
+<td>Total population size</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(S\)</span></td>
+<td>Susceptible population</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(E\)</span></td>
+<td>Exposed not yet infectious</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(A\)</span></td>
+<td>Infected, unobserved</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(I\)</span></td>
+<td>Infected, observed</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(H\)</span></td>
+<td>In Hospital</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Q\)</span></td>
+<td>In ICU</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(V\)</span></td>
+<td>On ventilator</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(D\)</span></td>
+<td>Dead</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(R\)</span></td>
+<td>Recovered/removed</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="model-parameters" class="section level3">
+<h3>Model Parameters</h3>
+<p><strong>Fixed</strong></p>
+<ul>
+<li>Fixed model parameters provide the transition times between compartments.</li>
+<li>Values were taken from the literature from various sources, detailed <a href="https://docs.google.com/spreadsheets/d/1PQttOS0VllpDGZswngMBIX5GMV2cMAxyseD3L-aNw-U/edit#gid=1798107562">here</a>.</li>
+</ul>
+<table>
+<colgroup>
+<col width="12%" />
+<col width="76%" />
+<col width="10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Description</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(d_{EI}\)</span></td>
+<td>days between exposure and infectivity (incubation period)</td>
+<td>5 days</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(d_{IH}\)</span></td>
+<td>days between symptom onset and hospitalization (if required)</td>
+<td>10 days</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(d_{IR}\)</span></td>
+<td>days between symptom onset and recovery (if not hospitalized)</td>
+<td>7 days</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(d_{HQ}\)</span></td>
+<td>days between hospitalization and ICU (if required)</td>
+<td>1 day</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(d_{QR}\)</span></td>
+<td>days between hospitalization and recovery (if ICU not required)</td>
+<td>12 days</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(d_{QD}\)</span></td>
+<td>days between ICU and fatality</td>
+<td>8 days</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(d_{QR}\)</span></td>
+<td>days between ICU and recovery</td>
+<td>7 days</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Estimated</strong></p>
+<table>
+<colgroup>
+<col width="18%" />
+<col width="19%" />
+<col width="62%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>In System of Equations</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(R0\)</span></td>
+<td><span class="math inline">\(R0\)</span></td>
+<td>Basic reproductive number</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(\beta\)</span>*</td>
+<td><span class="math inline">\(\beta\)</span>*</td>
+<td>Infectivity rate</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(t(0)\)</span></td>
+<td>-</td>
+<td>Start time of the epidemic</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Frac_{R0}\)</span></td>
+<td><span class="math inline">\(\mu(t)\)</span></td>
+<td>Time-varying reduction in initial <span class="math inline">\(R0\)</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(r\)</span></td>
+<td><span class="math inline">\(r\)</span></td>
+<td>Proportion of illnesses that are detected and reported out of all illnesses</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Pr(Hospital|Illness)\)</span></td>
+<td><span class="math inline">\(\alpha\)</span></td>
+<td>probability infected (I) requires hospitalization (vs. recovers)</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Pr(ICU|Hospital)\)</span></td>
+<td><span class="math inline">\(\kappa\)</span></td>
+<td>probability hospitalized (H) requires ICU (vs. recovers)</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Pr(Death|ICU)\)</span></td>
+<td><span class="math inline">\(\delta\)</span></td>
+<td>probability ICU (Q) patient dies</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Pr(Ventilation|ICU)\)</span></td>
+<td><span class="math inline">\(p_V\)</span></td>
+<td>probability ventilation (V) required given ICU</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><span class="math inline">\(\beta\)</span> is analytically derived from our model with estimated value for <span class="math inline">\(R0\)</span>.</li>
+</ul>
+<p><strong>The section <em>Estimated Parameters</em> provides details on parameter prior and posterior distributions.</strong></p>
+</div>
+<div id="parameter-estimation-procedure" class="section level3">
+<h3>Parameter Estimation Procedure</h3>
+<p>We use <strong>Approximate Bayesian Computation (ABC)</strong> for parameter estimation.</p>
+<p><strong>Benefits of using ABC include</strong>:</p>
+<ul>
+<li>Allows us to incorporate the uncertainty in all the parameters in fitting the model to data and estimating parameters</li>
+<li>Allows us to include all prior information and/or assumptions about the distribution (the range of values) for each parameter</li>
+<li>Allows us to prioritize data input that is more reliable in fitting the model to data (e.g., not including more unreliable early illness count data)</li>
+</ul>
+<p><strong>Overview</strong></p>
+<p>In brief, ABC involves specifyinig prior distributions for parameters that function as the modelers’ assumed likelihood of an initial “guess” of the initial parameter values. The model is simulated with a parameter “guess” and the resulting outbreak is compared to the observed data to determine how similar these appear. This procedure is repeated to identify a range of parameter values for which the fit of the simulations to the observed outbreak data is adequate. These resulting parameter values used for the simulations that are in agreement with data then serve as ‘parameter estimates.’</p>
+<p>Using ABC on multiple parameters simultaneously produces joint posterior estimates over all parameters rather than the marginal posterior of a single parameter. In forward simulations of our model, we simulate trajectories with parameter values coming from this joint posterior distribution, rather than a single value of a parameter.</p>
+<p><strong>Variable observations used for parameter estimation</strong></p>
+<p>We use current numbers of <strong>Infected (observed)</strong>, <strong>Hospitalized</strong>, <strong>ICU</strong>, <strong>Ventilated</strong>, and <strong>Deaths</strong> in the parameter estimation procedure. Incorporating data beyond observed Infected cases allows for better fitting, because this data is more reliable; for example, deaths are likely more accurately reported than cases in settings with limited testing capacity where tests are usually prioritized for the more severely ill patients. We further improve the reliability of the data used for estimation by weighting the parameter estimation procedure such that early count data in all compartments is not included; what this means is that we only use to variable counts beginning around mid-March 2020 (and at later dates for more delayed compartments e.g. Death counts).</p>
+<p><br><br></p>
+</div>
+</div>
+<div id="estimated-parameters" class="section level2 tabset">
+<h2>Estimated Parameters</h2>
+<p><strong>Model Estimated Parameters: Prior Specification and Posterior Estimates</strong></p>
+<p>Below we provide information on prior specification and resulting posterior estimation of each parameter. Because our model is stochastic and we are using Bayesian techniques for parameter estimation, each posterior parameter estimate is represented by a distribution of likely values.</p>
+<div id="summary-of-key-estimated-parameters" class="section level3">
+<h3>Summary of key estimated parameters</h3>
+<p><strong>Summary of key statistics of each estimated parameter: the mean and the standard deviation</strong></p>
+<table>
+<colgroup>
+<col width="19%" />
+<col width="66%" />
+<col width="5%" />
+<col width="8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Description</th>
+<th>Mean</th>
+<th>Std.Dev.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(R0\)</span></td>
+<td>Basic reproductive number</td>
+<td>3.86</td>
+<td>0.15</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Frac_{R0}\)</span></td>
+<td>Time-varying reduction in initial <span class="math inline">\(R0\)</span></td>
+<td>0.21</td>
+<td>0.11</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(r\)</span></td>
+<td>Proportion of illnesses that are detected and reported out of all illnesses</td>
+<td>0.033</td>
+<td>0.007</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Pr(HospitalIllness)\)</span></td>
+<td>probability infected (I) requires hospitalization (vs. recovers)</td>
+<td>0.165</td>
+<td>0.093</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Pr(ICUHospital)\)</span></td>
+<td>probability hospitalized (H) requires ICU (vs. recovers)</td>
+<td>0.516</td>
+<td>0.222</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Pr(DeathICU)\)</span></td>
+<td>probability ICU (Q) patient dies</td>
+<td>0.653</td>
+<td>0.077</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(Pr(VentilationICU)\)</span></td>
+<td>probability ventilation (V) required given ICU</td>
+<td>0.499</td>
+<td>0.005</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="illness-severity-probabilities" class="section level3">
+<h3>Illness severity probabilities</h3>
+<p><strong>Priors for illness severity probabilities, <span class="math inline">\(Pr(Hospital | Illness)\)</span>, <span class="math inline">\(Pr(ICU | Hospital)\)</span>, <span class="math inline">\(Pr(Death | ICU)\)</span>: Risk modeling and previous COVID-19 studies</strong></p>
+<ul>
+<li><p>We use previous studies to narrow the specification of the probability of hospitalization given illness, admittance to the intensive care unit (ICU) given being in hospital, ventilation given being in ICU, and death given being in ICU by incorporating risk factors, including age, sex, smoking and other comorbidities. The prevalence of these risk factors in Los Angeles County is also included.</p></li>
+<li><p>The comorbidities included in the “any comorbidity” category are: hypertension, diabetes, cardiovascular disease, cerebrovascular disease / stroke, cancer, COPD, and athsma. It is important to note that each of these conditions has its own risk of disease outcome; future models will disaggregate risk estimates by specific risk conditions when sufficient data becomes available to produce these estimations.</p></li>
+<li><p>The value of accounting for combinations of risk factors and breaking down risk estimates to specific combinations of risk factors is that this provides more specific information on risk for specific individuals. Marginal probabilities for single risk factors represent an average across all combinations of conditions; for example, the probability of hospitalization given illness for age 65+ averages over the risk for the population 65+ that has multiple comorbidities as well as those that do not, whereas the risk for an individual 65+ with no comorbidities will be significantly lower than that for someone with multiple comorbidities and a history of smoking.</p></li>
+</ul>
+<p><strong>Details: Estimating the conditional probability of COVID illness severity given combinations of risk factors</strong></p>
+<p>Using studies reporting the marginal risk of severe COVID-19 outcomes given individual risk factors, we develop a statistical model to estimate the probability of COVID illness trajectories for individuals with combinations of risk factors. Specifically, we estimate the probability that individuals having (or not) combinations of risk factors are admitted to hospital given having acquired (observed/detected) illness <span class="math inline">\(Pr(Hospital | Illness)\)</span>, are admitted to the ICU given admittance to hospitalized <span class="math inline">\(Pr(ICU | Hospital)\)</span>, and that die given being admitted to the ICU <span class="math inline">\(Pr(Death | ICU)\)</span>.</p>
+<p>Our methodology for joint risk factor estimation relies on a model, called JAM, developed for use in genome-wide analyses to identify the conditional relative risk (RR) of phenotypic occurrence given joint combinations of genes from two pieces of information: (i) the marginal RR between single genes and phenotype and (ii) the correlation structure between the genes. We apply the JAM model to estimate the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors. For information informing (i) we obtain the marginal RR between individual risk factors and COVID-19 illness severity from published COVID-19 studies (sources below, peer-reviewed where available). For (ii), we obtain the correlation structure between the risk factors using data from The National Health and Nutrition Examination Survey (NHANES). NHANES is a survey research program conducted by the National Center for Health Statistics (NCHS) to assess the health and nutritional status of adults and children in the United States, and to track changes over time. We use the NHANES cohort of 2017-2018.</p>
+<p>After obtaining the conditional RR of COVID-19 illness severity (hospitalization, ICU, and death) given joint combinations of risk factors, we convert these risks into the probabilities <span class="math inline">\(Pr(Hospital | Illness, Profile_i)\)</span>, <span class="math inline">\(Pr(ICU | Hospital,Profile_i)\)</span>, and <span class="math inline">\(Pr(Death | ICU,Profile_i)\)</span>. The analysis we present here has taken the combinations of risk factors and grouped these into 5 key <em>risk groups</em> according to similar within-group levels of the probabilities <span class="math inline">\(Pr(Hospital | Illness, Profile_i)\)</span>, <span class="math inline">\(Pr(ICU | Hospital, Profile_i)\)</span>, and <span class="math inline">\(Pr(Death | ICU, Profile_i)\)</span>. To produce an estimate of the overall <span class="math inline">\(Pr(Hospital | Illness)\)</span> across all risk groups for L.A. County and subpopulations, we take the weighted average of the probability for each risk profile and the prevalence of the risk profile pover all illnesses, i.e.</p>
+<p><span class="math display">\[
+\begin{align*}
+Pr(Hospital | Illness) = \sum_i Pr(Profile_i | Illness)Pr(Hospital|Profile_i,Illness)
+\end{align*}
+\]</span> We assume that the prevalence of the risk profile in the ill population, <span class="math inline">\(Pr(Profile_i|Illness)\)</span>, is equal to the prevalence of the profile in the general population of L.A. County, i.e. <span class="math inline">\(Pr(Profile_i)\)</span>. We again borrow the correlation structure between risk factors derived from the NHANES cohort to estimate the population prevalence <span class="math inline">\(Pr(Profile_i)\)</span> from available data on the prevalence of individual risk factors.</p>
+<p>The same approach is applied to estimate <span class="math inline">\(Pr(ICU | Hospital)\)</span> and <span class="math inline">\(Pr(Death|ICU)\)</span>: <span class="math display">\[
+\begin{align*}
+Pr(ICU | Hosptial) = \sum_i Pr(Profile_i | Hospital)Pr(ICU|Profile_i,Hospital)\\
+Pr(Death | ICU) = \sum_i Pr(Profile_i | ICU)Pr(Death|Profile_i,ICU)
+\end{align*}
+\]</span></p>
+<p><strong>Resulting estimated priors</strong></p>
+<p>The resulting prior estimates for <span class="math inline">\(Pr(Hospital | Profile_i,Illness)\)</span>, <span class="math inline">\(Pr(ICU | Profile_i,Hospital)\)</span>, <span class="math inline">\(Pr(Death | Profile_i,ICU)\)</span> given the combinations of risk factors summarized in each risk profile are provided in the <a href="https://uscbiostats.github.io/COVID19/risk_table.html">Risk Table</a>.</p>
+</div>
+<div id="r0" class="section level3">
+<h3><span class="math inline">\(R0\)</span></h3>
+<ul>
+<li>Mean = 3.864</li>
+<li>Standard deviation = 0.152</li>
+</ul>
+<p><strong>Prior for <span class="math inline">\(R0\)</span>, Reproductive number: Previous COVID-19 studies</strong></p>
+<p><span class="math inline">\(R0\)</span> prior estimate is based on values for <span class="math inline">\(R0\)</span> estimated from other published studies on COVID-19.</p>
+<p><br><br></p>
+<p><strong>Prior and Posterior Plots</strong> <img src="method_files/figure-html/posterior-R0-1.png" width="1056" /></p>
+</div>
+<div id="r" class="section level3">
+<h3><span class="math inline">\(r\)</span></h3>
+<ul>
+<li>Mean = 0.033</li>
+<li>Standard deviation = 0.007</li>
+</ul>
+<p><strong>Prior distribution for <span class="math inline">\(r\)</span>: Seroprevalence studies</strong></p>
+<p>A seroprevalence study conducted on the Los Angeles on April 10-11, 2020, by Neeraj Sood and LADPH, found the prevalence of antibodies in 3.6% (1.7,5.2) of the sampled population. We use this information to inform two pieces of information: (i) the prior distribution for <span class="math inline">\(r\)</span>, the fraction of observed illnesses over all illnesses, and (ii) an observed data point for the number of counts in the Recovered compartment. We make the following assumptions:</p>
+<ul>
+<li>The seroprevalence study retuns an estimated % of the population of L.A. that has antibodies for COVID-19 by the study date. We assume this is equal to the proportion of total recovered individuals as of a week prior to the study date, April 4, 2020, since it takes a week for antibodies to develop.</li>
+<li>We assume the fraction of observed illnesses <span class="math inline">\(r\)</span> is approximately equal to the fraction of recovered cases as:</li>
+</ul>
+<p><span class="math display">\[
+\begin{align*}
+\mathbf{r} = \frac{cum. obs. I(t = t&#39;)}{cum. tot. I(t=t&#39;)}\\
+\approx \frac{cum. obs. R(t=t&#39;)}{cum.tot.R(t=t&#39;)}\\
+\end{align*}
+\]</span> - The seroprevalence study informs the denominator, the total recovered cases at <span class="math inline">\(t&#39;\)</span> = April 4. - The numerator, the “observed” recovered cases at time <span class="math inline">\(t&#39;\)</span>, is assumed to be approximately equal to the observed illnesses at time <span class="math inline">\(t&#39;-\)</span> [1,3] weeks, which is the assumed period from infectiousness to recovery. - We specify the minimum and maximum values for the prior for <span class="math inline">\(r\)</span> <span class="math inline">\(Pr(r)\)</span> using the equation above with the range of the % of the population with antibodies on of April 4, and the number of observed illnesses 1-3 weeks prior to that. - In addition to using the seroprevalence study to inform the prior distribution on <span class="math inline">\(r\)</span>, we use it to inform the</p>
+<p><strong>Data point on number in Recovered compartment</strong></p>
+<p>We use the results of the seroprevalence study to inform a fixed data point representing the number of counts in the Recovered compartment on April 4. We use this data point together with the approximated timing of the first recovered case (1-3 weeks after the start date of the outbreak) to interpolate an exponential distribution in the time series of counts in the Recovered compartment. This is then used as an observed data input alongside the other observed compartment variables (illnesses, hospitalizations, deaths, etc.) in the parameter estimation procedure.</p>
+<p>These estimates will be greatly improved by time series of COVID-19 seroprevalence, i.e. as results of future seroprevalence studies become available.</p>
+<p><br><br></p>
+<p><strong>Prior and Posterior Plots</strong></p>
+<p><img src="method_files/figure-html/posterior-r-1.png" width="1056" /></p>
+</div>
+<div id="frac_r0" class="section level3">
+<h3><span class="math inline">\(Frac_{R0}\)</span></h3>
+<p><strong>Prior on <span class="math inline">\(Frac_{R0}\)</span>, the reduction in the initial R0 due to social distancing: Mobility data</strong></p>
+<ul>
+<li>Mean = 0.21</li>
+<li><p>Standard deviation = 0.108</p></li>
+<li><p>We use mobility data to narrow the specification of the reduction in the average number of new infections due to an infected person (R0) in a completely susceptible population under recent social distancing restrictions.</p></li>
+<li><p>Effectively, reductions in mobility correspond to a proportional reduction in R0.</p></li>
+</ul>
+<p><strong>Reduction in mobility observed in LA County</strong></p>
+<div class="figure">
+<img src="Unacast.LA.redux.2.png" alt="encounter reduction" width="100%" />
+<p class="caption">
+encounter reduction
+</p>
+</div>
+<p><strong>Sources</strong>:</p>
+<ul>
+<li><a href="https://www.unacast.com/covid19/social-distancing-scoreboard?view=county&amp;fips=06037">Unacast COVID-19 Social Distancing Scoreboard</a></li>
+<li><p><a href="https://docs.safegraph.com/docs/neighborhood-patterns">Safegraph mobility data available for research</a></p></li>
+<li><p>Our modeled reduction in R0 timeline:</p></li>
+</ul>
+<p><img src="method_files/figure-html/posterior-R0-timeline-1.png" width="1056" /></p>
+<p><br></p>
+<p><strong>Prior and Posterior Plots</strong></p>
+<p><img src="method_files/figure-html/posterior-R0t-1.png" width="1056" /></p>
+</div>
+<div id="joint-posterior-densities-of-interest" class="section level3">
+<h3>Joint posterior densities of interest</h3>
+<p><img src="method_files/figure-html/unnamed-chunk-3-1.png" width="1056" /><div id="htmlwidget-3269604bd19fc04c6ca9" style="width:1056px;height:864px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-3269604bd19fc04c6ca9">{"x":{"visdat":{"f05d14a694f7":["function () ","plotlyVisDat"]},"cur_data":"f05d14a694f7","attrs":{"f05d14a694f7":{"x":[3.42228022486952,3.4574543593614,3.49262849385328,3.52780262834516,3.56297676283704,3.59815089732892,3.63332503182081,3.66849916631269,3.70367330080457,3.73884743529645,3.77402156978833,3.80919570428021,3.84436983877209,3.87954397326397,3.91471810775586,3.94989224224774,3.98506637673962,4.0202405112315,4.05541464572338,4.09058878021526,4.12576291470714,4.16093704919903,4.19611118369091,4.23128531818279,4.26645945267467],"y":[0.0250038941145404,0.0260449147509396,0.0270859353873387,0.0281269560237379,0.0291679766601371,0.0302089972965362,0.0312500179329354,0.0322910385693345,0.0333320592057337,0.0343730798421328,0.035414100478532,0.0364551211149311,0.0374961417513303,0.0385371623877294,0.0395781830241286,0.0406192036605278,0.0416602242969269,0.0427012449333261,0.0437422655697252,0.0447832862061244,0.0458243068425235,0.0468653274789227,0.0479063481153218,0.048947368751721,0.0499883893881201],"z":[[2.45354184504355e-05,8.70767912328036e-05,0.000243861430531641,0.000579745491034591,0.00125611397981627,0.00252985426815011,0.00470415290160093,0.00834666117108146,0.0146364806186283,0.024117415511692,0.0347295383557264,0.0464310488743126,0.074002429184882,0.148806383125483,0.289161313139293,0.471605528197506,0.694592342124675,1.1761191028413,2.57190502216992,5.93209044712305,11.9794403834283,19.6876839023017,25.599366366773,25.9288096577015,20.2368734521845],[0.000700793031991306,0.00244091289805492,0.00652447311770345,0.0141544675963432,0.0269349267220781,0.0477783750802465,0.0806020834052512,0.132074970714883,0.215210600612522,0.33326257182471,0.449611178950792,0.523464221231611,0.627978917005786,0.976187572318198,1.70919351056204,2.65588857923309,3.48210018890654,4.22573310618565,5.67573534208067,9.16810911913483,15.5983992770954,23.802595347321,29.9273634854917,29.863903813323,23.2074064702414],[0.0095171708364735,0.0328759719242212,0.0858044065332269,0.176346661629055,0.305686226486786,0.483961414009468,0.737767355744046,1.11057382570956,1.67028821589198,2.41141182051298,3.07037645494258,3.29857143403957,3.27255836140345,3.84397129421364,5.66727756150196,8.28696617151465,10.4933888631412,11.564724115396,11.8538659100027,12.4015748454068,14.1710182859855,16.9870845471364,18.9884459141726,17.9652300489603,13.643613856797],[0.0614190144173568,0.211697095262736,0.547702889862137,1.09921472431828,1.81545110356538,2.6766692061228,3.78071255177929,5.28620899349976,7.34661668774704,9.82642463090815,11.8004380112224,12.0761565074416,10.9331217508821,10.5069375923293,12.5274444361794,16.236798276307,19.2557449497453,19.9528581609463,18.2837601934839,15.1335836687188,11.7632424205272,9.20173843940479,7.50768148495671,5.98635643340526,4.1990764577646],[0.191636085455456,0.65640220215074,1.69875617972071,3.41132967146723,5.60874107109357,8.15094474017415,11.2118117859811,15.0296842516612,19.6471020086936,24.5765922234385,28.1151291646089,28.1864421495337,25.1911569879286,22.5855922291256,23.1197455722255,25.6603126649817,26.8310427297815,24.708985582837,19.9054757864005,14.0919815038904,8.76677240933397,4.87078121262045,2.56575167109618,1.38145576915712,0.756346017885491],[0.366081050147865,1.09708517285922,2.72983958229969,5.51836408526941,9.35381992224838,14.0903691380958,19.7705168193183,26.27558533761,33.252771625376,40.1249965124876,45.2579767446364,46.3870977272506,43.6074753647282,40.333572598912,39.4011406524987,39.6432370907527,37.6603533065767,31.8036489476052,23.4724773067508,15.2806349424225,8.9454894668592,4.79162040832727,2.36848317384458,1.07773176014815,0.445037302242669],[1.30038880471904,2.31398408922575,3.99206106761808,6.68701935535159,10.6308565644294,15.9153029822249,22.3868496852249,29.5374744900076,37.0121750182716,44.8744559652848,52.4451577643196,57.7899706590134,59.8625021768689,60.063554453273,60.1074088736389,59.4588996019033,56.079625704702,48.8668576675971,38.8531151595903,28.4746726205873,19.7773563399784,13.2951092936921,8.52346159714363,4.96211746414346,2.47689127993409],[6.87107981454066,10.4657306019273,13.9323852799888,16.866524174553,19.1458316020779,21.2068485554773,23.9142907874832,27.8632811724117,33.2387881374185,40.2371424446147,48.722650815008,57.5076411790502,64.9680529018556,70.3639619339591,73.6801522894813,74.5087347045014,72.0899526210673,66.1852425363487,57.6341851707655,48.4278046255934,40.502552351528,33.8158662865371,26.635597958774,18.2353791419615,10.169162165529],[22.5131216968212,35.5881458487641,48.145354014843,56.6176286626034,58.0902065181612,52.931787942351,45.4382200536352,40.2765645821803,38.9694493023335,40.5684817550422,44.1568704508944,49.3612644876333,55.4284731302388,61.1095624346336,65.2425201532132,67.0556400217931,66.408983834943,63.9550415474853,61.0653480026854,59.6638225344,60.5501304269385,60.6775408130286,54.5517689394478,40.5516735016994,23.7350382558664],[45.2203788338976,75.8094299611801,107.409910946728,129.997492423572,134.689036364408,120.474407248466,96.1519489380642,73.1349507919281,57.0704291775315,47.4581772591076,42.427692082703,41.0656567378248,42.3857326653828,44.6275387621224,46.2566363783874,46.967297459816,47.5239543811753,49.1153253745792,53.0122041445565,60.132695640483,69.2419462500317,74.9507133090021,70.2536438981862,53.7241105794821,32.342680953702],[65.5461277701148,113.452270475495,163.744568140669,200.035229824205,208.907218812582,188.386651310787,149.396511464878,107.683018997203,74.1157526882539,52.2061236933534,41.1803330097686,38.4673663068923,40.3845841226627,43.1565302127199,44.6262814105813,44.8174368762845,44.9114393636548,46.3598270251908,50.5624924446971,57.8688486979353,66.0336178731384,70.1578475857518,65.4459318722957,51.3020083599566,32.7264455372712],[75.8223931936607,129.271787653773,184.114029695931,223.469646324757,234.877209928528,216.443221883808,176.867184957822,130.037104612412,88.7451005696619,61.1354755889469,49.5660570954992,51.06648827865,59.4531116968519,68.3957501015443,73.7160388343757,73.7600832275265,68.9720410884007,61.9704683715496,56.8113210037198,56.1866761862062,58.8679661057253,60.5654314888826,57.1459314000437,47.1022000188464,32.5484900679643],[68.5712630524809,113.151541389418,158.512185102447,193.087495127465,208.172419365214,201.320237638745,176.653283637295,142.459634853835,108.59332195839,84.0699559880707,74.0450187953114,77.9650409900224,90.5791582105551,104.601425604625,113.027197974164,110.939843177052,97.6565218292533,77.9635077464611,59.7753710438825,48.8710645634409,45.3737299433048,45.0782329267935,43.1884948061939,36.8813648841386,26.5278051063416],[52.7246268711864,83.5103660228603,114.072583211188,138.968400289014,154.493542128693,159.298626874907,154.158437582864,140.844708381585,122.448220381752,104.411744344844,93.0709185195413,92.1930835371968,100.630485479823,112.591784335181,120.001530472464,116.130787980001,99.3657509178374,74.7233966372967,50.9103361413543,34.511960003222,26.503403580235,23.6456338717063,21.8900498952502,18.5967190312169,13.3814896934595],[62.7053549116713,91.9817591650865,114.150407289697,125.893496398148,129.491111324059,129.251755389399,127.668696559369,123.550435132505,114.229150112754,100.105231275787,86.159250871954,78.4448601043323,79.0729187178973,84.4532291182807,87.9848272261102,84.2253135804521,71.5634348464107,52.9027727975196,34.0399619639167,19.9259441477291,11.906045018056,8.30604481018105,6.68448953992454,5.34581845238902,3.73404566800306],[116.975724831596,165.020094689122,191.731692024114,190.954698897188,171.014719827277,145.600823323152,124.311920289236,108.813139167913,95.3900111274572,80.9866831573866,66.923306114345,57.1005508959878,53.2538783636734,52.7854467919606,51.4312082884288,46.7098252741727,38.4051562471611,27.8038279506813,17.2992733704451,9.22702237762944,4.41734916174978,2.159999801771,1.2606347924268,0.851036907656222,0.553053398286097],[174.558658084412,241.737951850813,273.799411769165,262.468493082582,221.378087227543,171.68151177694,128.762454191077,97.8236695756119,76.5494237745016,60.864615436911,49.0326939309394,41.4678130284953,37.7365778918487,35.0423271581869,30.6396597461589,24.4047884162874,17.7716256365146,11.7399452527393,6.8003283190203,3.33342198515787,1.36830016691073,0.490815583029726,0.178509312349144,0.0806629034315969,0.0433864218728847],[187.466534362017,254.040418485934,281.214820057068,262.616463487427,213.897835354477,157.090232938618,108.029457855688,72.8242575195566,50.2342656497001,36.3878569367584,28.3030042740471,24.3839263392601,22.9009028408059,21.2352928301805,17.5941241482373,12.5789056605231,7.90450280602387,4.47297991271773,2.25561708821368,0.974381144599145,0.347740713501556,0.101351718140414,0.0250848362170998,0.00621693999616621,0.00202503421447325],[152.893920480392,203.650209360639,221.18084832654,201.983624906103,159.520968019124,111.497840246243,70.6168990056028,41.9546823150925,24.5716547330429,15.1049052779373,10.5577487866325,8.94256099499968,8.67143818482447,8.21906585738539,6.75208586473446,4.62222750102964,2.67455268330295,1.34605518441898,0.592718585085279,0.222580415013162,0.0688125104082742,0.0170862039463952,0.00338652187917254,0.000553870117773756,8.80437455051188e-05],[93.4157564783099,125.276193861735,136.517201755081,124.506104525099,97.4534608092227,66.5462996911938,40.1366717972576,21.8007740427284,11.0168837198172,5.44600133698777,2.91967214884249,2.01668261943006,1.82065088707625,1.70868145457138,1.39318290675697,0.933566628953874,0.518217429143532,0.244215375563937,0.0984643418809425,0.0333070232244382,0.00916560340487013,0.00200269894482977,0.000343094070603142,4.60350163473741e-05,4.96153793638402e-06],[46.1333688940792,64.5803951469783,73.3740738981388,69.708808192706,56.8549627362759,40.4746171394735,25.4058024832666,14.2808099006059,7.35878517678508,3.51514745709733,1.53967870657457,0.639152024724298,0.306605892789035,0.201724517247719,0.147097177556755,0.0947435820669877,0.0509004787865519,0.0230017300592406,0.00878289554824074,0.00277930366689226,0.000706729996081094,0.000140857608195914,2.17156775788911e-05,2.57891152374686e-06,2.36461923169417e-07],[26.9517237138855,39.2922106461297,46.3199901565259,45.5757225881735,38.6693375228388,28.9307078586547,19.2410826393196,11.4533577037128,6.19954895032034,3.0661186520382,1.33835295751319,0.486564629017939,0.14318250837642,0.0371866329138683,0.0115687467333968,0.0051291767619703,0.00247226049964304,0.00106619505491316,0.000391203361974264,0.000118563043287345,2.86768809287237e-05,5.38166690334372e-06,7.7137281626263e-07,8.40021679762298e-08,6.95723689953008e-09],[23.6912141779692,33.5774329319522,38.1585835236603,36.0990565978432,29.8102044131253,22.2362296020154,14.932941615934,8.79874786359458,4.50008640936968,2.02189352284473,0.800006985268476,0.269268672202365,0.0730014740988517,0.0153143481689283,0.00250558226917775,0.000373667348503684,7.76346612623157e-05,2.49828699266449e-05,8.49178674147632e-06,2.48129040622602e-06,5.80814339610615e-07,1.05003576755203e-07,1.43692690411615e-08,1.47620485894752e-09,1.13793815985539e-10],[19.7313093054282,26.5766905779451,28.4077328902946,25.1510261018354,19.6560360460796,14.2587842859868,9.47424356679396,5.42747774934161,2.55831069914577,0.986863429388866,0.31967553589109,0.0890262903228123,0.0210476521954682,0.00403915428148903,0.000601088244083185,6.78323532134046e-05,6.05873777356774e-06,5.76323564189329e-07,1.01019374460571e-07,2.53505418813195e-08,5.71328440877702e-09,1.00758050091751e-09,1.34086039302492e-10,1.32903561291577e-11,9.77739938942609e-13],[11.0764561607761,14.3717910624349,14.5454824734949,11.962695780224,8.60220171075102,5.82756039353396,3.71664115788603,2.06425055886334,0.926209317740051,0.324762873392798,0.0893990543721005,0.0199304198202418,0.00373682164746979,0.000596464123314055,7.88019727039647e-05,8.22594441235036e-06,6.54227527727632e-07,3.94916303379421e-08,2.06805181599493e-09,1.70326219551619e-10,2.79049724214064e-11,4.66831253513887e-12,6.08782604109674e-13,5.90830182409219e-14,4.2277892688313e-15]],"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"surface","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":[]},"yaxis":{"title":[]},"zaxis":{"title":[]}},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"showSendToCloud":false},"data":[{"colorbar":{"title":"","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"x":[3.42228022486952,3.4574543593614,3.49262849385328,3.52780262834516,3.56297676283704,3.59815089732892,3.63332503182081,3.66849916631269,3.70367330080457,3.73884743529645,3.77402156978833,3.80919570428021,3.84436983877209,3.87954397326397,3.91471810775586,3.94989224224774,3.98506637673962,4.0202405112315,4.05541464572338,4.09058878021526,4.12576291470714,4.16093704919903,4.19611118369091,4.23128531818279,4.26645945267467],"y":[0.0250038941145404,0.0260449147509396,0.0270859353873387,0.0281269560237379,0.0291679766601371,0.0302089972965362,0.0312500179329354,0.0322910385693345,0.0333320592057337,0.0343730798421328,0.035414100478532,0.0364551211149311,0.0374961417513303,0.0385371623877294,0.0395781830241286,0.0406192036605278,0.0416602242969269,0.0427012449333261,0.0437422655697252,0.0447832862061244,0.0458243068425235,0.0468653274789227,0.0479063481153218,0.048947368751721,0.0499883893881201],"z":[[2.45354184504355e-05,8.70767912328036e-05,0.000243861430531641,0.000579745491034591,0.00125611397981627,0.00252985426815011,0.00470415290160093,0.00834666117108146,0.0146364806186283,0.024117415511692,0.0347295383557264,0.0464310488743126,0.074002429184882,0.148806383125483,0.289161313139293,0.471605528197506,0.694592342124675,1.1761191028413,2.57190502216992,5.93209044712305,11.9794403834283,19.6876839023017,25.599366366773,25.9288096577015,20.2368734521845],[0.000700793031991306,0.00244091289805492,0.00652447311770345,0.0141544675963432,0.0269349267220781,0.0477783750802465,0.0806020834052512,0.132074970714883,0.215210600612522,0.33326257182471,0.449611178950792,0.523464221231611,0.627978917005786,0.976187572318198,1.70919351056204,2.65588857923309,3.48210018890654,4.22573310618565,5.67573534208067,9.16810911913483,15.5983992770954,23.802595347321,29.9273634854917,29.863903813323,23.2074064702414],[0.0095171708364735,0.0328759719242212,0.0858044065332269,0.176346661629055,0.305686226486786,0.483961414009468,0.737767355744046,1.11057382570956,1.67028821589198,2.41141182051298,3.07037645494258,3.29857143403957,3.27255836140345,3.84397129421364,5.66727756150196,8.28696617151465,10.4933888631412,11.564724115396,11.8538659100027,12.4015748454068,14.1710182859855,16.9870845471364,18.9884459141726,17.9652300489603,13.643613856797],[0.0614190144173568,0.211697095262736,0.547702889862137,1.09921472431828,1.81545110356538,2.6766692061228,3.78071255177929,5.28620899349976,7.34661668774704,9.82642463090815,11.8004380112224,12.0761565074416,10.9331217508821,10.5069375923293,12.5274444361794,16.236798276307,19.2557449497453,19.9528581609463,18.2837601934839,15.1335836687188,11.7632424205272,9.20173843940479,7.50768148495671,5.98635643340526,4.1990764577646],[0.191636085455456,0.65640220215074,1.69875617972071,3.41132967146723,5.60874107109357,8.15094474017415,11.2118117859811,15.0296842516612,19.6471020086936,24.5765922234385,28.1151291646089,28.1864421495337,25.1911569879286,22.5855922291256,23.1197455722255,25.6603126649817,26.8310427297815,24.708985582837,19.9054757864005,14.0919815038904,8.76677240933397,4.87078121262045,2.56575167109618,1.38145576915712,0.756346017885491],[0.366081050147865,1.09708517285922,2.72983958229969,5.51836408526941,9.35381992224838,14.0903691380958,19.7705168193183,26.27558533761,33.252771625376,40.1249965124876,45.2579767446364,46.3870977272506,43.6074753647282,40.333572598912,39.4011406524987,39.6432370907527,37.6603533065767,31.8036489476052,23.4724773067508,15.2806349424225,8.9454894668592,4.79162040832727,2.36848317384458,1.07773176014815,0.445037302242669],[1.30038880471904,2.31398408922575,3.99206106761808,6.68701935535159,10.6308565644294,15.9153029822249,22.3868496852249,29.5374744900076,37.0121750182716,44.8744559652848,52.4451577643196,57.7899706590134,59.8625021768689,60.063554453273,60.1074088736389,59.4588996019033,56.079625704702,48.8668576675971,38.8531151595903,28.4746726205873,19.7773563399784,13.2951092936921,8.52346159714363,4.96211746414346,2.47689127993409],[6.87107981454066,10.4657306019273,13.9323852799888,16.866524174553,19.1458316020779,21.2068485554773,23.9142907874832,27.8632811724117,33.2387881374185,40.2371424446147,48.722650815008,57.5076411790502,64.9680529018556,70.3639619339591,73.6801522894813,74.5087347045014,72.0899526210673,66.1852425363487,57.6341851707655,48.4278046255934,40.502552351528,33.8158662865371,26.635597958774,18.2353791419615,10.169162165529],[22.5131216968212,35.5881458487641,48.145354014843,56.6176286626034,58.0902065181612,52.931787942351,45.4382200536352,40.2765645821803,38.9694493023335,40.5684817550422,44.1568704508944,49.3612644876333,55.4284731302388,61.1095624346336,65.2425201532132,67.0556400217931,66.408983834943,63.9550415474853,61.0653480026854,59.6638225344,60.5501304269385,60.6775408130286,54.5517689394478,40.5516735016994,23.7350382558664],[45.2203788338976,75.8094299611801,107.409910946728,129.997492423572,134.689036364408,120.474407248466,96.1519489380642,73.1349507919281,57.0704291775315,47.4581772591076,42.427692082703,41.0656567378248,42.3857326653828,44.6275387621224,46.2566363783874,46.967297459816,47.5239543811753,49.1153253745792,53.0122041445565,60.132695640483,69.2419462500317,74.9507133090021,70.2536438981862,53.7241105794821,32.342680953702],[65.5461277701148,113.452270475495,163.744568140669,200.035229824205,208.907218812582,188.386651310787,149.396511464878,107.683018997203,74.1157526882539,52.2061236933534,41.1803330097686,38.4673663068923,40.3845841226627,43.1565302127199,44.6262814105813,44.8174368762845,44.9114393636548,46.3598270251908,50.5624924446971,57.8688486979353,66.0336178731384,70.1578475857518,65.4459318722957,51.3020083599566,32.7264455372712],[75.8223931936607,129.271787653773,184.114029695931,223.469646324757,234.877209928528,216.443221883808,176.867184957822,130.037104612412,88.7451005696619,61.1354755889469,49.5660570954992,51.06648827865,59.4531116968519,68.3957501015443,73.7160388343757,73.7600832275265,68.9720410884007,61.9704683715496,56.8113210037198,56.1866761862062,58.8679661057253,60.5654314888826,57.1459314000437,47.1022000188464,32.5484900679643],[68.5712630524809,113.151541389418,158.512185102447,193.087495127465,208.172419365214,201.320237638745,176.653283637295,142.459634853835,108.59332195839,84.0699559880707,74.0450187953114,77.9650409900224,90.5791582105551,104.601425604625,113.027197974164,110.939843177052,97.6565218292533,77.9635077464611,59.7753710438825,48.8710645634409,45.3737299433048,45.0782329267935,43.1884948061939,36.8813648841386,26.5278051063416],[52.7246268711864,83.5103660228603,114.072583211188,138.968400289014,154.493542128693,159.298626874907,154.158437582864,140.844708381585,122.448220381752,104.411744344844,93.0709185195413,92.1930835371968,100.630485479823,112.591784335181,120.001530472464,116.130787980001,99.3657509178374,74.7233966372967,50.9103361413543,34.511960003222,26.503403580235,23.6456338717063,21.8900498952502,18.5967190312169,13.3814896934595],[62.7053549116713,91.9817591650865,114.150407289697,125.893496398148,129.491111324059,129.251755389399,127.668696559369,123.550435132505,114.229150112754,100.105231275787,86.159250871954,78.4448601043323,79.0729187178973,84.4532291182807,87.9848272261102,84.2253135804521,71.5634348464107,52.9027727975196,34.0399619639167,19.9259441477291,11.906045018056,8.30604481018105,6.68448953992454,5.34581845238902,3.73404566800306],[116.975724831596,165.020094689122,191.731692024114,190.954698897188,171.014719827277,145.600823323152,124.311920289236,108.813139167913,95.3900111274572,80.9866831573866,66.923306114345,57.1005508959878,53.2538783636734,52.7854467919606,51.4312082884288,46.7098252741727,38.4051562471611,27.8038279506813,17.2992733704451,9.22702237762944,4.41734916174978,2.159999801771,1.2606347924268,0.851036907656222,0.553053398286097],[174.558658084412,241.737951850813,273.799411769165,262.468493082582,221.378087227543,171.68151177694,128.762454191077,97.8236695756119,76.5494237745016,60.864615436911,49.0326939309394,41.4678130284953,37.7365778918487,35.0423271581869,30.6396597461589,24.4047884162874,17.7716256365146,11.7399452527393,6.8003283190203,3.33342198515787,1.36830016691073,0.490815583029726,0.178509312349144,0.0806629034315969,0.0433864218728847],[187.466534362017,254.040418485934,281.214820057068,262.616463487427,213.897835354477,157.090232938618,108.029457855688,72.8242575195566,50.2342656497001,36.3878569367584,28.3030042740471,24.3839263392601,22.9009028408059,21.2352928301805,17.5941241482373,12.5789056605231,7.90450280602387,4.47297991271773,2.25561708821368,0.974381144599145,0.347740713501556,0.101351718140414,0.0250848362170998,0.00621693999616621,0.00202503421447325],[152.893920480392,203.650209360639,221.18084832654,201.983624906103,159.520968019124,111.497840246243,70.6168990056028,41.9546823150925,24.5716547330429,15.1049052779373,10.5577487866325,8.94256099499968,8.67143818482447,8.21906585738539,6.75208586473446,4.62222750102964,2.67455268330295,1.34605518441898,0.592718585085279,0.222580415013162,0.0688125104082742,0.0170862039463952,0.00338652187917254,0.000553870117773756,8.80437455051188e-05],[93.4157564783099,125.276193861735,136.517201755081,124.506104525099,97.4534608092227,66.5462996911938,40.1366717972576,21.8007740427284,11.0168837198172,5.44600133698777,2.91967214884249,2.01668261943006,1.82065088707625,1.70868145457138,1.39318290675697,0.933566628953874,0.518217429143532,0.244215375563937,0.0984643418809425,0.0333070232244382,0.00916560340487013,0.00200269894482977,0.000343094070603142,4.60350163473741e-05,4.96153793638402e-06],[46.1333688940792,64.5803951469783,73.3740738981388,69.708808192706,56.8549627362759,40.4746171394735,25.4058024832666,14.2808099006059,7.35878517678508,3.51514745709733,1.53967870657457,0.639152024724298,0.306605892789035,0.201724517247719,0.147097177556755,0.0947435820669877,0.0509004787865519,0.0230017300592406,0.00878289554824074,0.00277930366689226,0.000706729996081094,0.000140857608195914,2.17156775788911e-05,2.57891152374686e-06,2.36461923169417e-07],[26.9517237138855,39.2922106461297,46.3199901565259,45.5757225881735,38.6693375228388,28.9307078586547,19.2410826393196,11.4533577037128,6.19954895032034,3.0661186520382,1.33835295751319,0.486564629017939,0.14318250837642,0.0371866329138683,0.0115687467333968,0.0051291767619703,0.00247226049964304,0.00106619505491316,0.000391203361974264,0.000118563043287345,2.86768809287237e-05,5.38166690334372e-06,7.7137281626263e-07,8.40021679762298e-08,6.95723689953008e-09],[23.6912141779692,33.5774329319522,38.1585835236603,36.0990565978432,29.8102044131253,22.2362296020154,14.932941615934,8.79874786359458,4.50008640936968,2.02189352284473,0.800006985268476,0.269268672202365,0.0730014740988517,0.0153143481689283,0.00250558226917775,0.000373667348503684,7.76346612623157e-05,2.49828699266449e-05,8.49178674147632e-06,2.48129040622602e-06,5.80814339610615e-07,1.05003576755203e-07,1.43692690411615e-08,1.47620485894752e-09,1.13793815985539e-10],[19.7313093054282,26.5766905779451,28.4077328902946,25.1510261018354,19.6560360460796,14.2587842859868,9.47424356679396,5.42747774934161,2.55831069914577,0.986863429388866,0.31967553589109,0.0890262903228123,0.0210476521954682,0.00403915428148903,0.000601088244083185,6.78323532134046e-05,6.05873777356774e-06,5.76323564189329e-07,1.01019374460571e-07,2.53505418813195e-08,5.71328440877702e-09,1.00758050091751e-09,1.34086039302492e-10,1.32903561291577e-11,9.77739938942609e-13],[11.0764561607761,14.3717910624349,14.5454824734949,11.962695780224,8.60220171075102,5.82756039353396,3.71664115788603,2.06425055886334,0.926209317740051,0.324762873392798,0.0893990543721005,0.0199304198202418,0.00373682164746979,0.000596464123314055,7.88019727039647e-05,8.22594441235036e-06,6.54227527727632e-07,3.94916303379421e-08,2.06805181599493e-09,1.70326219551619e-10,2.79049724214064e-11,4.66831253513887e-12,6.08782604109674e-13,5.90830182409219e-14,4.2277892688313e-15]],"type":"surface","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script><div id="htmlwidget-4c16738bbef9c2fa30a3" style="width:1056px;height:864px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-4c16738bbef9c2fa30a3">{"x":{"visdat":{"f05d447deeb8":["function () ","plotlyVisDat"]},"cur_data":"f05d447deeb8","attrs":{"f05d447deeb8":{"x":[3.42228022486952,3.4574543593614,3.49262849385328,3.52780262834516,3.56297676283704,3.59815089732892,3.63332503182081,3.66849916631269,3.70367330080457,3.73884743529645,3.77402156978833,3.80919570428021,3.84436983877209,3.87954397326397,3.91471810775586,3.94989224224774,3.98506637673962,4.0202405112315,4.05541464572338,4.09058878021526,4.12576291470714,4.16093704919903,4.19611118369091,4.23128531818279,4.26645945267467],"y":[0.00574434290212904,0.0223441650722791,0.0389439872424292,0.0555438094125793,0.0721436315827294,0.0887434537528795,0.10534327592303,0.12194309809318,0.13854292026333,0.15514274243348,0.17174256460363,0.18834238677378,0.20494220894393,0.22154203111408,0.23814185328423,0.25474167545438,0.27134149762453,0.287941319794681,0.304541141964831,0.321140964134981,0.337740786305131,0.354340608475281,0.370940430645431,0.387540252815581,0.404140074985731],"z":[[0.15537292038228,0.273931901258837,0.383458530498098,0.460047535347939,0.527087745689259,0.615860380044952,0.723592831931242,0.820431161559225,0.871676352982561,0.862699985384157,0.804036286196089,0.698207275861104,0.535414795275424,0.338930384450965,0.168861957576419,0.0654143326552886,0.0211795852759311,0.00835510283159095,0.00654651794639477,0.00657485451453935,0.00555858364935162,0.00369425580914499,0.00207081470810953,0.00114255165650148,0.00067007949695642],[0.253306948717431,0.413607455064056,0.551642711614712,0.630762881637334,0.675467562638099,0.732188385885034,0.816099262655699,0.912411162169645,0.995722144195087,1.04113401100559,1.02411863484584,0.915131048702034,0.707051532209364,0.453788029566896,0.241090196563737,0.114065687971573,0.0605399226623195,0.0490851926960711,0.0537745679659161,0.0559952502156672,0.0475497764535154,0.0328357059016292,0.0202765997208938,0.0127866641771225,0.00823798135052773],[0.262005899484153,0.370192038519159,0.455004986062147,0.497603046707093,0.507068734375954,0.517310046580746,0.562298708137516,0.656657746138059,0.786800461791113,0.908751999113013,0.958338753218473,0.885585915492784,0.703566941484546,0.492408191448261,0.331018779155731,0.24135240522309,0.21080214420403,0.225014201961516,0.256508882167093,0.262735918531397,0.223653302649399,0.161410469910491,0.10882512481585,0.0751484654905722,0.0509123430961832],[0.214100664120577,0.26408204942941,0.293422399417623,0.308014485559372,0.315051385364281,0.336489767741049,0.406951569367126,0.541946370314607,0.715726909021133,0.874187233379893,0.961539531316463,0.945030779469883,0.843070075465351,0.721872911148307,0.63517717755579,0.591802561180165,0.596678608482841,0.657417589973168,0.729434368776702,0.727397021116051,0.619396998818276,0.462331283435505,0.328750192103165,0.236874338728405,0.164341033403885],[0.243098408998607,0.313914443353597,0.349393830323563,0.376063490437889,0.431431744954302,0.532510451875681,0.672905962752076,0.824864906321578,0.949581333474272,1.03344070619767,1.10137441918686,1.17143847202791,1.22634979076671,1.24592416993703,1.22941162271589,1.19736439994788,1.19988490353215,1.26727196782562,1.3338294667239,1.28288910777755,1.08177802947768,0.816949838048235,0.591640445013334,0.433030619032878,0.306903505249671],[0.470301707508045,0.662352416736639,0.799322058808153,0.922243822059383,1.08772496975027,1.27942261411296,1.42918150214148,1.4867275882414,1.4525353756016,1.39281940986072,1.41736857829448,1.57606528208127,1.78752423510377,1.92304999073838,1.93338976568577,1.86984090890156,1.81788853115027,1.80739210560357,1.77119805619988,1.61553236832675,1.33190607063343,1.01071324618084,0.747818339174879,0.562657773639967,0.41089117064861],[0.745717970325413,1.12781289619422,1.47965326500452,1.79809150497894,2.08306549527327,2.27324220615738,2.30564578561954,2.19888940037627,2.03838285636252,1.92549404560468,1.95281619368813,2.13810406357189,2.36614128083557,2.48908597186819,2.48069490274373,2.42406274458052,2.3787516150349,2.31583802064118,2.16810403849538,1.91008045990603,1.58421600670805,1.26128746130598,0.986139183595451,0.754533468173218,0.535846411268421],[0.844421477212942,1.40186136735859,1.98705049658281,2.49214988054507,2.84001277516289,2.98951183662213,2.95570285781418,2.82767662927589,2.71370266292258,2.66703168980161,2.69604168845035,2.78183254323357,2.85972507753307,2.87819016004987,2.87953766383792,2.93797602239222,3.03229735458188,3.05090978627892,2.92379233132857,2.69220437907868,2.42340047468884,2.11123105562812,1.71468005711063,1.24927413793421,0.790002413883214],[0.790069052057213,1.41615933920383,2.09782319916312,2.66719732552504,3.05120349759908,3.28526262238061,3.43024667690064,3.52816417247258,3.59932756026724,3.63885159894632,3.63447040879875,3.57728576765348,3.47321168239812,3.39735628554084,3.48464400129811,3.78345368760957,4.1475217671039,4.35657951298685,4.35221085482963,4.2580375628411,4.12590448531741,3.79589114086493,3.11584291012733,2.18700586278702,1.28386601221564],[0.723417275494544,1.32199590779033,1.97115879752647,2.51498986743798,2.92757888526055,3.30732833957118,3.72270395918786,4.12088325736196,4.40481106161507,4.55590953674615,4.63158505700988,4.65776000898727,4.62706426220776,4.62955053036067,4.84932345625329,5.34271115592588,5.90882857478177,6.29441452326215,6.4663928461708,6.52823674715444,6.41169952570676,5.85737588719593,4.74825179719586,3.31633173906662,1.96040353951442],[0.835333243522346,1.48894255163207,2.19879819340442,2.81572739919842,3.31936960700332,3.81352883821369,4.36790909885618,4.91709073627023,5.34950801083698,5.6471575145931,5.87862772952245,6.0814344333725,6.24156830283978,6.39511804630154,6.64356647290887,7.02207415888659,7.44860948303125,7.85707784514744,8.22054792788541,8.36383279091074,7.98085149315304,6.94341607741057,5.43947528907043,3.80117430908578,2.32046272263238],[1.46122576271496,2.45893367168024,3.4920785569981,4.35746322827329,5.00393407651339,5.51753978950682,5.98075043736116,6.40449860270101,6.76474018284282,7.03794299101172,7.22490713628097,7.36191245095185,7.49426289200269,7.64374489440995,7.80299427531137,7.95568010614572,8.13184733813286,8.41431563320767,8.72582938055992,8.66932316113507,7.88548456095156,6.49469138330151,4.91679977634328,3.432743443084,2.14004077365701],[2.41342302135139,3.92791689949438,5.41383465035331,6.53698568650277,7.17542018551877,7.42294172033339,7.44018733684743,7.3718491873381,7.31641045422463,7.29199310281741,7.29284520658928,7.35369203076705,7.50109178349952,7.69938678232719,7.87686399053875,7.96578375054805,7.94489005954014,7.86820194575387,7.72653642198764,7.30694284687957,6.42381226943471,5.20788930455181,3.93959273006132,2.75912760129521,1.71212498201549],[2.81333310768199,4.53916586990079,6.18094272974687,7.28365936190121,7.6499376479511,7.42301953596255,6.90967203951188,6.38423258669393,5.98924442739308,5.74124497604248,5.64829451082649,5.7611080874789,6.07987486071596,6.50364631180923,6.88241375836637,7.05055337113606,6.88304149074019,6.43684423281066,5.92375509621468,5.44324425251309,4.89516067658812,4.17774866545346,3.29761343535086,2.33046636237663,1.41274747553713],[2.46101333472137,3.96774818366382,5.32541212713023,6.07630625740791,6.07260014889741,5.55747500235219,4.92087268226518,4.43157933216157,4.15252795907465,4.0215039907243,4.00194352321048,4.14277071639067,4.49614808821903,5.02444362680375,5.58391614142124,5.95760525097166,5.96852664969725,5.67243641733229,5.34600590137107,5.15267491556057,4.94805171812849,4.48815018955167,3.67765241149082,2.62144520719447,1.56665527975902],[2.22082143516078,3.57335755529786,4.70312836781022,5.17929517629002,4.96474651115333,4.41543332230461,3.9310142089426,3.69115138848323,3.66520668982921,3.74395043229201,3.85745572776318,4.02008204902526,4.2934728088121,4.71382281100953,5.24778731151917,5.79717772166029,6.24195571180496,6.53483897337615,6.72825436351102,6.81590479809021,6.63711718664334,6.02229429786089,4.94465032216177,3.55382114068611,2.1527474105571],[2.37565003873685,3.71876785862485,4.78116960730371,5.17452094922604,4.94813908720045,4.51361763086565,4.22517308439934,4.15216498669934,4.19349351241697,4.26393379524638,4.36766362394647,4.54475716348612,4.79709257742609,5.09835231612445,5.46758897180768,5.98857695327955,6.6881346476222,7.42772593951191,7.98115092139608,8.15641358766327,7.83353329428722,6.98023044482906,5.66665992737101,4.07745212515777,2.50929077836747],[2.17115964215977,3.26780052272219,4.10646382198479,4.4406099484331,4.36927188866266,4.21510924356441,4.1780813080927,4.21879816736275,4.2254057265005,4.18904818922663,4.22095471488606,4.40321056595099,4.66948162427609,4.89893797663521,5.10412124993918,5.45629548840816,6.06687309640637,6.78064173281048,7.27506037502018,7.32224884467592,6.87808842194542,5.99465732815885,4.77076379711326,3.38172779111283,2.06973031869017],[1.38716598147544,2.05354606861558,2.58910725887752,2.89302771860702,3.02301650077964,3.10989343461608,3.20929267219725,3.27812174110328,3.26514216330234,3.2059089445304,3.22688293402292,3.40969435191288,3.6812069850549,3.90505317943032,4.05816051484689,4.2623927720035,4.61837447382294,5.03341271519772,5.27193497532751,5.16923915418172,4.72781229526359,4.0249617357484,3.13793847548185,2.17760379280852,1.30185953056632],[0.703192145696621,1.05726069079926,1.38461113585304,1.6478022728159,1.83773202598645,1.95228197038401,1.99394862179195,1.97276388436406,1.90051117124615,1.81726086052361,1.81482960089653,1.96638690036529,2.23563066055206,2.5025855589269,2.6802769395613,2.78696597310968,2.89270124670955,3.0063988362411,3.04758353012448,2.9329591804347,2.6507197616216,2.23605626844258,1.72770764541754,1.18313064069356,0.691883337337215],[0.568473554628449,0.837199423038543,1.05601824204908,1.19604499219647,1.26071626504795,1.25765040294901,1.19788838029048,1.10288029471444,0.991687863937754,0.888189850074837,0.847778766905247,0.929018469484371,1.12152342409246,1.33121878205913,1.455929990992,1.47309298247469,1.43939913390915,1.41087807292339,1.39089899081887,1.35172457357413,1.26785260875134,1.1151814191143,0.879857425824473,0.594787181743182,0.333391162323774],[0.679014075243321,0.973294756235814,1.1545682483418,1.18161657166019,1.09225650000688,0.958762734978055,0.845971510695634,0.780445832809584,0.735024808910208,0.668812883842108,0.593296485735808,0.565711094073637,0.612145518439099,0.687457414531881,0.720952858430184,0.690265425762562,0.634212423716146,0.598176452903064,0.593504409908703,0.608611323283394,0.621574458930146,0.590681572383824,0.480316706541793,0.314386370093702,0.161237818738122],[0.65968171191089,0.953454158010929,1.15109234660177,1.196832903309,1.08799711604824,0.888351589062036,0.718115221544246,0.660538335605184,0.679558747878346,0.676973600722628,0.614334200694079,0.536744674956846,0.497119128822732,0.494765066797492,0.486953060792914,0.445410509088699,0.386488898078533,0.343615802537121,0.327363224236692,0.324727307315129,0.319347306253391,0.29202509214742,0.227682497425703,0.140687924001912,0.0662595799969961],[0.431115093720075,0.640075174535652,0.816744515457918,0.907449705021846,0.859897872963894,0.6889170388509,0.507318913000349,0.425411796990668,0.443725937350682,0.483555907106553,0.488568379738358,0.466134603007517,0.452960661813213,0.460313479881721,0.45742201773303,0.413014668086951,0.337330483919138,0.267343971126425,0.220679111697338,0.185099597121248,0.148167231199617,0.110038627078918,0.0731015892100113,0.0405340286449357,0.0175783410078034],[0.163334803770884,0.252018093587304,0.340759494453895,0.399962067260454,0.390613842873118,0.309878612104418,0.212920519473039,0.162130615381305,0.171140997417089,0.210314004336882,0.246349908445004,0.270078781925541,0.295449541756465,0.328620483340195,0.345482017628937,0.316818614386762,0.247292661991655,0.171947146601041,0.116824004786817,0.0801794570767584,0.0519427320321815,0.0300448431509799,0.0155069405822571,0.0070750770445483,0.00270396876534529]],"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"surface","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":[]},"yaxis":{"title":[]},"zaxis":{"title":[]}},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"showSendToCloud":false},"data":[{"colorbar":{"title":"","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"x":[3.42228022486952,3.4574543593614,3.49262849385328,3.52780262834516,3.56297676283704,3.59815089732892,3.63332503182081,3.66849916631269,3.70367330080457,3.73884743529645,3.77402156978833,3.80919570428021,3.84436983877209,3.87954397326397,3.91471810775586,3.94989224224774,3.98506637673962,4.0202405112315,4.05541464572338,4.09058878021526,4.12576291470714,4.16093704919903,4.19611118369091,4.23128531818279,4.26645945267467],"y":[0.00574434290212904,0.0223441650722791,0.0389439872424292,0.0555438094125793,0.0721436315827294,0.0887434537528795,0.10534327592303,0.12194309809318,0.13854292026333,0.15514274243348,0.17174256460363,0.18834238677378,0.20494220894393,0.22154203111408,0.23814185328423,0.25474167545438,0.27134149762453,0.287941319794681,0.304541141964831,0.321140964134981,0.337740786305131,0.354340608475281,0.370940430645431,0.387540252815581,0.404140074985731],"z":[[0.15537292038228,0.273931901258837,0.383458530498098,0.460047535347939,0.527087745689259,0.615860380044952,0.723592831931242,0.820431161559225,0.871676352982561,0.862699985384157,0.804036286196089,0.698207275861104,0.535414795275424,0.338930384450965,0.168861957576419,0.0654143326552886,0.0211795852759311,0.00835510283159095,0.00654651794639477,0.00657485451453935,0.00555858364935162,0.00369425580914499,0.00207081470810953,0.00114255165650148,0.00067007949695642],[0.253306948717431,0.413607455064056,0.551642711614712,0.630762881637334,0.675467562638099,0.732188385885034,0.816099262655699,0.912411162169645,0.995722144195087,1.04113401100559,1.02411863484584,0.915131048702034,0.707051532209364,0.453788029566896,0.241090196563737,0.114065687971573,0.0605399226623195,0.0490851926960711,0.0537745679659161,0.0559952502156672,0.0475497764535154,0.0328357059016292,0.0202765997208938,0.0127866641771225,0.00823798135052773],[0.262005899484153,0.370192038519159,0.455004986062147,0.497603046707093,0.507068734375954,0.517310046580746,0.562298708137516,0.656657746138059,0.786800461791113,0.908751999113013,0.958338753218473,0.885585915492784,0.703566941484546,0.492408191448261,0.331018779155731,0.24135240522309,0.21080214420403,0.225014201961516,0.256508882167093,0.262735918531397,0.223653302649399,0.161410469910491,0.10882512481585,0.0751484654905722,0.0509123430961832],[0.214100664120577,0.26408204942941,0.293422399417623,0.308014485559372,0.315051385364281,0.336489767741049,0.406951569367126,0.541946370314607,0.715726909021133,0.874187233379893,0.961539531316463,0.945030779469883,0.843070075465351,0.721872911148307,0.63517717755579,0.591802561180165,0.596678608482841,0.657417589973168,0.729434368776702,0.727397021116051,0.619396998818276,0.462331283435505,0.328750192103165,0.236874338728405,0.164341033403885],[0.243098408998607,0.313914443353597,0.349393830323563,0.376063490437889,0.431431744954302,0.532510451875681,0.672905962752076,0.824864906321578,0.949581333474272,1.03344070619767,1.10137441918686,1.17143847202791,1.22634979076671,1.24592416993703,1.22941162271589,1.19736439994788,1.19988490353215,1.26727196782562,1.3338294667239,1.28288910777755,1.08177802947768,0.816949838048235,0.591640445013334,0.433030619032878,0.306903505249671],[0.470301707508045,0.662352416736639,0.799322058808153,0.922243822059383,1.08772496975027,1.27942261411296,1.42918150214148,1.4867275882414,1.4525353756016,1.39281940986072,1.41736857829448,1.57606528208127,1.78752423510377,1.92304999073838,1.93338976568577,1.86984090890156,1.81788853115027,1.80739210560357,1.77119805619988,1.61553236832675,1.33190607063343,1.01071324618084,0.747818339174879,0.562657773639967,0.41089117064861],[0.745717970325413,1.12781289619422,1.47965326500452,1.79809150497894,2.08306549527327,2.27324220615738,2.30564578561954,2.19888940037627,2.03838285636252,1.92549404560468,1.95281619368813,2.13810406357189,2.36614128083557,2.48908597186819,2.48069490274373,2.42406274458052,2.3787516150349,2.31583802064118,2.16810403849538,1.91008045990603,1.58421600670805,1.26128746130598,0.986139183595451,0.754533468173218,0.535846411268421],[0.844421477212942,1.40186136735859,1.98705049658281,2.49214988054507,2.84001277516289,2.98951183662213,2.95570285781418,2.82767662927589,2.71370266292258,2.66703168980161,2.69604168845035,2.78183254323357,2.85972507753307,2.87819016004987,2.87953766383792,2.93797602239222,3.03229735458188,3.05090978627892,2.92379233132857,2.69220437907868,2.42340047468884,2.11123105562812,1.71468005711063,1.24927413793421,0.790002413883214],[0.790069052057213,1.41615933920383,2.09782319916312,2.66719732552504,3.05120349759908,3.28526262238061,3.43024667690064,3.52816417247258,3.59932756026724,3.63885159894632,3.63447040879875,3.57728576765348,3.47321168239812,3.39735628554084,3.48464400129811,3.78345368760957,4.1475217671039,4.35657951298685,4.35221085482963,4.2580375628411,4.12590448531741,3.79589114086493,3.11584291012733,2.18700586278702,1.28386601221564],[0.723417275494544,1.32199590779033,1.97115879752647,2.51498986743798,2.92757888526055,3.30732833957118,3.72270395918786,4.12088325736196,4.40481106161507,4.55590953674615,4.63158505700988,4.65776000898727,4.62706426220776,4.62955053036067,4.84932345625329,5.34271115592588,5.90882857478177,6.29441452326215,6.4663928461708,6.52823674715444,6.41169952570676,5.85737588719593,4.74825179719586,3.31633173906662,1.96040353951442],[0.835333243522346,1.48894255163207,2.19879819340442,2.81572739919842,3.31936960700332,3.81352883821369,4.36790909885618,4.91709073627023,5.34950801083698,5.6471575145931,5.87862772952245,6.0814344333725,6.24156830283978,6.39511804630154,6.64356647290887,7.02207415888659,7.44860948303125,7.85707784514744,8.22054792788541,8.36383279091074,7.98085149315304,6.94341607741057,5.43947528907043,3.80117430908578,2.32046272263238],[1.46122576271496,2.45893367168024,3.4920785569981,4.35746322827329,5.00393407651339,5.51753978950682,5.98075043736116,6.40449860270101,6.76474018284282,7.03794299101172,7.22490713628097,7.36191245095185,7.49426289200269,7.64374489440995,7.80299427531137,7.95568010614572,8.13184733813286,8.41431563320767,8.72582938055992,8.66932316113507,7.88548456095156,6.49469138330151,4.91679977634328,3.432743443084,2.14004077365701],[2.41342302135139,3.92791689949438,5.41383465035331,6.53698568650277,7.17542018551877,7.42294172033339,7.44018733684743,7.3718491873381,7.31641045422463,7.29199310281741,7.29284520658928,7.35369203076705,7.50109178349952,7.69938678232719,7.87686399053875,7.96578375054805,7.94489005954014,7.86820194575387,7.72653642198764,7.30694284687957,6.42381226943471,5.20788930455181,3.93959273006132,2.75912760129521,1.71212498201549],[2.81333310768199,4.53916586990079,6.18094272974687,7.28365936190121,7.6499376479511,7.42301953596255,6.90967203951188,6.38423258669393,5.98924442739308,5.74124497604248,5.64829451082649,5.7611080874789,6.07987486071596,6.50364631180923,6.88241375836637,7.05055337113606,6.88304149074019,6.43684423281066,5.92375509621468,5.44324425251309,4.89516067658812,4.17774866545346,3.29761343535086,2.33046636237663,1.41274747553713],[2.46101333472137,3.96774818366382,5.32541212713023,6.07630625740791,6.07260014889741,5.55747500235219,4.92087268226518,4.43157933216157,4.15252795907465,4.0215039907243,4.00194352321048,4.14277071639067,4.49614808821903,5.02444362680375,5.58391614142124,5.95760525097166,5.96852664969725,5.67243641733229,5.34600590137107,5.15267491556057,4.94805171812849,4.48815018955167,3.67765241149082,2.62144520719447,1.56665527975902],[2.22082143516078,3.57335755529786,4.70312836781022,5.17929517629002,4.96474651115333,4.41543332230461,3.9310142089426,3.69115138848323,3.66520668982921,3.74395043229201,3.85745572776318,4.02008204902526,4.2934728088121,4.71382281100953,5.24778731151917,5.79717772166029,6.24195571180496,6.53483897337615,6.72825436351102,6.81590479809021,6.63711718664334,6.02229429786089,4.94465032216177,3.55382114068611,2.1527474105571],[2.37565003873685,3.71876785862485,4.78116960730371,5.17452094922604,4.94813908720045,4.51361763086565,4.22517308439934,4.15216498669934,4.19349351241697,4.26393379524638,4.36766362394647,4.54475716348612,4.79709257742609,5.09835231612445,5.46758897180768,5.98857695327955,6.6881346476222,7.42772593951191,7.98115092139608,8.15641358766327,7.83353329428722,6.98023044482906,5.66665992737101,4.07745212515777,2.50929077836747],[2.17115964215977,3.26780052272219,4.10646382198479,4.4406099484331,4.36927188866266,4.21510924356441,4.1780813080927,4.21879816736275,4.2254057265005,4.18904818922663,4.22095471488606,4.40321056595099,4.66948162427609,4.89893797663521,5.10412124993918,5.45629548840816,6.06687309640637,6.78064173281048,7.27506037502018,7.32224884467592,6.87808842194542,5.99465732815885,4.77076379711326,3.38172779111283,2.06973031869017],[1.38716598147544,2.05354606861558,2.58910725887752,2.89302771860702,3.02301650077964,3.10989343461608,3.20929267219725,3.27812174110328,3.26514216330234,3.2059089445304,3.22688293402292,3.40969435191288,3.6812069850549,3.90505317943032,4.05816051484689,4.2623927720035,4.61837447382294,5.03341271519772,5.27193497532751,5.16923915418172,4.72781229526359,4.0249617357484,3.13793847548185,2.17760379280852,1.30185953056632],[0.703192145696621,1.05726069079926,1.38461113585304,1.6478022728159,1.83773202598645,1.95228197038401,1.99394862179195,1.97276388436406,1.90051117124615,1.81726086052361,1.81482960089653,1.96638690036529,2.23563066055206,2.5025855589269,2.6802769395613,2.78696597310968,2.89270124670955,3.0063988362411,3.04758353012448,2.9329591804347,2.6507197616216,2.23605626844258,1.72770764541754,1.18313064069356,0.691883337337215],[0.568473554628449,0.837199423038543,1.05601824204908,1.19604499219647,1.26071626504795,1.25765040294901,1.19788838029048,1.10288029471444,0.991687863937754,0.888189850074837,0.847778766905247,0.929018469484371,1.12152342409246,1.33121878205913,1.455929990992,1.47309298247469,1.43939913390915,1.41087807292339,1.39089899081887,1.35172457357413,1.26785260875134,1.1151814191143,0.879857425824473,0.594787181743182,0.333391162323774],[0.679014075243321,0.973294756235814,1.1545682483418,1.18161657166019,1.09225650000688,0.958762734978055,0.845971510695634,0.780445832809584,0.735024808910208,0.668812883842108,0.593296485735808,0.565711094073637,0.612145518439099,0.687457414531881,0.720952858430184,0.690265425762562,0.634212423716146,0.598176452903064,0.593504409908703,0.608611323283394,0.621574458930146,0.590681572383824,0.480316706541793,0.314386370093702,0.161237818738122],[0.65968171191089,0.953454158010929,1.15109234660177,1.196832903309,1.08799711604824,0.888351589062036,0.718115221544246,0.660538335605184,0.679558747878346,0.676973600722628,0.614334200694079,0.536744674956846,0.497119128822732,0.494765066797492,0.486953060792914,0.445410509088699,0.386488898078533,0.343615802537121,0.327363224236692,0.324727307315129,0.319347306253391,0.29202509214742,0.227682497425703,0.140687924001912,0.0662595799969961],[0.431115093720075,0.640075174535652,0.816744515457918,0.907449705021846,0.859897872963894,0.6889170388509,0.507318913000349,0.425411796990668,0.443725937350682,0.483555907106553,0.488568379738358,0.466134603007517,0.452960661813213,0.460313479881721,0.45742201773303,0.413014668086951,0.337330483919138,0.267343971126425,0.220679111697338,0.185099597121248,0.148167231199617,0.110038627078918,0.0731015892100113,0.0405340286449357,0.0175783410078034],[0.163334803770884,0.252018093587304,0.340759494453895,0.399962067260454,0.390613842873118,0.309878612104418,0.212920519473039,0.162130615381305,0.171140997417089,0.210314004336882,0.246349908445004,0.270078781925541,0.295449541756465,0.328620483340195,0.345482017628937,0.316818614386762,0.247292661991655,0.171947146601041,0.116824004786817,0.0801794570767584,0.0519427320321815,0.0300448431509799,0.0155069405822571,0.0070750770445483,0.00270396876534529]],"type":"surface","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script><div id="htmlwidget-6821193b6b503f84a4c7" style="width:1056px;height:864px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6821193b6b503f84a4c7">{"x":{"visdat":{"f05d27c39529":["function () ","plotlyVisDat"]},"cur_data":"f05d27c39529","attrs":{"f05d27c39529":{"x":[0.0250038941145404,0.0260449147509396,0.0270859353873387,0.0281269560237379,0.0291679766601371,0.0302089972965362,0.0312500179329354,0.0322910385693345,0.0333320592057337,0.0343730798421328,0.035414100478532,0.0364551211149311,0.0374961417513303,0.0385371623877294,0.0395781830241286,0.0406192036605278,0.0416602242969269,0.0427012449333261,0.0437422655697252,0.0447832862061244,0.0458243068425235,0.0468653274789227,0.0479063481153218,0.048947368751721,0.0499883893881201],"y":[0.00574434290212904,0.0223441650722791,0.0389439872424292,0.0555438094125793,0.0721436315827294,0.0887434537528795,0.10534327592303,0.12194309809318,0.13854292026333,0.15514274243348,0.17174256460363,0.18834238677378,0.20494220894393,0.22154203111408,0.23814185328423,0.25474167545438,0.27134149762453,0.287941319794681,0.304541141964831,0.321140964134981,0.337740786305131,0.354340608475281,0.370940430645431,0.387540252815581,0.404140074985731],"z":[[45.9524114013052,67.344842482679,82.4485730330015,88.2138637940748,87.5244614752334,85.8652087015465,86.4187577111016,88.9057050632989,92.2595683046845,96.3636581585297,100.980473656719,105.322346204364,109.542689239481,114.651266877277,120.974870907833,128.264735285604,136.750377649822,147.092869140357,158.015712974706,163.596713384143,156.079957290012,133.100253108599,100.154611258466,66.0593682811628,37.7271712392112],[68.1524770490123,100.986959488666,124.867395566811,134.130604317334,132.641750920598,129.419714162565,130.352453176247,135.124835252454,140.749300058827,145.619893523814,149.948318753219,154.503521794036,160.244422995925,167.459152680212,175.192175010665,183.090729776208,192.782000294061,206.016964663722,220.399729838671,227.16973368146,216.533276764935,186.17883938267,142.762268315234,96.5826741888667,56.564769186519],[82.5727775043392,124.314761954626,155.852875329782,168.620656643916,166.62394005495,161.923029581088,163.137393578283,170.021775979483,177.47262277307,182.259981505251,185.563030493304,190.157014186115,197.100335871456,205.048718118556,212.196847096635,219.200946355443,229.098105047231,243.52421401912,258.445745248262,263.950921292148,250.872730853915,217.759220029799,170.544829310105,118.411773097835,70.9517038924733],[84.6875261120448,129.867688686905,165.267081740769,180.323599857562,178.465674761542,173.141665261767,174.480728512845,182.141270038781,189.553296409937,192.818185790547,194.790368058013,200.046370298918,208.611617046977,216.960974928887,223.417244144539,230.420994072674,241.233011058492,255.540202903869,267.882646769817,269.729114039803,254.907814977094,223.103777910796,178.194373036741,126.603475792646,77.3022849731184],[76.4850052772389,119.347049554001,153.986606370335,169.558089137698,168.575845952158,163.781148683326,165.007048868294,171.604132873942,176.683216461632,176.950583884655,177.192100393889,183.253262804646,193.844627471072,203.616908123261,211.310789335159,220.385808742166,232.899687677821,246.207669076724,254.715376803881,252.716796526589,237.144599756334,208.356328840659,168.450240329465,121.479518169686,75.1026270168764],[63.5818593700012,100.498517808739,131.411197263283,146.733194917841,147.735203648562,144.510673207036,145.116796580426,148.876476605836,150.002536355039,146.568286479943,144.483250593249,150.063273913906,161.572346636728,173.071332066738,183.1811206271,194.64889977124,207.841662620366,219.293853632809,224.867938089321,221.353136673571,206.965650434332,181.795982650364,147.271325011935,106.606021239406,66.1785080419347],[51.1268786859581,81.3789974263228,108.240824359276,124.093039925345,128.454676764014,127.406702593017,126.532485068162,125.948347168107,122.392959581361,115.497142737447,110.838281024899,114.161301820896,124.27071019159,135.989334560239,147.432481767439,159.577506161808,171.520433807635,180.564274944473,184.761986454196,182.424365890807,171.402224848812,150.690688676586,121.56927972446,87.5165623132568,54.121753503969],[41.6655901286593,66.5717675208896,90.5687977385858,107.816866688549,115.874706584641,116.659141465954,113.453141377873,107.828191769637,99.7635791407173,90.38176513658,83.8985762723245,84.5322372517019,91.7407068321582,101.75663529526,112.50733908008,123.537736893553,133.342404804177,140.292325031683,144.1387248617,144.028669239256,137.152838351096,121.291016934223,97.4206880941813,69.440685821201,42.5912869610606],[35.583729039596,56.987023325091,78.9592013563029,96.8470182830502,106.970747433883,108.421212456757,102.870937415719,93.0811845882904,81.772684695177,71.4401180058305,64.8904720182968,64.2884139413004,69.0113654670823,76.5018497808463,85.1359508901961,94.1279009340057,102.023438043678,107.796240766215,111.786005102422,113.398841359774,109.607933596009,97.6269534026939,78.1400109162749,55.1713420596749,33.6390606446334],[32.6269430019876,51.9406934014402,71.6906134586376,88.0577647684756,97.6726628565033,98.8402942394017,92.1946618516924,80.5711827446902,68.1267564462592,58.5585159351194,53.829861547912,54.0096647068233,57.5645117079793,62.6538450857979,68.5728655332162,75.0968358628367,81.3153480279531,86.5182337309614,90.8004067896692,93.20015111738,90.7286664630647,80.8939409243474,64.5463989149757,45.5284284560742,28.0353200636516],[32.1422272839522,50.3795618467608,67.7389683215836,81.1439136517778,88.7749173196015,89.611402162859,83.5563723972767,72.5397879566845,60.9454766504541,53.3391638368504,51.3497389760989,53.2760746712361,56.3743296573879,59.2579320804223,62.33869551178,66.2430435575445,70.6990773598586,75.2707190893128,79.5926650834328,81.9614067329225,79.3619475283248,70.1567029670373,55.9043820047565,40.0538186254888,25.5570127733128],[32.3730363186972,50.4064589197203,66.4817225623727,77.8927519739056,84.1733910787622,85.2470505615507,80.7229397357428,71.6154272733191,61.9095739501749,56.4635269857205,56.756315400205,59.9644619703774,62.4788056987905,63.3251998321166,63.9239112657344,65.5588865297309,68.2846191511053,71.8382650395631,75.5772367636769,77.1185694040903,73.334992817631,63.593054974882,50.428563700596,36.8728230766421,24.4907718117572],[31.2659499399119,49.6385198702253,66.3907067644267,78.4073389757258,85.1596361604817,86.9991252662723,83.9607529329559,76.9571795362636,69.4072477839459,65.6706807998747,66.9755464801743,70.2830638899685,71.9750001449962,71.5246927453111,70.8424969382605,71.2223426726022,72.4778725561036,74.4002211148657,76.5310548720472,76.3496349918808,70.7406512688173,59.7965346529769,46.725121953875,34.2259959423311,22.9777583448049],[28.4261465496515,47.0988399152615,65.7595205380253,80.2701801759182,88.7297335432522,91.372031773446,89.3128904909953,84.2788961997609,79.1218973553667,76.8127060168274,77.9497156272217,80.1770389424776,81.0118576755535,80.5300921866958,80.3299215033314,80.7298847778925,80.704502425005,80.1140851391299,79.3313992067207,76.6513815646209,69.4196781592679,57.815885362201,44.6766231608393,32.2097494234938,21.0445623543079],[25.257194867127,43.7025515111864,63.8403434988164,80.6099442185222,90.5285886548558,93.5267332629744,92.0264036492749,89.0369458514463,86.8054625711361,86.1377162855111,86.4928557727876,86.7635551880029,86.5322120336355,86.6701215211274,87.8896374858076,88.940479612964,87.7587171504031,84.2996763417787,80.0392794624361,74.8206886532606,67.0035437079408,56.2882858227418,43.9640275796367,31.353296669342,19.6454986422766],[22.823057102776,40.2701393857367,60.2534416401344,77.4421547366791,87.4848302782587,90.1420455236122,88.9740161285579,88.2205592849194,89.421998103385,90.8692418093621,90.5717272694637,88.6789480504322,86.9365692137834,86.9958918058094,88.8187424637204,90.0763465376716,88.1272093057188,82.8817573700931,76.3401289366644,69.6158533668745,62.2178440912503,53.3804972840989,42.6454711020333,30.3786887555782,18.4039534978376],[20.457852220048,36.1122511597015,54.2772489036926,69.9242503647266,78.6431837128281,80.2627481884513,79.1443430022635,80.3935179226013,84.8929975173094,88.8087339466495,88.7940521630026,85.6516553345211,82.4316114115307,81.2885816930809,82.1192046610774,82.69951604646,80.5962645445138,75.4835036448324,68.8739179290204,62.0490797206249,55.2626943395171,47.8543823790215,38.5976261426602,27.3397445023006,16.1320161266176],[17.082492227541,30.3131168958701,45.65981784078,58.6517557855573,65.326231113601,65.7169511824996,64.4525072527441,66.9022807288703,73.6168816983402,79.8093404108246,81.3374539100315,78.7876684278961,75.2063091939358,72.7877179262764,71.8919233274622,71.2746107751833,69.2999908115403,65.4035554439189,60.0282362217855,53.7729125852764,47.1971906289014,40.2979398331635,32.1486145057463,22.4796889779544,13.004699050143],[13.0294318314326,23.5759344051501,35.7601713432886,45.8526239048092,50.7113452091477,50.5759022137682,49.5774219922537,52.5127558557164,59.9213715699168,67.4915099067455,71.2245462035662,71.0062889736732,68.8269264677819,66.3142864831928,64.1993792807401,62.3788984038594,60.2300222590343,57.0857325227234,52.4327840375463,46.3060206497453,39.6092685020331,33.0569620178514,26.1324027074163,18.3281605720681,10.6865879603405],[9.62179588246532,17.8021554868007,27.1182264873045,34.7285346143601,38.5908478367708,39.1328673566221,39.3706052656822,42.7790888750041,49.8531632299845,57.556028213979,62.8840728917296,65.3009121609202,65.55225795184,64.2891573850023,62.1215308957126,59.7288694721658,57.2995423637763,53.9806967627598,48.6411036003874,41.5498511277969,34.4932752638229,28.6446052386694,23.2125145842562,16.996485448884,10.4082306659345],[7.52300648845356,14.1032022869278,21.4328413743075,27.4766628042963,31.2577874210231,33.3967667876231,35.7200773261108,40.1537434080702,46.79036003789,53.6030008928072,58.8095257888379,62.2225981343666,64.1503851949736,64.5510042465221,63.5725635392911,62.0136652039819,60.2075519420178,56.7122509761123,49.934453487384,41.0326874944477,33.1828780753975,27.8667346912349,23.5295851123056,18.1017299773748,11.6211053505221],[6.30962777939336,11.9361471475197,18.1592159928962,23.528804670604,27.8061908402413,31.7306999298583,36.2587629688433,42.0824017211811,48.6216016330024,54.107340424022,57.6222212187276,59.8513783371082,61.6296388340479,62.9763350849301,63.6834922877392,64.0692287301945,63.8897534473978,60.9148389814438,53.2597891625697,42.9376597616481,34.2253606291128,28.7913742030493,24.5930481362954,19.1748509889205,12.4881930724797],[5.30521316449605,10.0947805049838,15.4393982874392,20.3611573132287,25.0290892860943,30.1079173489134,35.9523798687624,42.5230462104705,48.7878319823862,53.0020191691106,54.7058977757745,55.1873411471612,55.8235807602003,57.0431166993693,58.6347467513716,60.3639018330606,61.3136295244754,58.9954089714516,51.7470357514705,41.8299380229712,33.3810674622952,27.8208173212868,23.2979503517585,17.8275503603703,11.4945596086661],[4.20275348195791,7.92664758806456,12.0660913971823,16.0825327237166,20.3594756934764,25.3310991066439,30.8781572646578,36.6389247994475,41.7040099538608,44.7883954938475,45.7294791290267,45.6556182313479,45.6769004742127,46.3129850762332,47.5570572888607,48.9919256698976,49.5485294385787,47.3718033003156,41.6058549124645,34.1184893710411,27.6419913789178,22.8469786909847,18.5254921091364,13.6972301911607,8.6403817104808],[3.00373809652536,5.51325664922749,8.19181521152123,10.8242474497535,13.861822059901,17.5269355931462,21.4340208331432,25.1707919342034,28.3034755735955,30.3221855191368,31.2870036395158,31.7127870330102,31.9381938546082,32.2151752710736,32.6884096867461,33.064046456838,32.5876921814521,30.4185107416722,26.5674418692959,22.2288379970332,18.4759080353459,15.2254592141496,11.9240156465148,8.45977170029129,5.18944799586851]],"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"surface","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":[]},"yaxis":{"title":[]},"zaxis":{"title":[]}},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"showSendToCloud":false},"data":[{"colorbar":{"title":"","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"x":[0.0250038941145404,0.0260449147509396,0.0270859353873387,0.0281269560237379,0.0291679766601371,0.0302089972965362,0.0312500179329354,0.0322910385693345,0.0333320592057337,0.0343730798421328,0.035414100478532,0.0364551211149311,0.0374961417513303,0.0385371623877294,0.0395781830241286,0.0406192036605278,0.0416602242969269,0.0427012449333261,0.0437422655697252,0.0447832862061244,0.0458243068425235,0.0468653274789227,0.0479063481153218,0.048947368751721,0.0499883893881201],"y":[0.00574434290212904,0.0223441650722791,0.0389439872424292,0.0555438094125793,0.0721436315827294,0.0887434537528795,0.10534327592303,0.12194309809318,0.13854292026333,0.15514274243348,0.17174256460363,0.18834238677378,0.20494220894393,0.22154203111408,0.23814185328423,0.25474167545438,0.27134149762453,0.287941319794681,0.304541141964831,0.321140964134981,0.337740786305131,0.354340608475281,0.370940430645431,0.387540252815581,0.404140074985731],"z":[[45.9524114013052,67.344842482679,82.4485730330015,88.2138637940748,87.5244614752334,85.8652087015465,86.4187577111016,88.9057050632989,92.2595683046845,96.3636581585297,100.980473656719,105.322346204364,109.542689239481,114.651266877277,120.974870907833,128.264735285604,136.750377649822,147.092869140357,158.015712974706,163.596713384143,156.079957290012,133.100253108599,100.154611258466,66.0593682811628,37.7271712392112],[68.1524770490123,100.986959488666,124.867395566811,134.130604317334,132.641750920598,129.419714162565,130.352453176247,135.124835252454,140.749300058827,145.619893523814,149.948318753219,154.503521794036,160.244422995925,167.459152680212,175.192175010665,183.090729776208,192.782000294061,206.016964663722,220.399729838671,227.16973368146,216.533276764935,186.17883938267,142.762268315234,96.5826741888667,56.564769186519],[82.5727775043392,124.314761954626,155.852875329782,168.620656643916,166.62394005495,161.923029581088,163.137393578283,170.021775979483,177.47262277307,182.259981505251,185.563030493304,190.157014186115,197.100335871456,205.048718118556,212.196847096635,219.200946355443,229.098105047231,243.52421401912,258.445745248262,263.950921292148,250.872730853915,217.759220029799,170.544829310105,118.411773097835,70.9517038924733],[84.6875261120448,129.867688686905,165.267081740769,180.323599857562,178.465674761542,173.141665261767,174.480728512845,182.141270038781,189.553296409937,192.818185790547,194.790368058013,200.046370298918,208.611617046977,216.960974928887,223.417244144539,230.420994072674,241.233011058492,255.540202903869,267.882646769817,269.729114039803,254.907814977094,223.103777910796,178.194373036741,126.603475792646,77.3022849731184],[76.4850052772389,119.347049554001,153.986606370335,169.558089137698,168.575845952158,163.781148683326,165.007048868294,171.604132873942,176.683216461632,176.950583884655,177.192100393889,183.253262804646,193.844627471072,203.616908123261,211.310789335159,220.385808742166,232.899687677821,246.207669076724,254.715376803881,252.716796526589,237.144599756334,208.356328840659,168.450240329465,121.479518169686,75.1026270168764],[63.5818593700012,100.498517808739,131.411197263283,146.733194917841,147.735203648562,144.510673207036,145.116796580426,148.876476605836,150.002536355039,146.568286479943,144.483250593249,150.063273913906,161.572346636728,173.071332066738,183.1811206271,194.64889977124,207.841662620366,219.293853632809,224.867938089321,221.353136673571,206.965650434332,181.795982650364,147.271325011935,106.606021239406,66.1785080419347],[51.1268786859581,81.3789974263228,108.240824359276,124.093039925345,128.454676764014,127.406702593017,126.532485068162,125.948347168107,122.392959581361,115.497142737447,110.838281024899,114.161301820896,124.27071019159,135.989334560239,147.432481767439,159.577506161808,171.520433807635,180.564274944473,184.761986454196,182.424365890807,171.402224848812,150.690688676586,121.56927972446,87.5165623132568,54.121753503969],[41.6655901286593,66.5717675208896,90.5687977385858,107.816866688549,115.874706584641,116.659141465954,113.453141377873,107.828191769637,99.7635791407173,90.38176513658,83.8985762723245,84.5322372517019,91.7407068321582,101.75663529526,112.50733908008,123.537736893553,133.342404804177,140.292325031683,144.1387248617,144.028669239256,137.152838351096,121.291016934223,97.4206880941813,69.440685821201,42.5912869610606],[35.583729039596,56.987023325091,78.9592013563029,96.8470182830502,106.970747433883,108.421212456757,102.870937415719,93.0811845882904,81.772684695177,71.4401180058305,64.8904720182968,64.2884139413004,69.0113654670823,76.5018497808463,85.1359508901961,94.1279009340057,102.023438043678,107.796240766215,111.786005102422,113.398841359774,109.607933596009,97.6269534026939,78.1400109162749,55.1713420596749,33.6390606446334],[32.6269430019876,51.9406934014402,71.6906134586376,88.0577647684756,97.6726628565033,98.8402942394017,92.1946618516924,80.5711827446902,68.1267564462592,58.5585159351194,53.829861547912,54.0096647068233,57.5645117079793,62.6538450857979,68.5728655332162,75.0968358628367,81.3153480279531,86.5182337309614,90.8004067896692,93.20015111738,90.7286664630647,80.8939409243474,64.5463989149757,45.5284284560742,28.0353200636516],[32.1422272839522,50.3795618467608,67.7389683215836,81.1439136517778,88.7749173196015,89.611402162859,83.5563723972767,72.5397879566845,60.9454766504541,53.3391638368504,51.3497389760989,53.2760746712361,56.3743296573879,59.2579320804223,62.33869551178,66.2430435575445,70.6990773598586,75.2707190893128,79.5926650834328,81.9614067329225,79.3619475283248,70.1567029670373,55.9043820047565,40.0538186254888,25.5570127733128],[32.3730363186972,50.4064589197203,66.4817225623727,77.8927519739056,84.1733910787622,85.2470505615507,80.7229397357428,71.6154272733191,61.9095739501749,56.4635269857205,56.756315400205,59.9644619703774,62.4788056987905,63.3251998321166,63.9239112657344,65.5588865297309,68.2846191511053,71.8382650395631,75.5772367636769,77.1185694040903,73.334992817631,63.593054974882,50.428563700596,36.8728230766421,24.4907718117572],[31.2659499399119,49.6385198702253,66.3907067644267,78.4073389757258,85.1596361604817,86.9991252662723,83.9607529329559,76.9571795362636,69.4072477839459,65.6706807998747,66.9755464801743,70.2830638899685,71.9750001449962,71.5246927453111,70.8424969382605,71.2223426726022,72.4778725561036,74.4002211148657,76.5310548720472,76.3496349918808,70.7406512688173,59.7965346529769,46.725121953875,34.2259959423311,22.9777583448049],[28.4261465496515,47.0988399152615,65.7595205380253,80.2701801759182,88.7297335432522,91.372031773446,89.3128904909953,84.2788961997609,79.1218973553667,76.8127060168274,77.9497156272217,80.1770389424776,81.0118576755535,80.5300921866958,80.3299215033314,80.7298847778925,80.704502425005,80.1140851391299,79.3313992067207,76.6513815646209,69.4196781592679,57.815885362201,44.6766231608393,32.2097494234938,21.0445623543079],[25.257194867127,43.7025515111864,63.8403434988164,80.6099442185222,90.5285886548558,93.5267332629744,92.0264036492749,89.0369458514463,86.8054625711361,86.1377162855111,86.4928557727876,86.7635551880029,86.5322120336355,86.6701215211274,87.8896374858076,88.940479612964,87.7587171504031,84.2996763417787,80.0392794624361,74.8206886532606,67.0035437079408,56.2882858227418,43.9640275796367,31.353296669342,19.6454986422766],[22.823057102776,40.2701393857367,60.2534416401344,77.4421547366791,87.4848302782587,90.1420455236122,88.9740161285579,88.2205592849194,89.421998103385,90.8692418093621,90.5717272694637,88.6789480504322,86.9365692137834,86.9958918058094,88.8187424637204,90.0763465376716,88.1272093057188,82.8817573700931,76.3401289366644,69.6158533668745,62.2178440912503,53.3804972840989,42.6454711020333,30.3786887555782,18.4039534978376],[20.457852220048,36.1122511597015,54.2772489036926,69.9242503647266,78.6431837128281,80.2627481884513,79.1443430022635,80.3935179226013,84.8929975173094,88.8087339466495,88.7940521630026,85.6516553345211,82.4316114115307,81.2885816930809,82.1192046610774,82.69951604646,80.5962645445138,75.4835036448324,68.8739179290204,62.0490797206249,55.2626943395171,47.8543823790215,38.5976261426602,27.3397445023006,16.1320161266176],[17.082492227541,30.3131168958701,45.65981784078,58.6517557855573,65.326231113601,65.7169511824996,64.4525072527441,66.9022807288703,73.6168816983402,79.8093404108246,81.3374539100315,78.7876684278961,75.2063091939358,72.7877179262764,71.8919233274622,71.2746107751833,69.2999908115403,65.4035554439189,60.0282362217855,53.7729125852764,47.1971906289014,40.2979398331635,32.1486145057463,22.4796889779544,13.004699050143],[13.0294318314326,23.5759344051501,35.7601713432886,45.8526239048092,50.7113452091477,50.5759022137682,49.5774219922537,52.5127558557164,59.9213715699168,67.4915099067455,71.2245462035662,71.0062889736732,68.8269264677819,66.3142864831928,64.1993792807401,62.3788984038594,60.2300222590343,57.0857325227234,52.4327840375463,46.3060206497453,39.6092685020331,33.0569620178514,26.1324027074163,18.3281605720681,10.6865879603405],[9.62179588246532,17.8021554868007,27.1182264873045,34.7285346143601,38.5908478367708,39.1328673566221,39.3706052656822,42.7790888750041,49.8531632299845,57.556028213979,62.8840728917296,65.3009121609202,65.55225795184,64.2891573850023,62.1215308957126,59.7288694721658,57.2995423637763,53.9806967627598,48.6411036003874,41.5498511277969,34.4932752638229,28.6446052386694,23.2125145842562,16.996485448884,10.4082306659345],[7.52300648845356,14.1032022869278,21.4328413743075,27.4766628042963,31.2577874210231,33.3967667876231,35.7200773261108,40.1537434080702,46.79036003789,53.6030008928072,58.8095257888379,62.2225981343666,64.1503851949736,64.5510042465221,63.5725635392911,62.0136652039819,60.2075519420178,56.7122509761123,49.934453487384,41.0326874944477,33.1828780753975,27.8667346912349,23.5295851123056,18.1017299773748,11.6211053505221],[6.30962777939336,11.9361471475197,18.1592159928962,23.528804670604,27.8061908402413,31.7306999298583,36.2587629688433,42.0824017211811,48.6216016330024,54.107340424022,57.6222212187276,59.8513783371082,61.6296388340479,62.9763350849301,63.6834922877392,64.0692287301945,63.8897534473978,60.9148389814438,53.2597891625697,42.9376597616481,34.2253606291128,28.7913742030493,24.5930481362954,19.1748509889205,12.4881930724797],[5.30521316449605,10.0947805049838,15.4393982874392,20.3611573132287,25.0290892860943,30.1079173489134,35.9523798687624,42.5230462104705,48.7878319823862,53.0020191691106,54.7058977757745,55.1873411471612,55.8235807602003,57.0431166993693,58.6347467513716,60.3639018330606,61.3136295244754,58.9954089714516,51.7470357514705,41.8299380229712,33.3810674622952,27.8208173212868,23.2979503517585,17.8275503603703,11.4945596086661],[4.20275348195791,7.92664758806456,12.0660913971823,16.0825327237166,20.3594756934764,25.3310991066439,30.8781572646578,36.6389247994475,41.7040099538608,44.7883954938475,45.7294791290267,45.6556182313479,45.6769004742127,46.3129850762332,47.5570572888607,48.9919256698976,49.5485294385787,47.3718033003156,41.6058549124645,34.1184893710411,27.6419913789178,22.8469786909847,18.5254921091364,13.6972301911607,8.6403817104808],[3.00373809652536,5.51325664922749,8.19181521152123,10.8242474497535,13.861822059901,17.5269355931462,21.4340208331432,25.1707919342034,28.3034755735955,30.3221855191368,31.2870036395158,31.7127870330102,31.9381938546082,32.2151752710736,32.6884096867461,33.064046456838,32.5876921814521,30.4185107416722,26.5674418692959,22.2288379970332,18.4759080353459,15.2254592141496,11.9240156465148,8.45977170029129,5.18944799586851]],"type":"surface","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script></p>
+</div>
+</div>
+<div id="section" class="section level2 unnumbered">
+<h2></h2>
+<p><br> <br></p>
+</div>
+<div id="projections-by-risk-group" class="section level2">
+<h2>Projections by Risk Group</h2>
+<p>We extend the risk factor analysis to estimate the proportion of each risk or race/ethnicity group that will make up the cohorts of COVID patients admitted to hospital, admitted to ICU, or that die in L.A. County and across the SPAs.</p>
+<p>Specifically, we estimate the proportion of each risk or race/ethnicity group that will make up the cohorts of COVID patients admitted to hospital (<span class="math inline">\(Pr(Group_i|Hospital\)</span>)), admitted to ICU (<span class="math inline">\(Pr(Group_i|ICU\)</span>)), or death (<span class="math inline">\(Pr(Group_i|Death\)</span>)) in L.A. County population and each SPA, as the relative share of each group and disease status:</p>
+<p><span class="math display">\[
+\begin{align*}
+Pr(Group_i|Hospital) = \frac{Pr(Group_i|Illness)Pr(Hospital|Group_i,Illness)}{Pr(Hospital|Illness)}\\
+Pr(Group_i|ICU) = \frac{Pr(Group_i|Hospital)Pr(ICU|Group_i,Hospital)}{Pr(ICU|Hospital)}\\
+Pr(Group_i|Death) = \frac{Pr(Group_i|ICU)Pr(Death|Group_i,ICU)}{Pr(Death|ICU)}\\
+\end{align*}
+\]</span> We the multiply the group prevalences above by the trajectory median values for number in hospital, ICU, and death from the epidemic model to arrive at the trajectory breakdowns presented.</p>
+<p><br></p>
+</div>
+</div>
+<div id="data" class="section level1">
+<h1>Data</h1>
+<div id="section-1" class="section level2 tabset">
+<h2></h2>
+<div id="illness-case-data" class="section level3">
+<h3>Illness case data</h3>
+<p>We use current numbers of <strong>infected (observed)</strong>, <strong>hospitalized</strong>, <strong>ICU</strong>, <strong>ventilated</strong>, and <strong>deaths</strong>, as well as the capacity (total number of resouces available) at hospitals, ICUs, and ventilators in L.A. County from the Los Angeles County Department of Public Health, updated daily by Faith Washburn (shared privately).</p>
+<p>The data used in this version of the report includes counts up through 2020-07-22</p>
+<p><strong>Data processing: Nursing home counts removed from LA County daily counts</strong></p>
+<p>We are fitting our model to the general COVID-19 illness trends in L.A. County. At present, the burden of mortality of COVID-19 is led by cases from residents of Skilled Nursing Facilities (SNFs), more commonly referred to as Nursing Homes, a category of licensed healthcare residences for seniors who require a higher level of medical care than can be provided in an assisted living facility. As of 2020-07-23, the percentage of all deaths in L.A. County that coming from SNFs is 47.2%.</p>
+<p>Due to the differences in both (i) the prevalence of particularly high-risk profiles in SNFs (notably, the <a href="https://www.cahf.org/About/Consumer-Help/Facts-and-Statistics">average age of nursing home residents in California is 87</a>) and (ii) the conditions of these close-quartered facilities for which social distancing and reductions in contact rate are less tenable, the dynamics of the outbreak and associated illness severity probabilities will be distinct in SNFs from the general community. Therefore, to fit a model for the general L.A. community we have removed the numbers of illnesses, hospitalizations, ventilations, and deaths coming from SNFs from the overall L.A. counts before the parameter estimation procedure. In other words, we fit our general population model to the data with the SNF cases removed, as illustrated below. Because case counts from SNFs are not available prior to April 21, 2020, we have estimated the epidemic trajectory in SNFs leading up to this date.</p>
+<p><img src="method_files/figure-html/plot-NH-removed-1.png" width="1056" /></p>
+<p><strong>Data processing: Removing nursing home counts in illnesses and deaths by race</strong></p>
+<p>To remove SNF cases by race for use in the relative risk of death rate comparison plots, we have taken two steps:</p>
+<ol style="list-style-type: decimal">
+<li>Determine the total number of counts to remove, as described above;</li>
+<li>Distribute this number of removed counts by race according to statistics on the race distribution at care homes in California, as published by the <a href="https://www.ppic.org/publication/nursing-homes-in-california/">Public Policy Institute of California</a>.</li>
+</ol>
+<p><br></p>
+</div>
+<div id="risk-factor-data" class="section level3">
+<h3>Risk factor data</h3>
+<p><strong>COVID-19 Illness Trajectory Relative Risks</strong></p>
+<p>Studies on COVID-19 clinical presentation and trajectories to inform the probability of hospitalization, ICU, and ventilation based on single risk factors:</p>
+<ul>
+<li>Guan, Wei-jie, et al. “<a href="https://www.nejm.org/doi/full/10.1056/NEJMoa2002032">Clinical characteristics of coronavirus disease 2019 in China.</a>” New England Journal of Medicine (2020).</li>
+<li>Petrilli, Christopher M., et al. “<a href="https://www.medrxiv.org/content/10.1101/2020.04.08.20057794v1">Factors associated with hospitalization and critical illness among 4,103 patients with COVID-19 disease in New York City</a>.” medRxiv (2020).</li>
+<li><a href="https://docs.google.com/spreadsheets/d/1Crsz7hfgBx4_-SsZI7u0e6IrHlQa-qVPbr3N87fUuqg/edit#gid=1637953801">Summary table of the modified Relative Risks (RR) coming from these studies, which are used by our statistical model estimates</a></li>
+</ul>
+<p><strong>Correlation structure between risk factors</strong></p>
+<p>We obtain the correlation structure between the risk factors using data from The National Health and Nutrition Examination Survey (NHANES). NHANES is a survey research program conducted by the National Center for Health Statistics (NCHS) to assess the health and nutritional status of adults and children in the United States, and to track changes over time. We use the NHANES cohort of 2017-2018.</p>
+<p><strong>L.A. County Risk Factor Prevalences</strong></p>
+<ul>
+<li><a href="http://publichealth.lacounty.gov/ha/hasurveyintro.htm">Los Angeles County Health Survey</a></li>
+<li><a href="https://healthpolicy.ucla.edu/chis/Pages/default.aspx">UCLA California Health Information Survey</a></li>
+</ul>
+</div>
+<div id="mobility-data" class="section level3">
+<h3>Mobility data</h3>
+<p>We use mobility data to narrow the specification of the reduction in the average number of new infections due to an infected person (R0) in a completely susceptible population under recent social distancing restrictions.</p>
+<p><strong>Sources</strong>:</p>
+<ul>
+<li><a href="https://www.unacast.com/covid19/social-distancing-scoreboard?view=county&amp;fips=06037">Unacast COVID-19 Social Distancing Scoreboard</a></li>
+<li><a href="https://docs.safegraph.com/docs/neighborhood-patterns">Safegraph mobility data available for research</a></li>
+</ul>
+<p><br><br><br></p>
+</div>
+</div>
+</div>
+<div id="section-2" class="section level1">
+<h1></h1>
+<p><br></p>
+</div>
+<div id="limitations-and-next-steps" class="section level1">
+<h1>Limitations and Next Steps</h1>
+<p>Predictive epidemic modeling can help to evaluate the public health strategies for limiting the spread of COVID-19. However, the findings and projections from the model must be interpreted relative to the input data and modeling decisions or assumptions. Below we list some of the key assumptions and limitations of this model. Some of these will be addressed in future work.</p>
+<p><strong>Epidemic Predictions</strong></p>
+<ul>
+<li><strong>Dynamics</strong>: We develop a simplistic modeling dynamics that assumes homogeneous mixing and a single population, whereas there are many different subpopulations with different contact structures and types. As such, this model does not account for differences in contact patterns within and across key groups, such as workplaces, schools, and communities; or of group-specific social distancing scenarios. Future work should stratify contact rates to specific risk groups. In addition, high resolution models are available and are being used to simulate at a micro level the different policies and interventions that can be implemented; this should be the direction of future work to predict the effect the portfolio of options for reopening society.</li>
+<li>This model does not account for the role of interventions beyond social distancing, such as contact tracing and surveillance testing, which are critical to identifying and limiting the spread of the virus.</li>
+<li>This model does not account for unanticipated behavioral responses to the effects of interventions or mitigation strategies</li>
+<li>The accuracy of the parameter estimation depends on the accuracy of the prior specifications and any fixed parameters employed, including the incubation and recovery period. As new information about the epidemiological characteristics of COVID-19 continues to arise, model estimation will need to be continuously updated. Incorporating the latest information into our models will be key to maintaining its relevance for policy and analysis.</li>
+</ul>
+<p><strong>Risk Factor Predictions</strong></p>
+<ul>
+<li><strong>Probability of severe illness</strong>: Our risk model provides estimates of COVID-19 illness severity probabilities due to risk factors for COVID alone (age, comorbidities, obesity, smoking). This can be seen as a “baseline” risk model, whereas a multitude of exogenous factors may impact what we observe on the epidemic, including:
+<ul>
+<li><strong>Differences in dynamics among subpopulations</strong>: Different dynamics at different scales due to different types of contact patterns and structures, and abilities to adhere social distancing guidance/guidelines, which translate to different rates of infection and subsequent stages of illness.</li>
+<li><strong>Initial conditions</strong>: Randomness (and structure) in initial seeding events</li>
+<li><strong>Access to care</strong>: Disparities exist in access to health care and which individuals are being treated in health care facilities, which also impacts the numbers showing up in health care related statistics.</li>
+<li><strong>Testing</strong>: Disparities in who is getting tested and at what stage of disease</li>
+</ul></li>
+<li>Additionally, these probabilities are only as accurate as the data used to produce these estimates, coming from early published clinical studies of COVID-19. These input data are likely to differ across study populations, and can also vary based on study definitions.</li>
+</ul>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

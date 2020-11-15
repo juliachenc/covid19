@@ -1,9 +1,10 @@
 ---
-title: "USC Predict COVID Project"
-subtitle: "Predictive Epidemic Model for COVID-19 in Los Angeles County"
+title: "USC COVID19 Modeling"
+subtitle: "Analysis updated with data as of October 15, 2020"
 author: "University of Southern California, Department of Preventive Medicine"
 output:
   html_document:
+    css: "styles.css"
     toc: true
     toc_depth: 2
     toc_float: true
@@ -11,11 +12,11 @@ editor_options:
   chunk_output_type: console
 ---
 
-Updated with data available as of `r Sys.Date()`
+<br>
+
+<!--Initialize-->
 
 ``` {r setup, include=FALSE}
-
-#rmarkdown::render_site()
 
 ### Install necessary packages and get started
 
@@ -71,2516 +72,796 @@ r_output <- function(x) lang_output(x, "r")
 knitr::opts_chunk$set(
   fig.width = 9.5,
   fig.height = 8,
+  eval=TRUE,
   echo=FALSE,
   warning=FALSE,
   cache=FALSE,
-  message=FALSE)
-
+  message=FALSE,
+  include=TRUE
+  )
 
 code.dir=here("code/")
 data.dir=here("data/")
 result.dir = here("results/")
+fig.dir = here("figs/")
+output.dir = here("output/")
+code.paper.dir=here("code/epi_model_code")
+code.risk.dir=here("code/risk_model_code/")
+code.scenarios.dir=here("code/scenarios_code/")
 ```
 
-<br>
+<!--Set global options-->
 
-# Aims
-
-The USC Predict COVID project has developed the **SEIR+Risk** epidemic model to estimate and gain insight into the impact of COVID-19 in Los Angeles County and on its residents. 
-
-The primary questions we are addressing are:
-
-- When will the peak of the epidemic occur and how will it impact health care capacity?
-- What happens to the dynamics of the epidemic when social distancing is reduced or returns to pre-pandemic levels?
-- How will the epidemic affect different at-risk groups?
-- How will the epidemic affect different race / ethnicity groups?
-
-Our epidemic modeling efforts provide:
-
-- Projections of illness severity trajectories in L.A. County as a whole and for race/ethnicity groups, based on prevalence of known COVID-19 risk factors.
-- Predictions for the impact on counts and corresponding time periods under various social distancing scenarios in which restrictions are eased.
-
-**The particular contribution of our model over existing models estimating hospital resource demand is that it accounts for combinations of risk factors (age, unhealthy behaviors, existing comorbidities, and combinations of comorbidities), including area-level differences in prevalence of these risk factors, in determining COVID intensity.** Accounting for differential risk for specific populations is important both for making projections about the scale of the epidemic, and for prioritizing at-risk populations for protection. In the [Risk Table](https://uscbiostats.github.io/COVID19/risk_table.html) page, we also provide the results of our estimates as a tool where individuals can look up their risk of severe illness based on their individual combinations of risk factors.
-
-
-```{r calc-risk-probs, include=FALSE, eval=TRUE}
-###################################################################################################
-## (1) PR(H) PR(Q) PR(D) ESTIMATION (PRIORS)
-###################################################################################################
-
-# calc_risk_probs_code <- path(code.dir, "calc_risk_probs_042220.R")
-# #r_output(readLines(calc_risk_probs_code))
-# #source(calc_risk_probs_code)
-# #
-# Alpha.prior.mean <- risk.probs.SPAs[9,1]
-# Kappa.prior.mean <- risk.probs.SPAs[9,2]
-# Delta.prior.mean <- risk.probs.SPAs[9,3]
-
+```{r options, include=FALSE}
+print.output <- FALSE
+days.truncate <- 15
+endDatePlot <- as.Date("2020-12-01")
 ```
 
 
-```{r read-in-current-COVID-data, include=FALSE}
-
-###################################################################################################
-## COVID INPUT DATA
-# obs_cum_new_counts: cumulative counts for "Htotcum","D","Vcum","Idetectcum","H_new","D_new"
-# no_obs: number of observation days
-## Read and process the data
-
-cum_file <- sort(dir_ls(data.dir, regexp = "cum_counts_"), decreasing = TRUE)[1]
-
-obs_cum_new_counts = t(read.csv(cum_file, sep=",",stringsAsFactors = FALSE))
-#import.date <- as.Date("2020-05-06")
-
-colnames<-c("Htotcum","D","Vcum","Idetectcum","H_new","D_new","I_new","V_new","H_capacity","Q_capacity", "V_free", "Q_free")
-
-nvars <- ncol(obs_cum_new_counts)
-colnames(obs_cum_new_counts) <- colnames
-obs_cum_new_counts <- as.data.frame(obs_cum_new_counts)
-obs_cum_new_counts <- obs_cum_new_counts[-1,]
-obs_cum_new_counts[1:nvars] <- sapply(obs_cum_new_counts[1:nvars],as.character)
-obs_cum_new_counts[1:nvars] <- sapply(obs_cum_new_counts[1:nvars],as.numeric)
-no_obs <- nrow(obs_cum_new_counts)
-
-step <- c(1:no_obs)
-obs.shift <- cbind(step,obs_cum_new_counts)
-data = obs.shift
-
-## DATA FORMAT FOR PLOTTING (BELOW)
-data.in.tmp.orig <- obs_cum_new_counts %>% dplyr::select(-c(H_capacity,Q_capacity,V_free,Q_free))
-
-length(data.in.tmp.orig)
-
-```
-
-```{r SNF-data-frac-calc, include=FALSE}
-
-# READ IN SNF DATA AND CALCULATE FRACTIONS COMPOSED OF THIS GROUP
-snf_file <- sort(dir_ls(data.dir, regexp = "SNF_"), decreasing = TRUE)[1]
-
-NH_counts = t(read.csv(snf_file, sep=",",stringsAsFactors = FALSE))
-length(NH_counts)
-
-
-### Process data
-NH_counts <- as.data.frame(NH_counts)
-NH_counts <- NH_counts[-1,]
-colnames(NH_counts) <-c("I_staff_cum","I_resident_cum","D_resident_cum")
-nvars <- ncol(NH_counts)
-NH_counts[1:nvars] <- sapply(NH_counts[1:nvars],as.character)
-NH_counts[1:nvars] <- sapply(NH_counts[1:nvars],as.numeric)
-no_obs_NH <- nrow(NH_counts)
-
-step <- c(1:no_obs_NH)
-obs.shift <- cbind(step,NH_counts)
-data_NH = obs.shift
-
-# REMOVE NH COUNTS AND PLOT
-clean_SNF_remove <- path(code.dir, "clean_SNF_remove.R")
-#r_output(readLines(clean_SNF_remove))
-source(clean_SNF_remove)
-
-# CURRENT TOTAL % OF ILLNESSES COMING FROM SNF
-#NH_total_frac_I <- ( last(NH_counts$I_resident_cum) + last(NH_counts$I_staff_cum) ) / last(data.in.tmp.orig$Idetectcum)
-current_I <- last(data.in.tmp.orig$Idetectcum)
-SNF_removed_I <- last(cum_counts_NH_update$Idetectcum)
-NH_total_frac_I <- (current_I-SNF_removed_I) / current_I
-
-# CURRENT TOTAL % OF DEATHS COMING FROM SNF -- FOR METHODS
-#NH_total_frac_D <- last(NH_counts$D_resident_cum) / last(data.in.tmp.orig$D)
-#NH_total_per <- round(NH_total_frac_D*100,1)
-current_D <- last(data.in.tmp.orig$D)
-SNF_removed_D <- last(cum_counts_NH_update$D)
-NH_total_frac_D <- (current_D-SNF_removed_D) / current_D
-NH_total_per <- round(NH_total_frac_D*100,1)
-
-```
-
+<!--Read in epidemic model, functions, COVID data-->
 
 ```{r read-in-model-supporting-functions, include=FALSE}
 
 ###################################################################################################
-## READ IN EPIDEMIC MODEL CODE
-path_seihqdr_model <- path(code.dir, "stochastic_SEIHQDR_A.R")
-r_output(readLines(path_seihqdr_model))
-
-## Compile the model
+## LOAD EPIDEMIC MODEL
+## And compile the model
+path_seihqdr_model <- path(code.paper.dir, "stochastic_SEIAHQDR_Alphat_rt.R")
 seihqdr_generator <- odin::odin(path_seihqdr_model)
 
 ###################################################################################################
-## READ IN REQUIRED FUNCTIONS
-
-supporting_functions <- path(code.dir, "supporting_functions_Recovered.R")
-#r_output(readLines(supporting_functions))
-source(supporting_functions)
-
-# FUNCTIONS INCLUDED:
-
-## FOR ABC
-### sum.stats: A function specifying the data to COVID-19 data to fit the model to
-### model.1sim.stats: A function implementing the model to be simulated
-
-## FUNCTIONS FOR GENERATING PROJECTIONS
-### correlated.param: SPECIFYING EPIDEMIC MODEL TO BE SIMULATED AND SCENARIOS
-### model.output.to.plot: ETTING MODEL OUTPUT + SUMMARY STATISTICS FUNCTION
-
-## TABLE GENERATING FUNCTIONS
-
-## PLOTTING FUNCTIONS
-### plot.model.data.all: PLOTTING ALL FACETED FUNCTION
-### plot.model.single: PLOTTING ONE AT A TIME FUNCTION INCLUDING SCENARIO SPECIFICATIONS
-
-```
-
-
-
-```{r bringing-in-Recovered, include=FALSE}
-
-### Step 1: Calculate frac. Recovered from the prior bounds of r, fraction observed illnesses
-
-## The equations informing Step 1
-#frac.obs <- obs.R / total.R
-#total.R <- obs.R / frac.obs
-#frac.R <- obs.R / (frac.obs * pop.size)
-
-## Inputs
-pop.size <- 1e7
-frac.obs <- c(0.02,0.04) # Best estimate from model
-#frac.obs <- c(0.0002,0.0125)
-# Dates 1 to 3 weeks before seroprevalence study
-sero.date <- as.Date("2020-04-05")
-whatis.1to3weeks.before.sero <- c(sero.date-21,sero.date-7)
-whatis.1to3weeks.before.sero <- as.numeric(whatis.1to3weeks.before.sero - as.Date("2020-03-01"))
-obs.R <- cum_counts_NH_update$Idetectcum[whatis.1to3weeks.before.sero]
-#obs.R
-
-## Output: frac. Recovered cases at point of serological study
-frac.R.1 <- obs.R / (frac.obs[1] * pop.size)
-frac.R.2 <- obs.R / (frac.obs[2] * pop.size)
-frac.R.min <- min(frac.R.1,frac.R.2)
-frac.R.max <- max(frac.R.1,frac.R.2)
-frac.R.mean <- (frac.R.min+frac.R.max)/2
-# frac.R.min <- min(frac.R.1)
-# frac.R.max <- max(frac.R.2)
-# frac.R.mean <- (frac.R.min + frac.R.max)/2
-frac.R.mean
-### Step 2: Interpolating time series for number Recovered from frac. Recovered 
-###         and assumption of 1st Recovered case 2 weeks after 1st Infected case
-
-## Date of first recovered
-# Start time of outbreak --> first infection (in days before March 1st 2020)
-start_time_for_interpolate = 45
-# Choose the amount of recovery time (14 days)
-days_to_assume_recovery = 14
-
-start.interpolate <-  -start_time_for_interpolate+days_to_assume_recovery 
-end.interpolate <- as.numeric(as.Date("2020-04-05") - as.Date("2020-03-01"))
-n.interpolate <- end.interpolate - start.interpolate +1
-
-# Input from Step 1
-Recovered.data.point <- frac.R.mean*pop.size  #0.0002 * 1e7 #0.04 * 1e7
-#Recovered.data.point <- .04 *pop.size  #0.0002 * 1e7 #0.04 * 1e7
-
-# Interpolation
-int.t <- c(start.interpolate,end.interpolate)
-int.y <- c(1,Recovered.data.point)
-
-interpolate_Recovered <- spline(x=int.t, y=(int.y)^(.5), n=n.interpolate, method="natural")
-interpolate_Recovered$y <- (interpolate_Recovered$y)^2
-#plot(interpolate_Recovered$x, (interpolate_Recovered$y), type ="o")
-
-# Save only values from timestep 0 (i.e. from March 1 2020) onwards
-interpolated.R <- as.data.frame(interpolate_Recovered) %>% filter(x>0)
-interpolated.R <- as.numeric(interpolated.R$y)
-
-```
-
-```{r setup-ABC}
+## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
+model_functions <- path(code.paper.dir, "data_model_fun.R")
+source(model_functions)
 
 ###################################################################################################
+## LOAD PLOTTING FUNCTIONS
+plot_code <- path(code.paper.dir, "plotting_fun.R")
+source(plot_code)
+
+###################################################################################################
+## LOAD TABLES FUNCTIONS
+tables_code <- path(code.paper.dir, "tables_fun.R")
+source(tables_code)
+
+###################################################################################################
+## COVID INPUT DATA
+# latest_data: cumulative and daily counts for "Htotcum","D","Vcum","Idetectcum","H_new","D_new"
+# no_obs: number of observation days
+latest_data <- latest_covid_data(truncate=days.truncate)
+no_obs <- nrow(latest_data)
+
+```
+
+
+<!--Model Fitting-->
+
+```{r include=FALSE}
+
+## SOURCE PRIOR PARAMETERS
+## Provides output in form of a prior.par list
+## Note: Beta(t), Alpha(t), Kappa(t), Delta(t) are read in from file
+prior_param_input <- path(code.paper.dir, "prior_param.R")
+source(prior_param_input)
+# prior.par
+
 ## SUMMARY STATISTICS COMPUTED ON DATA
-data.in.tmp <- cum_counts_NH_update %>% select(-c(V_new))
-no_obs <- nrow(data.in.tmp)
+summarydata <- sum.stats.SIMTEST(latest_data,include.R = FALSE)
+model.R <- model.1sim.stats.no.R  # From supporting_functions
 
-summarydata <- sum.stats.SIMTEST(data.in.tmp,include.R = FALSE)
-summarydata.no.R <- summarydata
+### NUMBER OF OUTPUTS
+# n_calibration = 10000
+# n_rec = 2000
 
-# Add interpolated number Recovered onto summary data
-summarydata.yes.R <- c(summarydata,interpolated.R)
+n_calibration = 1000
+n_rec = 100
 
-
-###################################################################################################
-## DEFINING PRIORS
-iter = 500
-R0 <- 4.1 #3.25
-r <- 0.035 #0.05
-start_time <- 45
-R0_redux <- .205 #.2  #Br(t)=Br*R0_redux
-Delta <- .5 #.75
-Alpha <- .25#.2
-Kappa <- .85 #.25
-p_V <- .85#.7
-intervention_date="2020-03-12"
-
-ABC.out.mat <- as.data.frame(t(rep(0,8)))
-ABC.out.mat[1] <- R0
-ABC.out.mat[2] <- r
-ABC.out.mat[3] <- start_time
-ABC.out.mat[4] <- R0_redux
-ABC.out.mat[5] <- Delta
-ABC.out.mat[6] <- Alpha
-ABC.out.mat[7] <- Kappa
-ABC.out.mat[8] <- p_V
-
-###################################################################################################
-## APPLY ABC 
-###################################################################################################
-
-###################################################################################################
-## PRIOR DISTRIBUTIONS
-## A list joining the prior for each parameter
-prior.R0 <- c("normal",R0,.025) 
-#prior.r <- c("unif", .005, .035) # c("normal",r,0.01)
-prior.st <- c("unif",40,50) 
-prior.R0.redux <- c("unif", R0_redux - 0.2, R0_redux + 0.2)  #c("normal",R0_redux, 0.05) 
-prior.Delta <- c("normal",0.55,0.01) 
-prior.Alpha <- c("normal",Alpha, 0.03) 
-prior.Kappa <- c("normal",Kappa, 0.03)
-prior.p_V <- c("unif", p_V-0.01, p_V+0.01 ) #c("normal",p_V, 0.08)
-
-#prior.par <- list(prior.R0, prior.r,prior.st,prior.R0.redux,prior.Delta,prior.Alpha,prior.Kappa,prior.p_V)
-intervention_date="2020-03-12"
-
-## OTHER INPUTS
-tolerance=c(15,4) # defining the sequence of tolerance levels 
-#weights.vec <- c( rep(1,length(ss.I)), rep(5,length(ss.H)), rep(2,length(ss.V)), rep(5, length(ss.D)), rep(2,length(ss.Hnew)),rep(2,length(ss.Dnew))  )
-```
-
-
-```{r ABC.yes.R, include=FALSE}
-
-###################################################################################################
-## RUN ABC ALGORITHM (SOURCED FROM ABC_mcmc PACKAGE)
-
-# Specifiying the prior for r to be close to sero study
-#prior.r <- c("unif",0.00013,0.0125) #c("unif", .02, .036)  #c("unif", .017, .052) #  #c("unif", .028, .05) 
-prior.r <- c("unif",0.025, 0.05)
-#prior.r <- c("unif",0.0002,0.0125)
-prior.par <- list(prior.R0, prior.r,prior.st,prior.R0.redux,prior.Delta,prior.Alpha,prior.Kappa,prior.p_V)
-
-summarydata <- summarydata.yes.R
-model.R <- model.1sim.stats.yes.R
-
-# AA = 35
-# BB = length(summarydata) - AA
-# dist_weights = c(rep(1,BB), rep(1000,AA))
-
-# ABC_Marjoram<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
-#                        summary_stat_target=summarydata, n_calibration=100000,
-#                        tolerance_quantile=0.1,verbose=TRUE,progress=TRUE, n_rec=1000) #, dist_weights=dist_weights )
-
-### FOR QUICK TESTS
-ABC_Marjoram<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
-                       summary_stat_target=summarydata, n_calibration=100000,
-                       tolerance_quantile=0.1,verbose=TRUE,progress=TRUE, n_rec=1000) #, dist_weights=dist_weights )
-
-ABC_out <- ABC_Marjoram
+## FIT MODEL
+ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
+                       summary_stat_target=summarydata, n_calibration=n_calibration,
+                       tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
 
 ABC.par.out <- as.data.frame(ABC_out$param)
 ABC.out.mat <- ABC_out$param
-ABC.out.mat.yesR <- ABC.out.mat
+par.vec.length <- nrow(ABC_out$param)
 
-## STATS ON POSTERIOR PARAMETER DISTRIBUTIONS
-ABC.mean <- ABC.par.out %>% summarise_if(is.numeric, mean) %>% mutate_if(is.numeric,round,digits=4)
-ABC.sd <- ABC.par.out %>% summarise_if(is.numeric, sd) %>% mutate_if(is.numeric,round,digits=4)
-ABC.par.stats <- as.data.frame(rbind(ABC.mean,ABC.sd))
-colnames(ABC.par.stats)<-c("R0","Prop. cases detected (r)","Start time", "Frac R0 Mar11", "Pr(Death|ICU)", "Pr(Hospital|Illness)", "Pr(ICU|Hospital)", "Pr(Ventilation|ICU)")
-rownames(ABC.par.stats)<-c("mean","sd")
-ABC.par.stats
-#ABC.par.stats %>% round(ABC.par.stats,4)
+```
 
+
+<!--Simulate model-->
+<!--Get compartment variables over time with CI-->
+<!--Get CFR/IFR-->
+
+```{r include=FALSE}
 ###################################################################################################
-## PLOTTING DENSITIES
-out_R0<- as.data.frame(cbind(ABC_out$param[,1],ABC_out$weights))
-out_r<- as.data.frame(cbind(ABC_out$param[,2],ABC_out$weights))
-out_R0redux<- as.data.frame(cbind(ABC_out$param[,4],ABC_out$weights))
+## GET MODEL OUTPUT: traj.0
 
-yesR.p.R0redux <- ggplot2::ggplot(out_R0redux, aes(V1)) + geom_density() + xlab("R0 Redux Posterior Distribution") + ggtitle("R0 Redux") 
-yesR.p.R0 <- ggplot(out_R0, aes(V1)) + geom_density() + xlab("R0 Posterior Distribution") + ggtitle("R0") 
-yesR.p.r <- ggplot(out_r, aes(V1)) + geom_density() + xlab("r Posterior Distribution") + ggtitle("r") 
-
-#yesR.p.R0redux + yesR.p.R0 + yesR.p.r
-
-den3d <- kde2d(ABC.out.mat[,1], ABC.out.mat[,2])
-yesR.p.3d.R0.r <- plot_ly(x=den3d$x, y=den3d$y, z=den3d$z) %>% add_surface()
-layout(yesR.p.3d.R0.r, title="R0 and r (fraction observed cases) joint posterior density")
-
-den3d <- kde2d(ABC.out.mat[,1], ABC.out.mat[,4])
-yesR.p.3d.R0.redux <- plot_ly(x=den3d$x, y=den3d$y, z=den3d$z) %>% add_surface()
-layout(yesR.p.3d.R0.redux, title="R0 and R0_redux (R0 factor reduction) joint posterior density")
-
-den3d <- kde2d(ABC.out.mat[,2], ABC.out.mat[,4])
-yesR.p.3d.r.redux <- plot_ly(x=den3d$x, y=den3d$y, z=den3d$z) %>% add_surface()
-layout(yesR.p.3d.r.redux, title="r (fraction observed cases) and R0_redux (R0 factor reduction) joint posterior density")
-
-###################################################################################################
-## SUMMARY TABLE 
-
-ABC.out.mat <- ABC_out$param[1:1000,]
-time.steps = 400
-par.vec.length=1000
-iter <- 20
-summary_table <- summary.table(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, init.date.data="2020-03-01")
-
-###################################################################################################
-## PLOTTING ALL VARIABLE FITS
-
-ABC.out.mat <- ABC_out$param[1:1000,]
-par.vec.length <- 1000
-iter <- 25
+ABC.out.mat <- ABC_out$param
+par.vec.length <- nrow(ABC_out$param)
+iter <- 10
 time.steps <- 400
 vars.to.plot <- vars.plus.R
 
-traj.0 <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot, init.date.data="2020-03-01", all=TRUE, scenario.selection = 4,intervention_date=intervention_date,sd.redux=NULL)
+## FUNCTION MODEL.OUTPUT.TO.PLOT.SIM
+## Calculates mean and CI of each estimated parameter & CFR/IFR
+## Uses correlated.param.SIM
+## Reads in Beta, Alpha, Kappa, Delta from file
+traj.0 <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.vec.length, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot)
 
-time.steps.4.plot = 200
-#data.in <- data.in.tmp
-data.in <- data.in.tmp
-vars.to.plot <- vars.plus.R
-## Plot all
+```
 
-yesR.plot.all.variables.current.scenario.150days <- 
-plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 15, time.steps.4plot=time.steps.4.plot, 
-                    vars.to.plot=vars.plus.R)
+# Epidemic model
 
-time.steps.4.plot = 300
-#data.in <- data.in.tmp
-data.in <- data.in.tmp
-vars.to.plot <- vars.plus.R
-## Plot all
+## Tables: Parameter estimates {.tabset}
 
-yesR.plot.all.variables.current.scenario.300days <- 
-plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 15, time.steps.4plot=time.steps.4.plot, 
-                    vars.to.plot=vars.plus.R)
+```{r include=FALSE}
+###################################################################################################
+## GET MODEL OUTPUT: summary
+
+startDatePlot <- as.Date("2020-03-01")
+#endDatePlot <- as.Date("2020-12-01")
+all_day_1s <- seq(startDatePlot,endDatePlot,by='month')
+all_day_15s <- all_day_1s+14
+date.in <- sort(c(all_day_1s,all_day_15s))
+tables.out <- summary.table.param.CFR.IFR(traj.CI=traj.0, ABC_out=ABC_out, date.in=date.in, use.mean.select = 1, round.by.in=4)
+
+```
+
+### $R0$, $r(t)$, $\mu(t)$
+```{r}
+formattable(tables.out[[1]])
+if (print.output==TRUE) write.csv(tables.out[[1]], file = path(output.dir, "R.r.mu_table.csv"))
+```
+
+### $\alpha(t)$, $\kappa(t)$, $\delta(t)$
+
+```{r}
+formattable(tables.out[[2]])
+akd_table <- tables.out[[2]]
+if (print.output==TRUE) write.csv(tables.out[[2]], file = path(output.dir, "AKD_t_table.csv"))
+```
+
+### CFR and IFR
+
+```{r}
+formattable(tables.out[[3]])
+if (print.output==TRUE) write.csv(tables.out[[3]], file = path(output.dir, "CFR_IFR_table.csv"))
+```
+
+## Figure: Model fits
+
+Summarizes the epidemic model fit with COVID-19 data for LAC from March 1 through `r as.Date("2020-03-01") + no_obs` for all disease states across multiple views: New cases, representing new daily incidence; the current number in a compartment at a specific date, relevant for understanding current prevalence rates and comparing with healthcare capacity limitations; and cumulative counts until a specific date. Observed data for available compartments with cases attributable to nursing home residents removed, are plotted as black dots. The figure demonstrates that good model fits are achieved in all compartments across time.
+
+* **New = new daily incidence**
+* **Current = current census in compartment** 
+* **Cumulative = running total over time**
+* Black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed
+* The dashed line represents healthcare resource capacity limits
+
+```{r include=FALSE}
 
 ###################################################################################################
-## PLOTTING NUMBERS IN COMPARTMENTS 
+## Plot all variables faceted
 
-var.to.plot <- "Htot"
-scenario=0
-intervention_date = intervention_date
-sd.redux = NULL
-use.title=NULL
-plot.capacity=TRUE
-ymax=NULL
-time.steps.4plot = 250
+time.steps.4.plot = as.Date("2020-11-15") - as.Date("2020-03-01") + 1
+data.in <- latest_data
+vars.to.plot <- vars.plus.R
 
-yesR.p.H.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                           scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-#ggplotly(yesR.p.H.0)
+plot.all.variables <- 
+plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 15, time.steps.4plot=time.steps.4.plot,
+                    vars.to.plot=vars.plus.R)
 
-var.to.plot <- "Q"
-yesR.p.Q.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                           scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-#ggplotly(p.Q.0)
+if (print.output==TRUE){
+  pdf(file = path(output.dir, "plot.all.variables.pdf"), width=10, height =10)
+  plot.all.variables
+  dev.off()
+}
+
+```
+
+```{r}
+plot.all.variables
+```
 
 
-var.to.plot <- "V"
-yesR.p.V.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=plot.capacity, var.to.plot=var.to.plot,use.title=use.title,
-                           scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-#ggplotly(p.V.0)
+## Figures: Time-Varying Parameters {.tabset}
 
-var.to.plot <- "D"
-yesR.p.D.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL, var.to.plot=var.to.plot,use.title=use.title,
-                           scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
-#ggplotly(p.D.0)
+```{r include=FALSE}
+
+#endDatePlot <- as.Date("2020-12-01")
+Fig3.plots <- plot.param.t(ABC_out = ABC_out, endDatePlot=endDatePlot)
+
+if (print.output==TRUE){
+  pdf(file = path(output.dir, "plot_Rt.pdf"), width=10, height =10)
+  Fig3.plots[[1]]
+  dev.off()
+  
+  pdf(file = path(output.dir, "plot_r_t.pdf"), width=10, height =10)
+  Fig3.plots[[2]]
+  dev.off()
+  
+  pdf(file = path(output.dir, "plot_AKD_t.pdf"), width=10, height =10)
+  Fig3.plots[[3]]
+  dev.off()
+}
+
+```
+
+### Reproductive Number $R(t)$
+
+```{r}
+Fig3.plots[[1]]
+```
+
+### Fraction of Observed Infections $r(t)$
+
+```{r}
+Fig3.plots[[2]]
+```
+
+### $\alpha(t)$, $\kappa(t)$, $\delta(t)$
+
+```{r}
+Fig3.plots[[3]]
+```
+
+<!--CFR and IFR-->
+
+```{r include=FALSE}
+
+startDatePlot <- as.Date("2020-03-01")
+#endDatePlot <- as.Date("2020-12-01")
+all_day_1s <- seq(startDatePlot,endDatePlot,by='month')
+all_day_15s <- all_day_1s+14
+date.in <- sort(c(all_day_1s,all_day_15s))
+
+CFR.IFR.plots.out <- CFR.IFR.plots(traj.CI=traj.0, date.in=date.in)
+
+if (print.output==TRUE){
+  pdf(file = path(output.dir, "CFR_plot.pdf"), width=10, height =10)
+  CFR.IFR.plots.out[[1]]
+  dev.off()
+  
+  pdf(file = path(output.dir, "IFR_plot.pdf"), width=10, height =10)
+  CFR.IFR.plots.out[[2]]
+  dev.off()
+}
+```
+
+### Time-varying CFR(t)
+
+```{r}
+CFR.IFR.plots.out[[1]]
+```
+
+### Time-varying IFR(t)
+```{r}
+CFR.IFR.plots.out[[2]]
+```
+
+
+## Figures: Compartmental Variables {.tabset}
+
+```{r include=FALSE}
+
+## Get compartmental variable plots and print/save
+plot.compartments.out <- plot.compartments(traj.CI.in = traj.0)
+curr.infect.variables <- plot.compartments.out[[1]]
+curr.healthcare.variables <- plot.compartments.out[[2]]
+
+if (print.output==TRUE){
+  pdf(file = path(output.dir, "curr_infect_var.pdf"), width=10, height =10)
+  curr.infect.variables
+  dev.off()
+  
+  pdf(file = path(output.dir, "curr_healthcare_var.pdf"), width=10, height =10)
+  curr.healthcare.variables
+  dev.off()
+}
+
+## Get plots for individual variables (for ggplotly)
+time.steps.4plot <- as.numeric(endDatePlot - as.Date("2020-03-01"))
 
 var.to.plot <- "I"
-yesR.p.I.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL, var.to.plot=var.to.plot,use.title=use.title,
-                           scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+ymax=100000
+plot.I <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="2020-03-01", date.offset.4plot=0, 
+                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL,var.to.plot=var.to.plot,
+                           use.title=NULL, scenario=scenario, intervention_date=intervention_date, sd.redux=NULL)
 
 var.to.plot <- "Itot"
-yesR.p.Itot.0 <- plot.model.single(traj.CI=traj.0, data.in=data.in.tmp, init.date.data="2020-03-01", date.offset.4plot=15, 
-                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL, var.to.plot=var.to.plot,use.title=use.title,
-                           scenario=scenario, intervention_date=intervention_date, sd.redux=sd.redux)
+ymax=200000
+plot.Itot <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="2020-03-01", date.offset.4plot=0, 
+                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL,var.to.plot=var.to.plot,
+                           use.title=NULL, scenario=scenario, intervention_date=intervention_date, sd.redux=NULL)
+var.to.plot <- "Htot"
+ymax = 3000
+plot.Htot <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="2020-03-01", date.offset.4plot=0, 
+                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL,var.to.plot=var.to.plot,
+                           use.title=NULL, scenario=scenario, intervention_date=intervention_date, sd.redux=NULL)
 
-
-```
-
-<br>
-
-# Model Projections
-
-## By Key Compartments {.tabset}
-
-Here we provide model projections for the SEIR+Risk model in L.A. County. Model fits are estimated based on counts of the number of infected (observed), hospitalized, ventilated, and deaths, *with counts from outbreaks in nursing homes removed* (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).  
-
-Projections are shown as the median number in compartments over time, with the 50% and 95% Confidence Intervals. Observed counts are depicted for variables with available data. Key healthcare capacity limits (hospital beds, ICU beds, ventilators) in L.A. County are also indicated.
-
-### Current in Hospital
-
-**The dashed line represents healthcare resource capacity limits.**
-
-```{r, echo=FALSE}
-ggplotly(yesR.p.H.0)
+var.to.plot <- "D_new"
+ymax = 200
+plot.Dnew <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="2020-03-01", date.offset.4plot=0, 
+                           time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL,var.to.plot=var.to.plot,
+                           use.title=NULL, scenario=scenario, intervention_date=intervention_date, sd.redux=NULL)
 
 ```
 
-### Current in ICU
+### Current observed infections
 
-**The dashed line represents healthcare resource capacity limits.**
-
-```{r, echo=FALSE}
-ggplotly(yesR.p.Q.0)
-
+```{r}
+ggplotly(plot.I)
 ```
 
-### Current in Ventilation
+### Current estimated total infections
 
-**The dashed line represents healthcare resource capacity limits.**
-
-```{r, echo=FALSE}
-ggplotly(yesR.p.V.0)
-
-```
-
-### Cumulative Deaths
-
-**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
-
-```{r, echo=FALSE}
-ggplotly(yesR.p.D.0)
-
-```
-
-### Current Observed Illnesses
-
-**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
-
-```{r, echo=FALSE}
-ggplotly(yesR.p.I.0)
-
-```
-
-### Current Total Illnesses (Observed + Unobserved)
-```{r, echo=FALSE}
-ggplotly(yesR.p.Itot.0)
-
-```
-
-## Against Data {.tabset}
-
-**Summarizing model fit against COVID-19 data for Los Angeles, for all variables/compartments. Each variable/compartment can be tracked according to three views:**
-
-* **New = new daily incidence**. Unstable but relevant for interpreting immediate trends.
-* **Current = current census in compartment**. Relevant for comparing with healthcare capacity limitations.
-* **Cumulative = running total over time**. Provides understanding of longer term trends.
-
-These figures provide a summarizing view across all model variables. More detailed projections of key variables are provided in the section above.
-
-### Short time horizon
-
-**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).
-
-**The dashed line represents healthcare resource capacity limits.**
-
-```{r all-150days, echo=FALSE}
-
-yesR.plot.all.variables.current.scenario.150days
-
+```{r}
+ggplotly(plot.Itot)
 ```
 
 
-```{r all-300days, echo=FALSE}
+### Current in hospital
 
-### Longer time horizon
+```{r}
+ggplotly(plot.Htot)
+```
 
-#**The black dots depict COVID-19 data, with counts from outbreaks in nursing homes removed** (for more details see #[Data](https://uscbiostats.github.io/COVID19/method.html#data)).
+### New deaths
 
-#**The dashed line represents healthcare resource capacity limits.**
+```{r}
+ggplotly(plot.Dnew)
+```
 
-#yesR.plot.all.variables.current.scenario.300days
+{-}
+
+
+
+# Risk model
+
+<!--- 
+Read in data
+--->
+
+```{r include=FALSE}
+###############################################################################################################
+## Read in marginal risk probability P(H|I), P(Q|H), P(D|Q) for each risk profile q, calculated by the JAM model
+## Data coming from: Guan et al. 2020, Petrilli et al. 2020
+Pr.H <- read.csv(path(data.dir, "Pr.H.csv"), sep=",", header=TRUE,row.names = 1)
+Pr.Q <- read.csv(path(data.dir, "Pr.Q.csv"), sep=",", header=TRUE,row.names = 1)
+Pr.D <- read.csv(path(data.dir, "Pr.D.csv"), sep=",", header=TRUE,row.names = 1)
+
+## Get profile matrix X.mat
+X.mat <- as.matrix(dplyr::select(Pr.H, -1))
+n_factors <- ncol(X.mat)
+n_profiles <- nrow(X.mat)
+
+#########################################################################################################
+## Read in prevalence of each risk factor p in the population for LA County
+## Data coming from:
+#### [Los Angeles County Health Survey](http://www.publichealth.lacounty.gov/ha/hasurveyintro.htm)
+#### [California Health Information Survey](http://ask.chis.ucla.edu)
+Pop.prevalence <- read.csv(path(data.dir, "Pop.prevalence.LA.csv"), sep=",", header=TRUE,row.names = 1 )
+Pop.prev.matrix<-as.matrix(Pop.prevalence)
+
+#########################################################################################################
+## Read in correlation structure, $\Sigma$, between the risk factors p
+## Correlation structure is weighted according to the prevalence of each race/ethnicity in LA County
+## Calculated using data coming from: The National Health and Nutrition Examination Survey (NHANES)
+SIGMA <- read.csv(path(data.dir, "SIGMA.csv"), sep=",", header=TRUE,row.names = 1)
 
 ```
 
-<br>
+<!---
+Calculate prevalence of each profile in overall LAC population
+--->
 
-## Summary Table
+```{r riskprofiles, include=FALSE, eval=TRUE}
+calc_profile_prev<- path(code.risk.dir, "calc_profile_prev.R")
+source(calc_profile_prev)
 
-### Posterior parameter estimates for key variables 
+## OUTPUT
+# profile.cnt.freq
+```
 
-Here we provide a summary of key parameters estimated by the SEIR+Risk model in L.A. County (for more details on parameter estimation see [Estimated Parameters](https://uscbiostats.github.io/COVID19/method.html#estimated_parameters)). Model fits are estimated based on counts of the number of infected (observed), hospitalized, ventilated, and deaths, *with counts from outbreaks in nursing homes removed* (for more details on data inputs and removal of nursing home cases see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).  
+<!---
+Estimate risk probabilities with baseline from epidemic model
+--->
 
-Median and 95% CI displayed.
+```{r estimate-risk-integrated}
 
-Note: 
+##################################################
+## INPUTS: TIMES
+### Chosen times to run analysis at
+t1 <- "2020-05-15"
+t2 <- "2020-08-01"
+t3 <- "2020-10-15"
+table.dates <- c("May.15","Aug.1","Oct.15")
+times <- c("t1", "t2", "t3")
+times.dates <- as.Date(c(t1,t2,t3))
 
-* **Case Fatality Rate** is the model-estimated number of deaths over the number of *observed* illnesses 
-* **Infection Fatality Rate** is the model-estimated number of deaths over the number of *total illnesses, observed + unobserved*
-* **$Pr(Hospital|Illness)$** is the model-estimated probability of hospitalization given *observed* illnesses
+# t1 <- "2020-05-15"
+# t2 <- "2020-07-15"
+# t3 <- "2020-09-15"
+# t4 <- "2020-10-15"
+# table.dates <- c("May.15","Jul.15","Sep.15","Oct.15")
+# times.dates <- as.Date(c(t1,t2,t3,t4))
+# times <- c("t1","t2","t3","t4")
 
-```{r, echo=FALSE}
+n.times <- length(times)
 
-# kable(summary_table) %>%
-#   kable_styling(bootstrap_options = "striped", full_width = F)
+##################################################
+## INPUTS: OBSERVED LAC DATA ON ILLNESSES
+### Observed LAC age prevalence in (I) infections
+n.dates.LAC.obs.age <- length(times)
+freq.LAC.obs.age <- matrix(nrow=3, ncol=n.dates.LAC.obs.age)
+colnames(freq.LAC.obs.age) <- times
+rownames(freq.LAC.obs.age) <- c("Age0.19","Age20.64","Age65.")
+# freq.LAC.obs.age[,1] <- c(0.011, 0.750, 0.239)  # Apr15
+# freq.LAC.obs.age[,2] <- c(0.080, 0.799, 0.121)  # Jul15
+# freq.LAC.obs.age[,3] <- c(0.102, 0.784, 0.114)  # Oct15
+# freq.LAC.obs.age[,1] <- c(0.035, 0.749, 0.216)  # May15
+# freq.LAC.obs.age[,2] <- c(0.080, 0.799, 0.121)  # Jul15
+# freq.LAC.obs.age[,3] <- c(0.099, 0.785, 0.116)  # Sep15
+# freq.LAC.obs.age[,4] <- c(0.102, 0.784, 0.114)  # Oct15
+freq.LAC.obs.age[,1] <- c(0.035, 0.749, 0.216)  # May.15
+freq.LAC.obs.age[,2] <- c(0.089, 0.791, 0.120)  # Aug.1
+freq.LAC.obs.age[,3] <- c(0.102, 0.784, 0.114)  # Oct.15
 
-summary_table2 <- as.data.frame(t(summary_table))
-formattable(summary_table2,
-            align=rep("c",NCOL(summary_table2)),
-            list(`Case Fatality Rate` = percent,
-                 `Infection Fatality Rate` = percent,
-                 `r, fraction obs. illnesses` = percent,
-                 `R0 fraction reduction` = percent,
-                 `Pr(Hospital|Illness)` = percent,
-                 `Pr(ICU|Hospital)` = percent,
-                 `Pr(Death|ICU)` = percent)
-)
+
+##################################################
+## INPUTS: EPIDEMIC MODEL
+## Get mean estimates of Alpha(t), Kappa(t), Delta(t) at each time point 
+akd_table <- tables.out[[2]]
+table1 <- akd_table
+for (i in 1:2){  table1[i,] <- akd_table[i,] %>% mutate_if(is.character, function(x) unlist(strsplit(x, " "))[1])}
+table1 <- as.data.frame(apply(table1, 2, as.numeric)) 
+
+## Create extra rows representing Alpha, Kappa, Delta values for t > 2 (with same values for Alpha, Kappa, Delta as t2)
+if (n.times > 2){ for (exrow in 3:n.times) table1[exrow,] <- table1[2,] }
+rownames(table1) <- times
+risk.probs.POSTERIORS <- table1
+
+##################################################
+## INPUTS: PROFILE FREQUENCY
+### Estimated frequency of each risk profile
+freq.PREV.q <- as.vector(profile.cnt.freq[,1])
+
+##################################################
+## INPUTS: JAM ESTIMATED CONDITIONAL RISK EFFECTS
+### Read in JAM produced conditional effect estimates
+psi.mat = read.csv(path(data.dir, "psi.conditional.effect.estimates.csv"), sep=",", header=TRUE,row.names = 1)
+rownames(psi.mat) <- colnames(X.mat)
+psi.mat[1,] <- c(rep(-1,times=3))
+
+##################################################
+## APPLY CODE TO GET ESTIMATE RISK PROBABILITIES WITH BASELINE FROM EPIDEMIC MODEL
+calc_integrated_risk_model<- path(code.risk.dir, "integrated_risk_model.R")
+source(calc_integrated_risk_model)
+
+Pr.freq.FUN.out <- Pr.freq.FUN(X.mat=X.mat, freq.PREV.q = freq.PREV.q, 
+                               freq.LAC.obs.age=freq.LAC.obs.age, logit.SEIR.est=logit.SEIR.est,psi.mat=psi.mat)
+### OUTPUTS
+Pr.OUT <- Pr.freq.FUN.out[[1]]
+freq.OUT <- Pr.freq.FUN.out[[2]]   
 
 ```
 
-```{r calc-risk-probs-initial, include=FALSE}
-###################################################################################################
-## (1) PR(H) PR(Q) PR(D) ESTIMATION (PRIORS)
-###################################################################################################
+<!---
+Clean data and get function for CFR and IFR table
+--->
 
-calc_risk_probs_code <- path(code.dir, "calc_risk_probs_042220.R")
-r_output(readLines(calc_risk_probs_code))
-source(calc_risk_probs_code)
+```{r clean-data-get-CFR, include=FALSE}
 
-```
+## INPUTS
+#X.mat
+#Pr.OUT
+#freq.OUT
 
+clean_data_risk_estimates_LAC <- path(code.risk.dir,"clean_data_integrated_risk.R")
+source(clean_data_risk_estimates_LAC)
 
-```{r load.data, include=FALSE}
-# LOAD DATA
+## OUTPUTS
+#data.prev #used for CFR/IFR calculation
 
-### Data from calc_risk_profiles_042220
-
-## import prevalence by profile
-data <- as.data.frame(profile.cnt.SPAs)
-dataH <- as.data.frame(H.profile.share.relative.all.SPAs)
-dataQ <- as.data.frame(Q.profile.share.relative.all.SPAs)
-dataD <- as.data.frame(D.profile.share.relative.all.SPAs)
-
-## import the probability by profile
-Pr.H <- Pr.H #Pr.H.orig
-Pr.Q <- Pr.Q #Pr.Q.orig
-Pr.D <- Pr.D #Pr.D.orig
-
-SPA.data <- risk.probs.SPAs
-
-## Data from estimated SEIR model (traj.CI.out) ##################################################
-traj.CI.out <- traj.0
-
-# CLEAN AND PROCESS DATA
 ## Note: The 5 risk groups are assigned within this code
-##       Currently are grouped according to Pr(D|Q).
+##       Currently are grouped according to CFR.t1
 ##       To modify the risk grouping cutoffs see the end of this code.
-clean_data_risk_estimates <- path(code.dir, "clean_data_risk_estimates.R")
-r_output(readLines(clean_data_risk_estimates))
-source(clean_data_risk_estimates)
-
 ```
 
-```{r risk-profile-table, echo=FALSE}
+<!---
+Table: CFR and IFR by risk profile
+--->
 
-unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
-
-data_subset <- subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D))
-data_subset <- arrange(data_subset, desc(data_subset$"LA County"))
-
-#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
-risk_table <- as.datatable(formattable(data_subset, align="r",
-            align = c(rep("c", 9)),
-            list(
-  `age`= color_tile('yellow', 'darkorange'),
-  `BMI`= color_tile('lightblue', 'pink'),
-  `smoking`= color_tile('grey', 'transparent'),
-  `comorbidity`= color_tile('darkgrey', 'transparent'),
-  `riskprofile`= color_tile('red', 'green'),
-  `LA County`= color_bar('cornflowerblue', fun = unit.scale),
-  `Pr.H`= color_bar('violet', fun = unit.scale),
-  `Pr.Q`= color_bar('violet', fun = unit.scale),
-  `Pr.D`= color_bar('violet', fun = unit.scale)
-)), rownames = FALSE, colnames = c('Population Prevalence in L.A.County' = 'LA County', 'Age' = 'age', 'BMI status' = 'BMI', 'Smoking status' = 'smoking', 'Existing comorbidities' = 'comorbidity', 'Risk Group' = 'riskprofile', 'Pr(Hospital|Illness)' = 'Pr.H', 'Pr(ICU|Hospital)' = 'Pr.Q', 'Pr(Death|ICU)' = 'Pr.D' ), 
-#filter = 'bottom', 
-options = list(pageLength = 10, 
-               autoWidth = TRUE) 
-               # order = list(list(9, 'desc'),list(8,'desc'),list(7,'desc')))
-               #order = list(list(6, 'desc'), list(7, 'desc'), list(8, 'desc')))
-               #order(data2$"LA County",decreasing=TRUE))
-)
-
-```
-
-
-```{r risk_table_CFR, include=FALSE}
-
-ABC.out.mat <- ABC_out$param
-time.steps = 500
-par.vec.length=500
-iter <- 20
-
+```{r risk_table_ALL_COLUMNS_INCLUDED, include=FALSE}
 
 ########################################################################
 ## risk.table.CFR.fn code found in clean_data_risk_estimates.R
+# Requires data.prev from clean_data_risk_estimates_LAC
 ########################################################################
 
-risk_table_CFR <- risk.table.CFR.fn(ABC.out.mat = ABC.out.mat, time.steps = time.steps, par.vec.length = par.vec.length, iter=iter, data.prev = data.prev)
+ABC.out.mat <- ABC_out$param
+time.steps = 400
+iter <- 10
+round.by <- 4
+times.dates <- times.dates
+filter.by <- 0.00001
 
-#risk_table_CFR <- filter(risk_table_CFR, "LA County" > 0.0004)
-#risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.median"))
+## Get CFR/IFR output
+risk_table_CFR_FULL <- risk.table.CFR.IFR.dates(ABC.out.mat=ABC.out.mat, time.steps=time.steps, iter=iter, data.prev=data.prev, times.dates=times.dates, round.by=round.by)
 
+## Format CFR/IFR table
+risk_table_CFR <- CFR_to_print(risk_table_CFR_FULL = risk_table_CFR_FULL, table.dates=table.dates, times.dates=times.dates, round.by=round.by, filter.by=filter.by)
+
+# Save output
+if (print.output==TRUE) write.csv(risk_table_CFR, file = path(output.dir, "CFR_IFR_table_FULL.csv"))
+
+# Create as a formattable
 unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
 
-#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
-risk_table_CFR.ft <- as.datatable(formattable(risk_table_CFR, align="r",
-            align = c(rep("c", 9)),
+risk_table_CFR.FT <- formattable(risk_table_CFR, align="c",
+            #align = c(rep("c", 9)),
             list(
   `age`= color_tile('yellow', 'darkorange'),
   `BMI`= color_tile('lightblue', 'pink'),
   `smoking`= color_tile('grey', 'transparent'),
   `comorbidity`= color_tile('darkgrey', 'transparent'),
-  `riskprofile`= color_tile('red', 'green'),
-  `LA County`= color_bar('cornflowerblue', fun = unit.scale),
-  `CFR.median`= color_bar('violet', fun = unit.scale),
-  `CFR.low_95`= color_bar('violet', fun = unit.scale),
-  `CFR.up_95`= color_bar('violet', fun = unit.scale),
-  `IFR.median`= color_bar('lightpink', fun = unit.scale),
-  `IFR.low_95`= color_bar('lightpink', fun = unit.scale),
-  `IFR.up_95`= color_bar('lightpink', fun = unit.scale)
-)), rownames = FALSE, colnames = c('Population Prevalence in L.A.County' = 'LA County', 'Age' = 'age', 'BMI status' = 'BMI', 'Smoking status' = 'smoking', 'Existing comorbidities' = 'comorbidity', 'Risk Group' = 'riskprofile', 'CFR Median' = 'CFR.median', 'CFR Lower 95%CI'='CFR.low_95', 'CFR Upper 95%CI'='CFR.up_95', 'IFR Median' = 'IFR.median', 'IFR Lower 95%CI' = 'IFR.low_95', 'IFR Upper 95%CI'='IFR.up_95'), 
-#filter = 'bottom', 
-options = list(pageLength = 10, 
-               autoWidth = TRUE) 
-)
+  `Group`= color_tile('red', 'green'),
+  `Pop.Prev`= color_bar('cornflowerblue', fun = unit.scale),
+    `Inf.May.15`= color_bar('orchid', fun = unit.scale),
+  `Inf.Aug.1`= color_bar('plum', fun = unit.scale),
+  `Inf.Oct.15`= color_bar('lightpink', fun = unit.scale),
+  `CFR.May.15`= color_bar('orchid', fun = unit.scale),
+  `CFR.Aug.1`= color_bar('plum', fun = unit.scale),
+  `CFR.Oct.15`= color_bar('lightpink', fun = unit.scale),
+  `IFR.May.15`= color_bar('orchid', fun = unit.scale),
+  `IFR.Aug.1`= color_bar('plum', fun = unit.scale),
+  `IFR.Oct.15`= color_bar('lightpink', fun = unit.scale)
+))
 
-
-```
-
-
-```{r plotting-stacked-bars, include=FALSE}
-
-## 0) PROCESS DATA TO PLOT STACKED BAR CHARTS #######################################################################################
-
-data.melted <- melt(data, id = c('Profile', 'age', 'BMI', 'smoking', 'comorbidity', 'Pr.H', 'Pr.Q', 'Pr.D', 'riskprofile'))
-
-data.melted$SPA.Name <- data.melted$variable
-data.melted$variable <- NULL
-
-data.melted$SPA.Name <- factor(data.melted$SPA.Name, levels =  c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County"))
-
-data.melted$prevalence.gen.pop <- data.melted$value
-data.melted$value <- NULL
-
-#merge with everything else
-
-full.data <- merge(data.melted, dataH.melted, by = c('Profile', 'SPA.Name' ) )
-full.data <- merge(full.data, dataQ.melted, by = c('Profile', 'SPA.Name' ) )
-full.data <- merge(full.data, dataD.melted, by = c('Profile', 'SPA.Name' ) )
-
-
-## 1) Risk profile in general population #######################################################################################
-
-p.risk.gen <-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in general population by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-
-p.BMI.gen <- 
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in general population by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.gen<-
-ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in general population by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.gen<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in general population by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.gen<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in general population by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-## 2) Risk profile in hospitalized population #######################################################################################
-
-p.risk.h<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in hospitalized by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.BMI.h<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in hospitalized by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.h<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in hospitalized by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.h<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in hospitalized by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.h<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in hospitalized by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-## 3) Risk profile in ICU population #######################################################################################
-
-p.risk.q<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in ICU by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.BMI.q<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in ICU by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.q<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in ICU by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.q<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in ICU by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.q<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in ICU by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-
-## 4) Risk profile in deceased #######################################################################################
-
-p.risk.d<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in deceased by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.BMI.d<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in deceased by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.d<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in deceased by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.d<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in deceased by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.d<-
-  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in deceased by SPA", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
-    theme(axis.text.x = element_text(angle = 45))
+#risk_table_CFR.FT
 
 ```
 
-```{r include=FALSE}
+<!---
+Table: Probabilities of severe illness by risk profile
+--->
 
-# RISK PROFILE AT EACH STAGE FOR LA COUNTY
+```{r probabilities-table, include=FALSE}
 
-## RESHAPE DATASET #######################################################################################
+########################################################################
+# Probabilities of severe illness by risk profile table
+# Requires risk_table_CFR_FULL and Profiles and Pr.OUT
+########################################################################
 
-full.data <- full.data %>% 
-  gather(keys, values, prevalence.gen.pop:prevalence.D )
-full.data$stage <- full.data$keys
-full.data$keys <- NULL 
-full.data$stage <- factor(full.data$stage, levels =  c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D"))
+# Get and format probability table
+probs_table_FULL <- probs_to_print(risk_table_CFR_FULL=risk_table_CFR_FULL, Profile=Profile,Pr.OUT=Pr.OUT,table.dates=table.dates, times.dates=times.dates, round.by=round.by, filter.by=filter.by)
 
+# Save output
+if (print.output==TRUE) write.csv(probs_table_FULL, file = path(output.dir, "probs_table_FULL.csv"))
 
-## Prevalence of risk profiles at each stage of disease ##############################################################  
+########################################################################
+## Create as a formattable
+########################################################################
 
-labels.SPA <- c(`Antelope Valley` = 'Antelope Valley' , `San Fernando` = 'San Fernando' , `San Gabriel`= 'San Gabriel' , Metro = 'Metro', West = 'West', South = 'South', East = 'East', `South Bay` = 'South Bay' , `LA County` = 'LA County')
+probs_table_FULL.FT <- formattable(probs_table_FULL, align="c",
+            #align = c(rep("c", 9)),
+            list(
+  `age`= color_tile('yellow', 'darkorange'),
+  `BMI`= color_tile('lightblue', 'pink'),
+  `smoking`= color_tile('grey', 'transparent'),
+  `comorbidity`= color_tile('darkgrey', 'transparent'),
+  `Group`= color_tile('red', 'green'),
+  `Pop.Prev`= color_bar('cornflowerblue', fun = unit.scale),
+    `P(H|I).May.15`= color_bar('orchid', fun = unit.scale),
+  `P(H|I).Aug.1`= color_bar('plum', fun = unit.scale),
+  `P(H|I).Oct.15`= color_bar('lightpink', fun = unit.scale),
+  `P(Q|H).May.15`= color_bar('orchid', fun = unit.scale),
+  `P(Q|H).Aug.1`= color_bar('plum', fun = unit.scale),
+  `P(Q|H).Oct.15`= color_bar('lightpink', fun = unit.scale),
+  `P(D|Q).May.15`= color_bar('orchid', fun = unit.scale),
+  `P(D|Q).Aug.1`= color_bar('plum', fun = unit.scale),
+  `P(D|Q).Oct.15`= color_bar('lightpink', fun = unit.scale)
+))
 
-p.prev.risk.stage.SPAs<- ggplot(full.data, aes(x = stage, y = values, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') + 
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    facet_wrap(SPA.Name ~ ., labeller=labeller(SPA.Name = labels.SPA)) +
-    labs(title = "Prevalence of risk profiles at each stage for LA County and SPAs", x = NULL, y = "Prevalence") +
-    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-### Risk profiles, comorbidity, age, obesity by stage of disease for LA County ##############################################################  
-
-LA.data <- subset(full.data, SPA.Name == 'LA County')
-
-p.riskprofiles<- 
-  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') + 
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk Profiles By Stage of Disease", x = NULL, y = "Prevalence") +
-    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.BMI<-
-  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') + 
-    labs(title = "Obesity By Stage of Disease", x = NULL, y = "Prevalence") +
-    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age<- 
-  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') + 
-    labs(title = "Age By Stage of Disease", x = NULL, y = "Age") +
-    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb<- 
-  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') + 
-    labs(title = "Any Comorbidity By Stage of Disease", x = NULL, y = "Prevalence") +
-    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoking<-
-  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') + 
-    labs(title = "Smoking Status By Stage of Disease", x = NULL, y = "Smoking") +
-    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
-    theme(axis.text.x = element_text(angle = 45))
+#probs_table_FULL.FT
 
 ```
 
-<br><br>
-
-# Projections for At-Risk Groups
-
-## By risk factors {.tabset}
-
-- These figures show the estimated proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within the L.A. County/SPA population, based on the population prevalence of the risk group in L.A. County/SPAs. 
-- The analyses are presented for each risk group, as well as stratified to the individual risk factors (age, comorbidities, obesity status, smoking status).
-
-### By SPA, stage of disease
-```{r, echo=FALSE}
-p.risk.gen + p.risk.h + p.risk.q + p.risk.d + plot_layout(guides = 'collect')
-```
-
-### By stage of disease, SPA
-```{r, echo=FALSE}
-p.prev.risk.stage.SPAs
-```
-
-### Comparing risk factors
-```{r, echo=FALSE}
-p.riskprofiles + p.comb + p.age + p.BMI
-```
-
-### Age by stage of disease
-```{r, echo=FALSE}
-p.age.gen + p.age.h + p.age.q + p.age.d +
-  plot_layout(guides = 'collect')
-
-```
-
-### Comorbidity by stage of disease
-```{r, echo=FALSE}
-p.comb.gen + p.comb.h + p.comb.q + p.comb.d +
-  plot_layout(guides = 'collect')
-
-```
-
-### BMI by stage of disease
-```{r, echo=FALSE}
-p.BMI.gen + p.BMI.h + p.BMI.q + p.BMI.d +
-  plot_layout(guides = 'collect')
-
-```
-
-### Smoking by stage of disease
-```{r, echo=FALSE}
-p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d +
-  plot_layout(guides = 'collect')
-
-```
-
-```{r trajectory-process-clean, include=FALSE}
-
-## PROCESS TRAJ.OUT TO FIND MEAN  ############################################################################
-H.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("Htot"))
-Q.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("Q"))
-D.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("D"))
-
-H.median$H <- H.median$median
-H.median$median <- NULL
-H.median$state.name <- NULL
-Q.median$Q <- Q.median$median
-Q.median$median <- NULL
-D.median$D <- D.median$median
-D.median$median <- NULL
-HQD.median <- cbind(cbind(H.median,Q.median$Q),D.median$D)
-colnames(HQD.median) <- c("date","H","Q","D")
-
-## FIX DATES ##################################################################
-HQD.median$date <- as.Date(HQD.median$date)
-
-## ORGANIZE / CLEAN ##################################################################
-HQD.median2 <- HQD.median
-HQD.median2$Hospitalizations <- HQD.median2$H
-HQD.median2$H <- NULL
-HQD.median2$ICU <- HQD.median2$Q
-HQD.median2$Q <- NULL
-HQD.median2$Deaths <- HQD.median2$D
-HQD.median2$D <- NULL
-HQD.median2 <- melt(HQD.median2,id = 'date')
-HQD.median2$Stage <- HQD.median2$variable
-HQD.median2$variable <- NULL
-
-```
-
-```{r trajectory-groupby.risk, include=FALSE}
-
-## 1A) GROUP BY RISK PROFILES  ############################################################################
-
-str(HQD.median2)
-
-#pull the total for each risk profile by stage
-
-grouped.by.risk <- full.data %>% 
-  dplyr::group_by(stage, riskprofile, SPA.Name) %>% 
-  dplyr::summarise(values = sum(values)) %>%
-  ungroup
-
-#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
-grouped.by.risk$stage <- factor(grouped.by.risk$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-
-#match the daily count naming
-grouped.by.risk$stage[grouped.by.risk$stage == "prevalence.H"] <- "Hospitalizations"
-grouped.by.risk$stage[grouped.by.risk$stage == "prevalence.Q"] <- "ICU"
-grouped.by.risk$stage[grouped.by.risk$stage == "prevalence.D"] <- "Deaths"
-
-
-#break down daily count by risk profile
-
-count.risk <- left_join(
-  HQD.median2 %>% dplyr::rename(count=value), 
-  grouped.by.risk,
-  by = c("Stage" = "stage")
-) %>% 
-  dplyr::rename(prop=values) %>% 
-  mutate(count_risk=round(count*prop,3))
-
-
-```
-
-```{r trajectory-plotby.risk, include=FALSE}
-
-## 1B) PLOT BY RISK PROFILES  ############################################################################
-
-
-#Hospitalizations
-
-p.traj.risk.h<-
-  ggplot(filter(count.risk, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
-       aes(x = date,
-           y = count_risk,
-           fill = riskprofile)) +
-  geom_area() +
-  scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Hospitalizations by Risk Profile for LA County",
-       x = NULL,
-       y = "Number in Hospital") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#ICU
-
-p.traj.risk.q<-
-  ggplot(filter(count.risk, SPA.Name == 'LA County' & Stage == "ICU"), 
-       aes(x = date,
-           y = count_risk,
-           fill = riskprofile)) +
-  geom_area() +
-  scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "ICU by Risk Profile for LA County",
-       x = NULL,
-       y = "Number in ICU") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#Death
-
-p.traj.risk.d<-
-  ggplot(filter(count.risk, SPA.Name == 'LA County' & Stage == "Deaths"), 
-       aes(x = date,
-           y = count_risk,
-           fill = riskprofile)) +
-  geom_area() +
-  scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Deaths by Risk Profile for LA County",
-       x = NULL,
-       y = "Number deceased")+
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#p.traj.risk.h + p.traj.risk.q + p.traj.risk.d
-
-```
-
-```{r trajectory-groupby.comb, include=FALSE}
-
-## 2A) GROUP BY COMORBIDITY  ############################################################################
-
-#pull the total for each risk profile by stage
-
-grouped.by.comb <- full.data %>% 
-  dplyr::group_by(stage, comorbidity, SPA.Name) %>% 
-  dplyr::summarise(values = sum(values)) %>%
-  ungroup
-
-#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
-grouped.by.comb$stage <- factor(grouped.by.comb$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-
-#match the daily count naming
-grouped.by.comb$stage[grouped.by.comb$stage == "prevalence.H"] <- "Hospitalizations"
-grouped.by.comb$stage[grouped.by.comb$stage == "prevalence.Q"] <- "ICU"
-grouped.by.comb$stage[grouped.by.comb$stage == "prevalence.D"] <- "Deaths"
-
-
-#break down daily count by risk profile
-
-count.comb <- left_join(
-  HQD.median2 %>% dplyr::rename(count=value), 
-  grouped.by.comb,
-  by = c("Stage" = "stage")
-) %>% 
-  dplyr::rename(prop=values) %>% 
-  mutate(count_comb=round(count*prop,3))
-
-
-```
-
-```{r trajectory-plotby.comb, include=FALSE}
-
-## 2B) PLOT BY COMORBIDITY  ############################################################################
-
-p.traj.comb.h<-
-  ggplot(filter(count.comb, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
-       aes(x = date,
-           y = count_comb,
-           fill = comorbidity)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Hospitalizations by Comorbidity Status for LA County",
-       x = NULL,
-       y = "Number in Hospital") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#ICU
-
-p.traj.comb.q<-
-  ggplot(filter(count.comb, SPA.Name == 'LA County' & Stage == "ICU"), 
-       aes(x = date,
-           y = count_comb,
-           fill = comorbidity)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "ICU by Comorbidity Status for LA County",
-       x = NULL,
-       y = "Number in ICU") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#Death
-
-p.traj.comb.d<-
-  ggplot(filter(count.comb, SPA.Name == 'LA County' & Stage == "Deaths"), 
-       aes(x = date,
-           y = count_comb,
-           fill = comorbidity)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Deaths by Comorbidity Status for LA County",
-       x = NULL,
-       y = "Number deceased")+
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#p.traj.comb.h + p.traj.comb.q + p.traj.comb.d
-
-```
-
-```{r trajectory-groupby.age, include=FALSE}
-
-## 3A) GROUP BY AGE  ############################################################################
-
-#pull the total for each risk profile by stage
-
-grouped.by.age <- full.data %>% 
-  dplyr::group_by(stage, age, SPA.Name) %>% 
-  dplyr::summarise(values = sum(values)) %>%
-  ungroup
-
-#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
-grouped.by.age$stage <- factor(grouped.by.age$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-
-#match the daily count naming
-grouped.by.age$stage[grouped.by.age$stage == "prevalence.H"] <- "Hospitalizations"
-grouped.by.age$stage[grouped.by.age$stage == "prevalence.Q"] <- "ICU"
-grouped.by.age$stage[grouped.by.age$stage == "prevalence.D"] <- "Deaths"
-
-
-#break down daily count by risk profile
-
-count.age <- left_join(
-  HQD.median2 %>% dplyr::rename(count=value), 
-  grouped.by.age,
-  by = c("Stage" = "stage")
-) %>% 
-  dplyr::rename(prop=values) %>% 
-  mutate(count_age=round(count*prop,3))
-
-
-```
-
-```{r trajectory-plotby.age, include=FALSE}
-
-## 3B) PLOT BY AGE  ############################################################################
-
-p.traj.age.h<-
-  ggplot(filter(count.age, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
-       aes(x = date,
-           y = count_age,
-           fill = age)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Hospitalizations by Age for LA County",
-       x = NULL,
-       y = "Number in Hospital") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#ICU
-
-p.traj.age.q<-
-  ggplot(filter(count.age, SPA.Name == 'LA County' & Stage == "ICU"), 
-       aes(x = date,
-           y = count_age,
-           fill = age)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "ICU by Age for LA County",
-       x = NULL,
-       y = "Number in ICU") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#Death
-
-p.traj.age.d<-
-  ggplot(filter(count.age, SPA.Name == 'LA County' & Stage == "Deaths"), 
-       aes(x = date,
-           y = count_age,
-           fill = age)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Deaths by Age for LA County",
-       x = NULL,
-       y = "Number deceased")+
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#p.traj.age.h + p.traj.age.q + p.traj.age.d
-
-```
-
-```{r trajectory-groupby.BMI, include=FALSE}
-
-## 4A) GROUP BY BMI  ############################################################################
-
-#pull the total for each risk profile by stage
-
-grouped.by.BMI <- full.data %>% 
-  dplyr::group_by(stage, BMI, SPA.Name) %>% 
-  dplyr::summarise(values = sum(values)) %>%
-  ungroup
-
-#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
-grouped.by.BMI$stage <- factor(grouped.by.BMI$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-
-#match the daily count naming
-grouped.by.BMI$stage[grouped.by.BMI$stage == "prevalence.H"] <- "Hospitalizations"
-grouped.by.BMI$stage[grouped.by.BMI$stage == "prevalence.Q"] <- "ICU"
-grouped.by.BMI$stage[grouped.by.BMI$stage == "prevalence.D"] <- "Deaths"
-
-
-#break down daily count by risk profile
-
-count.BMI <- left_join(
-  HQD.median2 %>% dplyr::rename(count=value), 
-  grouped.by.BMI,
-  by = c("Stage" = "stage")
-) %>% 
-  dplyr::rename(prop=values) %>% 
-  mutate(count_BMI=round(count*prop,3))
-
-
-```
-
-```{r trajectory-plotby.BMI, include=FALSE}
-
-## 4B) PLOT BY COMORBIDITY  ############################################################################
-
-p.traj.BMI.h<-
-  ggplot(filter(count.BMI, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
-       aes(x = date,
-           y = count_BMI,
-           fill = BMI)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Hospitalizations by Obesity Status for LA County",
-       x = NULL,
-       y = "Number in Hospital") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#ICU
-
-p.traj.BMI.q<-
-  ggplot(filter(count.BMI, SPA.Name == 'LA County' & Stage == "ICU"), 
-       aes(x = date,
-           y = count_BMI,
-           fill = BMI)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "ICU by Obesity Status for LA County",
-       x = NULL,
-       y = "Number in ICU") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#Death
-
-p.traj.BMI.d<-
-  ggplot(filter(count.BMI, SPA.Name == 'LA County' & Stage == "Deaths"), 
-       aes(x = date,
-           y = count_BMI,
-           fill = BMI)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Deaths by Obesity Status for LA County",
-       x = NULL,
-       y = "Number deceased")+
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-```
-
-```{r trajectory-groupby.smoke, include=FALSE}
-
-## 4A) GROUP BY SMOKING  ############################################################################
-
-#pull the total for each risk profile by stage
-
-grouped.by.smoke <- full.data %>% 
-  dplyr::group_by(stage, smoking, SPA.Name) %>% 
-  dplyr::summarise(values = sum(values)) %>%
-  ungroup
-
-#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
-grouped.by.smoke$stage <- factor(grouped.by.smoke$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
-
-#match the daily count naming
-grouped.by.smoke$stage[grouped.by.smoke$stage == "prevalence.H"] <- "Hospitalizations"
-grouped.by.smoke$stage[grouped.by.smoke$stage == "prevalence.Q"] <- "ICU"
-grouped.by.smoke$stage[grouped.by.smoke$stage == "prevalence.D"] <- "Deaths"
-
-
-#break down daily count by risk profile
-
-count.smoke <- left_join(
-  HQD.median2 %>% dplyr::rename(count=value), 
-  grouped.by.smoke,
-  by = c("Stage" = "stage")
-) %>% 
-  dplyr::rename(prop=values) %>% 
-  mutate(count_smoke=round(count*prop,3))
-
-
-```
-
-```{r trajectory-plotby.smoking, include=FALSE}
-
-## 4B) PLOT BY COMORBIDITY  ############################################################################
-
-p.traj.smoke.h<-
-  ggplot(filter(count.smoke, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
-       aes(x = date,
-           y = count_smoke,
-           fill = smoking)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Hospitalizations by Obesity Status for LA County",
-       x = NULL,
-       y = "Number in Hospital") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#ICU
-
-p.traj.smoke.q<-
-  ggplot(filter(count.smoke, SPA.Name == 'LA County' & Stage == "ICU"), 
-       aes(x = date,
-           y = count_smoke,
-           fill = smoking)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "ICU by Obesity Status for LA County",
-       x = NULL,
-       y = "Number in ICU") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-#Death
-
-p.traj.smoke.d<-
-  ggplot(filter(count.smoke, SPA.Name == 'LA County' & Stage == "Deaths"), 
-       aes(x = date,
-           y = count_smoke,
-           fill = smoking)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Deaths by Obesity Status for LA County",
-       x = NULL,
-       y = "Number deceased")+
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-                 strip.text.x = element_text(size = 12, face = "bold"))
-
-```
-
-## Across risk factors {.tabset}
-
-Fraction of all LA County Cases by risk factor 
-
-### By risk group
-```{r, echo=FALSE, message=FALSE}
-(p.traj.risk.h + p.traj.risk.q) / p.traj.risk.d +
-  plot_layout(guides = 'collect')
-```
-
-### By age
-```{r, echo=FALSE, message=FALSE}
-(p.traj.age.h + p.traj.age.q) / p.traj.age.d +
-  plot_layout(guides = 'collect')
-```
-
-### By comorbidity
-```{r, echo=FALSE, message=FALSE}
-(p.traj.comb.h + p.traj.comb.q) / p.traj.comb.d +
-  plot_layout(guides = 'collect')
-```
-
-### By obesity status
-```{r, echo=FALSE, message=FALSE}
-(p.traj.BMI.h + p.traj.BMI.q) / p.traj.BMI.d +
-  plot_layout(guides = 'collect')
-```
-
-### By smoking status
-```{r, echo=FALSE, message=FALSE}
-(p.traj.smoke.h + p.traj.smoke.q) / p.traj.smoke.d +
-  plot_layout(guides = 'collect')
-```
-
-## By race/ethnicity {.tabset}
-
-```{r calc-risk-probs-race, include=FALSE}
-###################################################################################################
-## (1) PR(H) PR(Q) PR(D) ESTIMATION (PRIORS)
-###################################################################################################
-
-calc_risk_probs_RACE <- path(code.dir, "calc_risk_probs_SPA_race2.R")
-r_output(readLines(calc_risk_probs_RACE))
-source(calc_risk_probs_RACE)
-
-```
-
-
-```{r load.data.race, include=FALSE}
-# LOAD DATA
-
-### Data from calc_risk_profiles_042220
-
-##import prevalence by profile
-data <- as.data.frame(profile.cnt.races)
-dataH <- as.data.frame(H.profile.share.relative.all.races)
-dataQ <- as.data.frame(Q.profile.share.relative.all.races)
-dataD <- as.data.frame(D.profile.share.relative.all.races)
-
-race.data <- risk.probs.races
-
-### Data from estimated SEIR model (traj.CI.out) ##################################################
-traj.CI.out <- traj.0
-
-# CLEAN AND PROCESS DATA
-## Note: The 5 risk groups are assigned within this code
-##       Currently are grouped according to Pr(D|Q).
-##       To modify the risk grouping cutoffs see the end of this code.
-clean_data_risk_estimates_race <- path(code.dir, "clean_data_risk_estimates_race.R")
-#r_output(readLines(clean_data_risk_estimates))
-source(clean_data_risk_estimates_race)
-
-```
-
-
-```{r plotting-stacked-bars.race, include=FALSE}
-
-## 0) PROCESS DATA TO PLOT STACKED BAR CHARTS #######################################################################################
-
-data.melted <- melt(data, id = c('Profile', 'age', 'BMI', 'smoking', 'comorbidity', 'Pr.H', 'Pr.Q', 'Pr.D', 'riskprofile'))
-
-data.melted$race.Name <- data.melted$variable
-data.melted$variable <- NULL
-
-data.melted$race.Name <- factor(data.melted$race.Name, levels =  c(rownames(race.data)))
-
-data.melted$prevalence.gen.pop <- data.melted$value
-data.melted$value <- NULL
-
-#merge with everything else
-
-full.data <- merge(data.melted, dataH.melted, by = c('Profile', 'race.Name' ) )
-full.data <- merge(full.data, dataQ.melted, by = c('Profile', 'race.Name' ) )
-full.data <- merge(full.data, dataD.melted, by = c('Profile', 'race.Name' ) )
-
-
-## 1) Risk profile in general population #######################################################################################
-
-p.risk.gen <-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.gen.pop, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in general population by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-
-p.BMI.gen <- 
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.gen.pop, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in general population by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.gen<-
-ggplot(data = full.data, aes(x=race.Name, y = prevalence.gen.pop, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in general population by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.gen<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.gen.pop, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in general population by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.gen<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.gen.pop, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in general population by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-## 2) Risk profile in hospitalized population #######################################################################################
-
-p.risk.h<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.H, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in hospitalized by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.BMI.h<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.H, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in hospitalized by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.h<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.H, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in hospitalized by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.h<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.H, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in hospitalized by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.h<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.H, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in hospitalized by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-## 3) Risk profile in ICU population #######################################################################################
-
-p.risk.q<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.Q, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in ICU by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.BMI.q<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.Q, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in ICU by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.q<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.Q, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in ICU by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.q<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.Q, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in ICU by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.q<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.Q, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in ICU by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-
-## 4) Risk profile in deceased #######################################################################################
-
-p.risk.d<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.D, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') +
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    labs(title = "Risk profiles in deceased by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.BMI.d<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.D, fill = BMI)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Obesity in deceased by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.comb.d<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.D, fill = comorbidity)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Comorbidity in deceased by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.age.d<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.D, fill = age)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Age in deceased by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-p.smoke.d<-
-  ggplot(data = full.data, aes(x=race.Name, y = prevalence.D, fill = smoking)) +
-    geom_bar(position="stack", stat = 'identity') +
-    labs(title = "Smoking in deceased by race", x = NULL, y = "Prevalence") + 
-    scale_x_discrete(labels = c(rownames(race.data))) +
-    theme(axis.text.x = element_text(angle = 45))
-
-```
-
-```{r include=FALSE}
-
-# RISK PROFILE AT EACH STAGE FOR LA COUNTY
-
-## RESHAPE DATASET #######################################################################################
-
-full.data <- full.data %>% 
-  gather(keys, values, prevalence.gen.pop:prevalence.D )
-full.data$stage <- full.data$keys
-full.data$keys <- NULL 
-full.data$stage <- factor(full.data$stage, levels =  c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D"))
-
-
-## Prevalence of risk profiles at each stage of disease ##############################################################  
-
-labels.race <- c(`Latino`= "Latinx" , `White`="White", `Black`= "Black", `American Indian`="American Indian", `Asian`= "Asian", `Native Hawaiian`="Native Hawaiian", `Other`="Other")
-
-p.prev.risk.stage.races<- ggplot(full.data, aes(x = stage, y = values, fill = riskprofile)) +
-    geom_bar(position="stack", stat = 'identity') + 
-    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-    facet_wrap(race.Name ~ ., labeller=labeller(race.Name = labels.race)) +
-    labs(title = "Prevalence of risk profiles at each stage for LA County and races", x = NULL, y = "Prevalence") +
-    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
-    theme(axis.text.x = element_text(angle = 45))
-
-```
-
-
-- These figures show the estimated proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within each race/ethnicity population, based on the population prevalence of the risk group in race/ethnicity groups. 
-- The analyses are presented for each risk group, as well as stratified to the individual risk factors (age, comorbidities, obesity status, smoking status).
-
-### Risk groups by stage of disease, race
-```{r, echo=FALSE}
-p.risk.gen + p.risk.h + p.risk.q + p.risk.d +
-  plot_layout(guides = 'collect')
-
-```
-
-### Risk groups by race, stage of disease
-```{r, echo=FALSE}
-p.prev.risk.stage.races
-```
-
-### Age by stage of disease, race
-```{r, echo=FALSE}
-p.age.gen + p.age.h + p.age.q + p.age.d +
-  plot_layout(guides = 'collect')
-
-```
-
-### Comorbidity by stage of disease, race
-```{r, echo=FALSE}
-p.comb.gen + p.comb.h + p.comb.q + p.comb.d +
-  plot_layout(guides = 'collect')
-
-```
-
-### BMI by stage of disease, race
-```{r, echo=FALSE}
-p.BMI.gen + p.BMI.h + p.BMI.q + p.BMI.d +
-  plot_layout(guides = 'collect')
-
-```
-
-### Smoking by stage of disease, race
-```{r, echo=FALSE}
-p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d +
-  plot_layout(guides = 'collect')
-
-```
-
-```{r illness-severity-by-race,include=FALSE}
-
-########################################################################################################################################################
-########################################################################################################################################################
-## BAR CHART COMPARISONS
-########################################################################################################################################################
-########################################################################################################################################################
-
-Pr.H.races <- H.risk.all.races
-Pr.Q.races <- Q.risk.all.races
-Pr.D.races <- D.risk.all.races
-nlevels <- length(Pr.H.races)
-
-Pr.pop <- race.pop
-
-# calculate relative shares in population, H, Q, D by race
-relative.shares.races <- calc.HQD.shares(Pr.pop=Pr.pop,Pr.H=Pr.H.races,Pr.Q=Pr.Q.races,Pr.D=Pr.D.races)
-rownames(relative.shares.races) <- race.order
-
-# process data for easy ggplot input
-relative.shares.races.melted <- melt(relative.shares.races, id=c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D"))
-relative.shares.races.melted$group <-relative.shares.races.melted$X1
-relative.shares.races.melted$stage <-relative.shares.races.melted$X2
-relative.shares.races.melted$values <-relative.shares.races.melted$value
-relative.shares.races.melted$X1 <- NULL
-relative.shares.races.melted$X2 <- NULL
-relative.shares.races.melted$value <- NULL
-
-relative.shares.races.melted <- relative.shares.races.melted %>% mutate(Race=factor(group,levels=c(race.order)))
-
-######################################
-## Bar chart
-
-p.shares.races<-
-  relative.shares.races.melted %>%
-  mutate(stage = factor(stage, levels=c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D"))) %>%
-  ggplot( aes(x=stage, y=values,fill=Race)) +
-#  ggplot( aes(x=stage,y=values,fill=factor(group,levels=c(race.order))))+
-  geom_bar(position="stack", stat = 'identity')+
-  labs(title = "Model-Projected Relative Proportion (%) of Race/Ethnicity \n by Stage of Disease", x = NULL, y = "Relative Proportion (%)", legend="Race/Ethnicity") +
-  scale_x_discrete(labels = c("Population % \n (baseline)","Hospitalized %","ICU admittance %","Deaths %"))
-
-
-
-
-##############################################################################################################################
-## Compare projected D to observed D
-race_file_D <- sort(dir_ls(data.dir, regexp = "race_D_"), decreasing = TRUE)[1]
-
-race_observed_D = read.csv(race_file_D, sep=",", header=TRUE,row.names = 1 )
-start.date.race <- as.Date("2020-03-28")
-no.obs.race <- ncol(race_observed_D)
-step.race <- seq(1:no.obs.race)
-colnames.race <- start.date.race + step.race - 1
-colnames(race_observed_D) <- colnames.race
-
-race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
-race_model_D <- relative.shares.races[,"prevalence.D"]
-
-D.dates.select <- c("2020-04-22", "2020-05-01", "2020-05-08", "2020-05-15", "2020-05-22","2020-05-29","2020-06-05","2020-06-12","2020-06-19","2020-06-24","2020-07-01","2020-07-08","2020-07-15","2020-07-20")
-race_observed_D_select <- race_observed_D %>% select(D.dates.select)
-race_obs_D <- apply(race_observed_D_select, 2, function(x) round(x/sum(x),4))
-
-relative.shares.races.D.obs <- as.data.frame(cbind(race_prevalence_gen_pop,race_obs_D,race_model_D))
-colnames.race.D <- c("prevalence.gen.pop", paste0("obs.D.",D.dates.select), "model.D")
-colnames(relative.shares.races.D.obs) <- colnames.race.D
-
-# process data for easy ggplot input
-relative.shares.races.D.obs.melted <- melt(as.matrix(relative.shares.races.D.obs))
-relative.shares.races.D.obs.melted$race <-relative.shares.races.D.obs.melted$X1
-relative.shares.races.D.obs.melted$stage <-relative.shares.races.D.obs.melted$X2
-relative.shares.races.D.obs.melted$values <-relative.shares.races.D.obs.melted$value
-relative.shares.races.D.obs.melted$X1 <- NULL
-relative.shares.races.D.obs.melted$X2 <- NULL
-relative.shares.races.D.obs.melted$value <- NULL
-
-######################################
-## Bar chart
-
-relative.shares.races.D.obs.melted <- relative.shares.races.D.obs.melted %>% mutate(Race=factor(race,levels=c(race.order)))
-
-labels.shares.races.D <- c("% in \n population", paste0("Obs.Deaths \n",D.dates.select), "Model Est.\n Deaths ")
-
-p.shares.races.D.obs<-
-  relative.shares.races.D.obs.melted %>%
-  mutate(stage = factor(stage, levels=colnames.race.D)) %>%
-  ggplot( aes(x=stage, y=values,fill=Race)) +
-#  ggplot( aes(x=stage,y=values,fill=factor(group,levels=c(race.order))))+
-  geom_bar(position="stack", stat = 'identity')+
-  labs(title = "Deaths by Race/Ethnicity: Model Projection vs. Observed", x = "Projection (Model) or Observation (Data)", y = "Relative % by Race", legend="Race/Ethnicity") +
-  scale_x_discrete(labels = labels.shares.races.D)
-
-
-```
-
-
-```{r trajectory-process-clean.race, include=FALSE}
-
-########################################################################################################################################################
-########################################################################################################################################################
-## TRAJECTORIES
-########################################################################################################################################################
-########################################################################################################################################################
-
-## PROCESS MODEL PROJECTS DATA TO GET MEAN/MEDIAN  ############################################################################
-I.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("Idetectcum"))
-H.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("Htot"))
-Q.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("Q"))
-D.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("D"))
-
-I.median$I <- I.median$median
-I.median$median <- NULL
-H.median$H <- H.median$median
-H.median$median <- NULL
-H.median$state.name <- NULL
-Q.median$Q <- Q.median$median
-Q.median$median <- NULL
-D.median$D <- D.median$median
-D.median$median <- NULL
-
-IHQD.median <- cbind(I.median,H.median$H,Q.median$Q,D.median$D)
-IHQD.median$state.name = NULL
-colnames(IHQD.median) <- c("date","I","H","Q","D")
-
-## FIX DATES ##################################################################
-IHQD.median$date <- as.Date(IHQD.median$date)
-
-## ORGANIZE / CLEAN ##################################################################
-IHQD.median2 <- IHQD.median
-IHQD.median2$Illnesses <- IHQD.median2$I
-IHQD.median2$I <- NULL
-IHQD.median2$Hospitalizations <- IHQD.median2$H
-IHQD.median2$H <- NULL
-IHQD.median2$ICU <- IHQD.median2$Q
-IHQD.median2$Q <- NULL
-IHQD.median2$Deaths <- IHQD.median2$D
-IHQD.median2$D <- NULL
-IHQD.median2 <- melt(IHQD.median2,id = 'date')
-IHQD.median2$Stage <- IHQD.median2$variable
-IHQD.median2$variable <- NULL
-
-
-## MERGE WITH COUNTS  ############################################################################
-
-str(IHQD.median2)
-
-#Add all the factor names so we can rename the factors in the dataframe to match the daily count
-TEST <- relative.shares.races.melted
-TEST$stage <- factor(TEST$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D","Illnesses", "Hospitalizations", "ICU", "Deaths"  ))
-IHQD.median2$Stage <- factor(IHQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Illnesses", "Hospitalizations", "ICU", "Deaths"  ))
-
-#match the daily count naming
-TEST$stage[TEST$stage == "prevalence.gen.pop"] <- "Illnesses"
-TEST$stage[TEST$stage == "prevalence.H"] <- "Hospitalizations"
-TEST$stage[TEST$stage == "prevalence.Q"] <- "ICU"
-TEST$stage[TEST$stage == "prevalence.D"] <- "Deaths"
-
-#break down daily count by race shares
-count.races <- left_join(
-  IHQD.median2 %>% dplyr::rename(count=value), 
-  TEST,
-  by = c("Stage" = "stage")
-) %>% 
-  dplyr::rename(prop=values) %>% 
-  mutate(count_races=round(count*prop,3))
-
-
-## PLOT BY RISK PROFILES  ############################################################################
-
-#Population
-
-p.traj.race.I<-
-  ggplot(filter(count.races, Stage == "Illnesses"), 
-         aes(x = date,
-             y = count_races,
-             fill = Race)) +
-  geom_area() +
-  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
-  labs(title = "Projected Cumulative Illnesses by Race/Ethnicity (by population share)",
-       x = NULL,
-       y = "Cumulative Illnesses") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-        strip.text.x = element_text(size = 12, face = "bold"))
-
-#Hospitalizations
-
-p.traj.race.H<-
-  ggplot(filter(count.races, Stage == "Hospitalizations"), 
-         aes(x = date,
-             y = count_races,
-             fill = Race)) +
-  geom_area() +
-  labs(title = "Projected Hospitalizations by Race/Ethnicity for LA County",
-       x = NULL,
-       y = "Number in Hospital") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-        strip.text.x = element_text(size = 12, face = "bold"))
-
-#ICU
-
-p.traj.race.Q<-
-  ggplot(filter(count.races, Stage == "ICU"), 
-         aes(x = date,
-             y = count_races,
-             fill = Race)) +
-  geom_area() +
-  labs(title = "Projected ICU by Race/Ethnicity for LA County",
-       x = NULL,
-       y = "Number in ICU") +
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-        strip.text.x = element_text(size = 12, face = "bold"))
-
-#Death
-
-p.traj.race.D<-
-  ggplot(filter(count.races, Stage == "Deaths"), 
-         aes(x = date,
-             y = count_races,
-             fill = Race)) +
-  geom_area() +
-  labs(title = "Projected Deaths by Race/Ethnicity for LA County",
-       x = NULL,
-       y = "Number Deceased")+
-  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
-  theme(axis.text.x = element_text(angle = 90), 
-        strip.text.x = element_text(size = 12, face = "bold"))
-
-```
-
-
-```{r Ill-shares-by-race}
-
-########################################################################################
-## Get Observed Illnesses by Race
-
-
-race_file_I <- sort(dir_ls(data.dir, regexp = "race_I_"), decreasing = TRUE)[1]
-
-race_observed_I = read.csv(race_file_I, sep=",", header=TRUE,row.names = 1 )
-start.date.race <- as.Date("2020-03-28")
-no.obs.race <- ncol(race_observed_I)
-step.race <- seq(1:no.obs.race)
-colnames.race <- start.date.race + step.race - 1
-colnames(race_observed_I) <- colnames.race
-
-## IF SETTING THE DATE FOR ILLNESSES FROM RR MANUALLY
-#I.dates.select <- "2020-06-03"
-#race_obs_I_recent <- race_observed_I %>% select(I.dates.select)
-#race_obs_I_recent <- race_observed_I %>% select(ncol(race_observed_I)) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
-#race_obs_I <- apply(race_obs_I_recent, 2, function(x) round(x/sum(x),4))
-
-##############################################################################################################################
-## Plot Ill shares by race over time
-
-race_prevalence_gen_pop <- relative.shares.races[,"prevalence.gen.pop"]
-
-I.dates.select <- D.dates.select #c("2020-04-11",D.dates.select)
-
-#D.dates.select SET ABOVE
-race_observed_I_select <- race_observed_I %>% select(I.dates.select)
-race_obs_I <- apply(race_observed_I_select, 2, function(x) round(x/sum(x),4))
-
-relative.shares.races.I.obs <- as.data.frame(cbind(race_prevalence_gen_pop,race_obs_I))
-colnames.race.I <- c("prevalence.gen.pop", paste0("obs.D.",I.dates.select))
-colnames(relative.shares.races.I.obs) <- colnames.race.I
-
-# process data for easy ggplot input
-relative.shares.races.I.obs.melted <- melt(as.matrix(relative.shares.races.I.obs))
-relative.shares.races.I.obs.melted$race <-relative.shares.races.I.obs.melted$X1
-relative.shares.races.I.obs.melted$stage <-relative.shares.races.I.obs.melted$X2
-relative.shares.races.I.obs.melted$values <-relative.shares.races.I.obs.melted$value
-relative.shares.races.I.obs.melted$X1 <- NULL
-relative.shares.races.I.obs.melted$X2 <- NULL
-relative.shares.races.I.obs.melted$value <- NULL
-
-######################################
-## Bar chart
-
-relative.shares.races.I.obs.melted <- relative.shares.races.I.obs.melted %>% mutate(Race=factor(race,levels=c(race.order)))
-
-labels.shares.races.I <- c("% in \n population", paste0("Obs.Illness \n",I.dates.select))
-
-p.shares.races.I.obs<-
-  relative.shares.races.I.obs.melted %>%
-  mutate(stage = factor(stage, levels=colnames.race.I)) %>%
-  ggplot( aes(x=stage, y=values,fill=Race)) +
-  geom_bar(position="stack", stat = 'identity')+
-  labs(title = "Distribution of Illnesses by Race/Ethnicity: Observed", x = NULL, y = "Relative % by Race", legend="Race/Ethnicity") +
-  scale_x_discrete(labels = labels.shares.races.I)
-
-
-
-```
-
-
-## Across race/ethnicity {.tabset}
-
-### Probability of Severe Illness by Race/Ethnicity
-
-This table shows the model estimated $Pr(Hospital|Illness)$, $Pr(ICU|Hospital)$, $Pr(Death|ICU)$, and $Pr(Death|Illness)$ by race/ethnicity group, as given by the prevalence of the risk factors in each race/ethnicity group in L.A. County. These probabilities are conditional upon an individual already having contracted COVID-19 illness, and so do not depend on the spatial distribution of exposure to the virus. These help to highlight whether a higher burden of mortality is expected for certain races for the same level of illness / hospitalization / ICU admission.
-
-Although the nominal values of the probabilities do not differ significantly across races (for example, the probabilities for $Pr(Death|Illness)$ vary from a minimum of 0.05 to a maximum of 0.14), the relative differences between the race/ethnicity groups may translate to meaningful differences at the level of the population. To visualize these relative differences, we have depicted these probabilities using color bars sized to a normalized scale for which the color bar for the largest probability value in a column spans the column width and the lowest probability for that column is shown with a very thin bar of color.
-
-With the normalized scaling, this chart can be used to compare the probability of severe illness from COVID-19 across the race/ethnicity groups. Some insights this provides:
-
-* $Pr(Death|Illness)$ is lowest for the Latinx population, largely attributable to the lower age distribution in this group. 
-* $Pr(Death|Illness)$ is highest for the Native Hawaiian popualtion, driven mainly by higher prevalence of smoking and obesity rates in this population.
-* $Pr(Death|Illness)$ is almost equivalent for white and black populations. 
+## Severe illness probabilities by profile
 
 ```{r}
-
-Pr.D.I <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],3)
-risk.probs.table <- risk.probs.races  
-risk.probs.table$"Pr(Death|Illness)" <- Pr.D.I
-
-formattable(risk.probs.table,
-            list(
-              `Pr(Hospital|Illness)` = color_bar('cornflowerblue', fun = unit.scale),
-              `Pr(ICU|Hosptial)` = color_bar('violet', fun = unit.scale),
-                `Pr(Death|ICU)` = color_bar('red', fun = unit.scale),
-                `Pr(Death|Illness)` = color_bar('lightpink', fun = unit.scale)
-            ))
-
+probs_table_FULL.FT <- as.datatable(probs_table_FULL.FT, rownames = TRUE, options = list(pageLength = 10, autoWidth = TRUE))
+probs_table_FULL.FT
 ```
 
+## CFR(t) and IFR(t) by profile
 
-### Illnesses by Race: Observed LA Data
-
-Here we plot the observed distribution of the relative shares of illnesses by race/ethnicity in L.A. County. The population prevalence of each race/ethnicity is also provided as a baseline (left-most bar).
-
-```{r, echo=FALSE, message=FALSE}
-
-p.shares.races.I.obs
-
+```{r}
+risk_table_CFR.DT <- as.datatable(risk_table_CFR.FT, rownames = TRUE, options = list(pageLength = 10, autoWidth = TRUE))
+risk_table_CFR.DT
 ```
 
-### Deaths by Race: Model Projections vs. Observed LA Data
+<!---
+Calculate frequency of risk factor groups by stage of disease
+Create plots for each risk factor group
+--->
 
-This figure compares model projections of the relative share of deaths by race/ethnicity (right-most bar) with the observed relative share of deaths by race/ethnicity in L.A. County. The population prevalence of each race/ethnicity is also provided as a baseline (left-most bar). 
+```{r get-group-by-stage}
 
-A key insight from this figure is that as the epidemic evolves, the trend of the distribution of deaths by race/ethnicity appears to be converging to the expected distribution based on the risk factors for COVID-19, as calculated by our model. 
+## Source code to clean data and get function for creating "Stage of disease by risk factor group" figures
+grouped_fig_code <- path(code.risk.dir, "clean_data_grouped_figs.R")
+source(grouped_fig_code)
 
-However because we have not accounted for the many complex factors leading to differences in illness exposure by race, other beyond risk factors could be influencing the results we see here. An additional important note is that the observed distribution of deaths by race for L.A. County (columns 2 - 6 below) includes cases from nursing homes (SNFs), whereas the model projections are fit to data with these cases removed. Because SNF deaths represent a significant portion of overall deaths, removing SNF numbers from the observed distribution may lead to a different distribution of deaths by race for the general L.A. County population than that plotted below. **This is demonstrated in the illustrative figures in the following section.**
+## Get "Stage of disease by risk factor group" figures
+var = "age"
+var.name <- "Age"
+p.prev.age.stage.DATES <- grouped.var.figs(full.data=full.data, var=var, var.name=var.name, times=times, table.dates=table.dates)
 
+var = "BMI"
+var.name <- "Obesity"
+p.prev.BMI.stage.DATES <- grouped.var.figs(full.data=full.data, var=var, var.name=var.name, times=times, table.dates=table.dates)
 
-```{r, echo=FALSE, message=FALSE}
+var = "comorbidity"
+var.name = "Comorbidity"
+p.prev.comorbidity.stage.DATES <- grouped.var.figs(full.data=full.data, var=var, var.name=var.name, times=times, table.dates=table.dates)
 
-p.shares.races.D.obs
+var = "smoking"
+var.name = "Smoking status"
+p.prev.smoking.stage.DATES <- grouped.var.figs(full.data=full.data, var=var, var.name=var.name, times=times, table.dates=table.dates)
 
-```
+p.prev.risk.stage.DATES<- ggplot(full.data, aes(x = stage, y = values, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    facet_wrap(DATE ~ ., labeller=labeller(DATE = times.names)) +
+    labs(title = "Risk Groups by stage of disease", x = NULL, y = "Frequency") +
+    scale_x_discrete(labels = c("Prevalence", "Infected", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 90))
 
-### Projected Illness Severity by Race
-
-- These figures demostrate the projections of the relative share of hospitalizations, ICU admissions, and deaths by race/ethnicity from our model, which accounts for risk factors for COVID-19. Values are compared with the baseline distribution of the relative share of the L.A. County population in each race/ethnicity group.
-
-- Due to disparities in the prevalence of the risk factors for COVID-19 (health conditions, health behaviors, and age) the relative risk of hospitalization, ICU admittance, and death is not distributed equally across each race/ethnicity (i.e., is not distributed in accordance with the population distribution).
-
-```{r, echo=FALSE, message=FALSE}
-
-p.shares.races
-
-```
-
-### Projected Timeseries by Race and Stage of Disease
-```{r, echo=FALSE, message=FALSE}
-
-p.traj.race.I + p.traj.race.H + p.traj.race.Q + p.traj.race.D +
-  plot_layout(guides = 'collect')
-
-```
-
-## {-}
-
-## Death Rates by Race {.tabset}
-
-```{r, RR-to-White, include=FALSE}
-
-########################################################################################
-## Function for RR calculation from "baseline race"
-
-
-RR.calc <- function(probs.vec, baseline.race){
-  #probs.vec <- race_model_D
-  #baseline.race <- "White"
+if (print.output==TRUE){
+  tiff(file = path(output.dir, "stage_by_group.tiff"), 
+       units="in", width=15, height=8, res=600, compression = 'lzw')
   
-  RR.vec <- rep(0, length(probs.vec))
-  prob.baseline <- probs.vec[baseline.race]
-  for (i in 1:length(probs.vec)) {
-    RR.vec[i] = probs.vec[i]/prob.baseline}
-  names(RR.vec) = names(probs.vec)
-  RR.vec <- round(RR.vec,3)
-  return(RR.vec)
+  p.prev.risk.stage.DATES + p.prev.age.stage.DATES + p.prev.BMI.stage.DATES +  p.prev.comorbidity.stage.DATES + p.prev.smoking.stage.DATES + plot_annotation(tag_levels = 'A' )
+  
+  dev.off()
 }
 
-
-######################################################################################
-## Pr(Death | Population) per Population
-
-#####################
-### OBSERVATION
-race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
-#.5 * sum(race_observed_D_recent.nominal)
-#race_observed_D_recent.nominal <- c(700, 225, 200, 2, 150, 15, 27)
-
-D.per.Pop.obs <- race_observed_D_recent.nominal / Pr.pop 
-names(D.per.Pop.obs) <- names(race_model_D)
-
-RR.D.per.Pop.obs <- RR.calc(D.per.Pop.obs, "White") 
-RR.D.per.Pop.obs
-
-#####################
-### MODEL
-Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
-
-# (Note that Pr(Illness | race_i) according to our model is equivalent across the races, so for doing relative risks, we don't need to include this constant)
-D.per.Pop.model <- Pr.DgivenI.model  #(Pr.pop/sum(Pr.pop)) * Pr.DgivenI.model
-names(D.per.Pop.model) <- names(race_model_D)
-
-RR.D.per.Pop.model <- RR.calc(D.per.Pop.model, "White") 
-RR.D.per.Pop.model
-
-#####################
-### TABLE
-# RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
-# colnames(RR.D.per.Pop) <- c("RR_White(Death|Race): Model","RR_White(Death|Race): Data")
-# max.RR <- max(RR.D.per.Pop)
-# min.RR <- min(RR.D.per.Pop)
-# mat.scale = function(x) (x) / 3#(max.RR)
-# 
-# RR.D.per.Pop.table <- 
-#   formattable(RR.D.per.Pop,
-#             list(
-#               #`Race to White: Pop` = color_bar('red', fun = mat.scale),
-#               `RR_White(Death|Race): Model` = color_bar('lightpink', fun = mat.scale),
-#               `RR_White(Death|Race): Data` = color_bar('navajowhite', fun = mat.scale)
-#             ))
-
-########################################################################################
-## Pr(Death | Illness)
-
-##################################
-### MODEL
-#Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
-names(Pr.DgivenI.model) <- names(race_model_D)
-RR.vec.DgivenI.model <- RR.calc(Pr.DgivenI.model, "White") 
-RR.vec.DgivenI.model
-
-##################################
-### OBS
-#race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
-race_obs_I_recent.nominal <- race_observed_I %>% select(ncol(race_observed_I)) # CHOOSING THE MOST RECENT DEATH OBSERVATION - NOMINAL
-Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal / race_obs_I_recent.nominal))
-names(Pr.DgivenI.obs) <- names(race_model_D)
-RR.vec.DgivenI.obs <- RR.calc(Pr.DgivenI.obs, "White") 
-RR.vec.DgivenI.obs
-
-##################################
-### TABLE
-# RR.D.given.I <- as.data.frame(cbind(RR.vec.DgivenI.model, RR.vec.DgivenI.obs))
-# #RR.DgivenI.desc <- RR.DgivenI[order(-RR.DgivenI$RR.vec.DgivenI.model), , drop = FALSE]
-# colnames(RR.D.given.I) <- c("RR_White(Death|Illness): Model","RR_White(Death|Illness): Data")
-# max.RR <- max(RR.D.given.I)
-# min.RR <- min(RR.D.given.I)
-# mat.scale = function(x) (x) / 3 #(max.RR)
-# 
-# RR.D.give.I.table <- 
-#   formattable(RR.D.given.I,
-#             list(
-#               `RR_White(Death|Illness): Model` = color_bar('lightpink', fun = mat.scale),
-#               `RR_White(Death|Illness): Data` = color_bar('navajowhite', fun = mat.scale)
-#             ))
-
-##################################################################
-##################################################################
-## BAR CHARTS
-##################################################################
-##################################################################
-
-labels.races.fit.bar <-c("Latino","White","Black","American \n Indian","Asian","Hawaiian","Other")
-
-ymax.bars <- 3 #3
-breaks = seq(0, ymax.bars, by = 0.5)
-
-##################################################################
-## BAR CHART RR.D.per.Pop
-
-RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
-colnames(RR.D.per.Pop) <- c("Model","Observation")
-RR.D.per.Pop.melted <- melt(as.matrix(RR.D.per.Pop))
-colnames(RR.D.per.Pop.melted) <- c("Race","stage","value")
-RR.D.per.Pop.melted <- RR.D.per.Pop.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.D.per.Pop)))
-
-RR.D.per.Pop.barchart <-
-  RR.D.per.Pop.melted %>%
-  ggplot( aes(x=Race, y=value,fill=stage)) +
-  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
-  labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
-  scale_y_continuous(breaks = breaks, limits=c(0,ymax.bars)) +
-  scale_x_discrete(labels = labels.races.fit.bar)
+```
 
 
-##################################################################
-## BAR CHART RR.DgivenI
+## Stage of disease by risk factor group {.tabset}
 
-RR.DgivenI <- as.data.frame(cbind(RR.vec.DgivenI.model,RR.vec.DgivenI.obs))
-colnames(RR.DgivenI) <- c("Model","Observation")
-RR.DgivenI.melted <- melt(as.matrix(RR.DgivenI))
-colnames(RR.DgivenI.melted) <- c("Race","stage","value")
-RR.DgivenI.melted <- RR.DgivenI.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.DgivenI)))
+Estimated frequency of groups in the overall LAC population, and the population of individuals in each stage of disease from infected, hospitalized, admitted to ICU, to deceased on each date `r table.dates` (2020): (A) Risk Groups, (B) age group, (C) obesity class groups, (D) any comorbidity group, and (E) smoking status group. 
 
-RR.DgivenI.barchart <-
-  RR.DgivenI.melted %>%
-  ggplot( aes(x=Race, y=value,fill=stage)) +
-  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
-  labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
-  scale_y_continuous(breaks = breaks, limits=c(0,ymax.bars)) +
-  scale_x_discrete(labels = labels.races.fit.bar)
+### Risk group
+
+```{r}
+p.prev.risk.stage.DATES
+```
+
+### Age
+
+```{r}
+p.prev.age.stage.DATES
+```
+
+### Cormorbidity
+
+```{r}
+p.prev.comorbidity.stage.DATES
+```
+
+### BMI
+
+```{r}
+p.prev.BMI.stage.DATES
+```
+
+### Smoking status
+
+```{r}
+p.prev.smoking.stage.DATES
+```
+
+{-}
+
+
+
+# Scenarios
+
+<!---
+Scenarios: Get Alpha, Kappa, Delta with populations protected
+--->
+
+```{r scenarios, include=FALSE}
+
+##################################################
+## SOURCE SCENARIOS FUNCTIONS
+scenarios_functions <- path(code.scenarios.dir, "scenarios_fun.R")
+source(scenarios_functions)
+
+##################################################
+## INPUTS for getting % removed for various scenarios
+percent.to.remove <- c(0,0.5,1) #c(1,0.5,0) 
+factor.to.remove <- 4  # Age.65.
+
+##################################################
+## Apply function for calculating decrease in Alpha Kappa Delta when protecting/removing 65+ from population
+
+weighted.avg.scenarios.overall <- 
+  weighted.avg.protect.SCENARIOS(X.mat=X.mat, freq.PREV.q = freq.PREV.q, 
+                                 freq.LAC.obs.age=freq.LAC.obs.age, logit.SEIR.est=logit.SEIR.est,
+                                 psi.mat=psi.mat,percent.to.remove=percent.to.remove,
+                                 factor.to.remove=factor.to.remove)
+
+##################################################
+## Name the scenarios
+
+protect.scenarios.mat <- matrix(NA, nrow=3, ncol=2)
+colnames(protect.scenarios.mat) <- c("index","protect.name")
+protect.scenarios.mat[,"index"] <- c(1:3)
+protect.scenarios.mat[,"protect.name"] <- rownames(weighted.avg.scenarios.overall)
+protect.scenarios.mat <- as.data.frame(protect.scenarios.mat)
+protect.scenarios.mat
+
+NPI.scenarios.mat <- matrix(NA, nrow=3, ncol=3)
+colnames(NPI.scenarios.mat) <- c("index","NPI.name","Beta_y_vals")
+NPI.scenarios.mat[,"index"] <- c(1:3)
+NPI.scenarios.mat[,"NPI.name"] <- c("NPI.None","NPI.Mod", "NPI.Obs")  #c("NPI.Obs","NPI.Mod","NPI.None")
+NPI.scenarios.mat[,"Beta_y_vals"] <- c("Beta_y_nothing", "Beta_y_moderate", "Beta_y" )  #c("Beta_y","Beta_y_moderate","Beta_y_nothing")
+NPI.scenarios.mat <- as.data.frame(NPI.scenarios.mat)
+NPI.scenarios.mat
+
+##################################################
+## Run the scenarios
+
+num.to.run = 100
+ABC.out.mat.scenarios = ABC.out.mat[c(1:num.to.run),]
+iter=10
+time.steps=400
+
+correlated.param.SCENARIOS.out <- 
+  correlated.param.SCENARIOS(ABC.out.mat=ABC.out.mat.scenarios,iter=iter,time.steps=time.steps,
+                             weighted.avg.scenarios=weighted.avg.scenarios.overall,
+                             protect.scenarios.mat=protect.scenarios.mat, NPI.scenarios.mat=NPI.scenarios.mat)
+
+##################################################
+## Plot the scenarios
+
+data.in <- latest_data %>% select("D")
+endDatePlot=as.Date("2020-11-15")
+vars.to.plot <- c("Itot","I", "Htot","D","CFRactual","CFRobs")
+traj.CI <- correlated.param.SCENARIOS.out
+filter.scenarios <- NULL
+
+plot.SCENARIOS.ALL <-  plot.SCENARIOS(traj.CI=traj.CI, data.in=data.in, endDatePlot=endDatePlot, vars.to.plot = vars.to.plot, filter.scenarios=filter.scenarios)
+
+filter.scenarios=c(4:9)
+plot.SCENARIOS.filter <-  plot.SCENARIOS(traj.CI=traj.CI, data.in=data.in, endDatePlot=endDatePlot, vars.to.plot = vars.to.plot, filter.scenarios=filter.scenarios)
+
+if (print.output==TRUE){
+  pdf(file = path(output.dir, "plot.SCENARIOS.ALL.pdf"), width=10, height =10)
+  plot.SCENARIOS.ALL
+  dev.off()
   
+  pdf(file = path(output.dir, "plot.SCENARIOS.filter.pdf"), width=10, height =10)
+  plot.SCENARIOS.filter
+  dev.off()
+}
+```
+
+## Scenarios {.tabset}
+
+### All scenarios
+
+```{r}
+plot.SCENARIOS.ALL
 ```
 
 
+### Scenarios with NPI modifications
 
-
-
-```{r RR-to-White-REMOVE, include=FALSE}
-
-
-######################################################################################
-## FRACTION REMOVED FROM ILLNESSES AND DEATHS DUE TO SNF
-## NOTE: that to remove SNF cases from race/ethnicity counts, we would need to know how many 
-## SNF cases there are, and how many of these appear in the overall race/ethnicity counts.
-## Without further knowledge, we can just assume that the % of SNF that is missing r/e data is = the % of general population that is missing r/e data.
-## So we remove a fraction of the SNF cases from the race/ethnicity data equal to the fraction of overall missing r/e data.
-
-
-SNF.race.distribution <- c(.18, .5, .12, 0, .19, 0,.01)
-names(SNF.race.distribution) <- race.order
-
-### Removing SNF from I by race   
-assumed.frac.SNF.reported.in.race.data.ill <- sum(race_obs_I_recent.nominal) / last(data.in.tmp.orig$Idetectcum) # = total in r/e / total overall
-num.to.remove.I.tot <- NH_total_frac_I * sum(race_obs_I_recent.nominal) * assumed.frac.SNF.reported.in.race.data.ill
-# NH_total_frac_I is the most recent
-num.to.remove.I.race <- round(SNF.race.distribution * num.to.remove.I.tot)
-race_obs_I_recent.nominal.REMOVED <- race_obs_I_recent.nominal - num.to.remove.I.race
-
-### Removing SNF from D by race
-race_observed_D_recent.nominal <- as.numeric(race_observed_D_select[,ncol(race_observed_D_select)]) 
-# NH_total_frac_D is the most recent
-num.to.remove.D.tot <- NH_total_frac_D * sum(race_observed_D_recent.nominal)    
-num.to.remove.D.race <- round(SNF.race.distribution * num.to.remove.D.tot)
-race_observed_D_recent.nominal.REMOVED <- race_observed_D_recent.nominal - num.to.remove.D.race
-                                             
-                                             
-                                             
-######################################################################################
-## Pr(Death | Population) per Population
-
-#####################
-### OBSERVATION
-#race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED               ### SNF REMOVED 
-D.per.Pop.obs <- race_observed_D_recent.nominal.REMOVED / Pr.pop #as.vector(t(race_obs_I_recent))/Pr.pop
-names(D.per.Pop.obs) <- names(race_model_D)
-
-RR.D.per.Pop.obs <- RR.calc(D.per.Pop.obs, "White") 
-RR.D.per.Pop.obs
-
-#####################
-### MODEL
-Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
-
-# (Note that Pr(Illness | race_i) according to our model is equivalent across the races, so for doing relative risks, we don't need to include this constant)
-D.per.Pop.model <- Pr.DgivenI.model  #(Pr.pop/sum(Pr.pop)) * Pr.DgivenI.model
-names(D.per.Pop.model) <- names(race_model_D)
-
-RR.D.per.Pop.model <- RR.calc(D.per.Pop.model, "White") 
-RR.D.per.Pop.model
-
-
-########################################################################################
-## Pr(Death | Illness)
-
-##################################
-### MODEL
-#Pr.DgivenI.model <- round(risk.probs.races[[1]]*risk.probs.races[[2]]*risk.probs.races[[3]],4)
-names(Pr.DgivenI.model) <- names(race_model_D)
-RR.vec.DgivenI.model <- RR.calc(Pr.DgivenI.model, "White") 
-RR.vec.DgivenI.model
-
-##################################
-### OBS
-#race_observed_D_recent.nominal <- race_observed_D_recent.nominal.REMOVED           ### SNF REMOVED 
-Pr.DgivenI.obs <- as.numeric(t(race_observed_D_recent.nominal.REMOVED / race_obs_I_recent.nominal.REMOVED))
-names(Pr.DgivenI.obs) <- names(race_model_D)
-RR.vec.DgivenI.obs <- RR.calc(Pr.DgivenI.obs, "White") 
-RR.vec.DgivenI.obs
-
-
-##################################################################
-##################################################################
-## BAR CHARTS
-##################################################################
-##################################################################
-
-ymax.bars <- 8 #5.5
-breaks = seq(0, ymax.bars, by = 0.5)
-
-##################################################################
-## BAR CHART RR.D.per.Pop
-
-RR.D.per.Pop <- as.data.frame(cbind(RR.D.per.Pop.model,RR.D.per.Pop.obs))
-colnames(RR.D.per.Pop) <- c("Model","Observation")
-RR.D.per.Pop.melted <- melt(as.matrix(RR.D.per.Pop))
-colnames(RR.D.per.Pop.melted) <- c("Race","stage","value")
-RR.D.per.Pop.melted <- RR.D.per.Pop.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.D.per.Pop)))
-
-RR.D.per.Pop.barchart.REMOVED <-
-  RR.D.per.Pop.melted %>%
-  ggplot( aes(x=Race, y=value,fill=stage)) +
-  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
-  labs(title = "Deaths per Population: RR to White", y = "RR_White(Deaths per Population)", x = NULL, legend="Model vs. Obs")+
-  scale_y_continuous(breaks = breaks, limits=c(0,ymax.bars)) +
-  #ylim(0,ymax.bars)+
-  scale_x_discrete(labels = labels.races.fit.bar)
-
-##################################################################
-## BAR CHART RR.DgivenI
-
-RR.DgivenI <- as.data.frame(cbind(RR.vec.DgivenI.model,RR.vec.DgivenI.obs))
-colnames(RR.DgivenI) <- c("Model","Observation")
-RR.DgivenI.melted <- melt(as.matrix(RR.DgivenI))
-colnames(RR.DgivenI.melted) <- c("Race","stage","value")
-RR.DgivenI.melted <- RR.DgivenI.melted %>% mutate(Race=factor(Race,levels=c(race.order))) %>% mutate(stage = factor(stage, levels=colnames(RR.DgivenI)))
-
-RR.DgivenI.barchart.REMOVED <-
-  RR.DgivenI.melted %>%
-  ggplot( aes(x=Race, y=value,fill=stage)) +
-  geom_bar(position="dodge", stat = 'identity', width = 0.5)+
-  labs(title = "Deaths Given Illness: RR to White", y = "RR_White(Death | Illness)", x = NULL, legend="Model vs. Obs")+
-  scale_y_continuous(breaks = breaks,limits=c(0,ymax.bars)) +
-  #ylim(0,ymax.bars)+
-  scale_x_discrete(labels = labels.races.fit.bar)
-
+```{r}
+plot.SCENARIOS.filter
 ```
-
-
-
-
-
-
-
-### Death rates by race: model vs. observed
-
-```{r RR-to-White-plot}
-
-##################################################################
-## PLOTTING BOTH TOGETHER: RR.DgivenI
-
-RR.D.per.Pop.barchart + RR.DgivenI.barchart + plot_layout(guides = 'collect') + plot_annotation(tag_levels = c('A', '1'), title = "Risk of Death by Race Relative to White: \n Deaths per Population vs. Deaths Given Illness \n Model vs. Observed", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
-
-
-```
-
-Here we compare the relative risk (RR) of deaths per population for each race relative to deaths per population for whites, as given by our model based on risk factors for COVID-19 and the prevalence of these factors in L.A. County, with the observed COVID-19 illness and death rates in L.A. County.
-
-**Figure A** (left) shows the observed rate of **deaths per population by race** relative to **deaths per population for whites** in L.A. County, i.e.
-
-$$
-\begin{equation*}
-RR_{White}(Death|Race_i)_{observed} = \frac{Deaths(Race_i)}{Deaths(White)} \
-\end{equation*}
-$$
-
-compared with the **probability of death by race** relative to the **probability of death for $race_i = White$**, as given by our model based on risk factors for COVID-19 and the prevalence of these factors in L.A. County, i.e.
-
-$$
-\begin{equation*}
-RR_{White}(Death|Race_i)_{model} = \frac{Pr(Death|Race_i)}{Pr(Death|White)} \
-\end{equation*}
-$$
-
-**Figure B** (right) compares the observed rate of **deaths given illness by race** relative to **deaths given illness for whites** in L.A. County, i.e.
-
-$$
-\begin{equation*}
-RR_{White}(Death|Illness)_{observed} = \frac{\frac{Deaths(Race_i)}{Illnesses(Race_i)}}{\frac{Deaths(White)}{Illnesses(White)}} \
-\end{equation*}
-$$
-with the **probability of death given illness** by race relative to the **probability of death given illness** for $race_i = White$, as given by our model based on risk factors for COVID-19 and the prevalence of these factors in L.A. County, i.e.
-
-$$
-\begin{equation*}
-RR_{White}(Death|Illness,Race_i)_{model} = \frac{Pr(Death|Illness,Race_i)}{Pr(Death|Illness,White)} \
-\end{equation*}
-$$
-Complex dynamics lead to exposure to COVID-19 and resulting illness. We have assumed a random-mixed model of transmission dynamics in L.A. and so do not account for these dynamics in our model. Because the probability $Pr(Death|Illness,Race_i)$ is by definition conditional upon an individual already having contracted COVID-19 illness, it does not depend on these factors leading to exposure to the virus. We therefore compare this with the $Pr(Death|Race_i)$, which will be determined by the nature of the distribution of exposure. 
-
-**Interpretation**
-
-We see from this chart that the death rate relative to that for whites is predicted to be lower for Latinx population by our model (based on prevalence of risk factors for COVID-19); a decreased risk relative to whites is also observed in the data, both for deaths per population and deaths given illness. The death rate relative to whites for blacks is predicted to be almost identical to whites, and is observed to be slightly higher than whites both for deaths per population and deaths over illnesses.
-
-### Death rates by race: nursing home cases removed (illustrative)
-
-```{r RR-to-White-REMOVE-plot}
-
-##################################################################
-## PLOTTING BOTH TOGETHER: RR.DgivenI
-
-RR.D.per.Pop.barchart.REMOVED + RR.DgivenI.barchart.REMOVED + plot_layout(guides = 'collect') + plot_annotation(tag_levels = c('A', '2'), title = "Risk of Death by Race Relative to White: \n Deaths per Population vs. Deaths Given Illness \n Model vs. Observed \n ESTIMATED SNF COUNTS REMOVED", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
-
-
-```
-
-**Interpretation**
-
-A different story emerges when we **remove from the observed numbers of illnesses and deaths the estimated numbers of counts** originating from outbreaks occurring in nursing homes. *Note that this serves as an illustration because exact numbers of illnesses and deaths by race are not available; for more details on how these cases are removed, see [Data](https://uscbiostats.github.io/COVID19/method.html#data)).*
-
-Because the majority of nursing home residents are white, once we remove the estimated counts from each race/ethnicity group from the overall numbers for deaths and illnesses, the relative share of deaths in the white population is decreased and all other shares are proportionally increased. The result is a picture of the risk of death relative to whites which is significantly higher for all other races, both for overall risk of death and the risk of death conditioned upon illness. These large differences in risk are apparent even after conditioning by illnesses, effectively conditioning out the component of the risk accounted for by differences in exposure and spread dynamics. **In other words, after removing (an estimated number of) illnesses and deaths from nursing home residents from the data, all race/ethnicity groups are at significantly increased risk of death upon contracting the COVID-19 virus in comparison with whites. Most importantly, this significant increase in risk is not explainable by the risk factors for COVID-19 that are factored into our model: namely age, comorbidities, and health behaviors.**
-
-
-
-
-
-
 

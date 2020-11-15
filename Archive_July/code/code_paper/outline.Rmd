@@ -1,0 +1,25 @@
+# GENERAL IDEA: Use markdown as the wrapper code, that can also produce the plots we want to see.
+# Question: 
+- How to do inputs and outputs? Do I want to have all plots coming at the end? Or within their section? I think within their section makes sense, but output to a single file.
+- Inputs: Clean data for epidemic model using a function. Need to write that function, save in a supplemental file, and then read in to apply it to the data. 
+- Functions to run vs. processing scripts. Those to be done separately. 
+- Need to think through how I want to do the data processing.
+
+# OUTLINE
+## Read in and clean data
+
+## Epidemic model
+### Fit epidemic model
+### Epidemic model parameter estimates (output -- save a output file and also have it render here in markdown)
+### OUTPUT: Epidemic model plot with all variables (output)
+### OUTPUT: Plot codes for R(t), alpha kappa delta, Infections, Hospitalizations
+
+## Risk model
+### INPUTS: Read in JAM inputs (RR), prevalence in LA (since it's just a vector can manually input)
+### OUTPUT: Profiles as a table (output)
+### Read in profiles
+### Estimate frequency of profiles
+### Integrated model
+### OUTPUTS: probability tables, RR tables 
+
+## Scenarios

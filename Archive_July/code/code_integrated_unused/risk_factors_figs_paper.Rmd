@@ -1,0 +1,1145 @@
+---
+title: "Risk Factor Figures for Paper"
+subtitle: "Predictive Epidemic Model for COVID-19 in Los Angeles County"
+author: "University of Southern California, Department of Preventive Medicine"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+``` {r setup, include=FALSE}
+
+#rmarkdown::render_site()
+
+### Install necessary packages and get started
+
+library(reshape2)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(ggrepel)
+library(bindata)
+library(odin)
+library(fitR)
+library(knitr)
+library(EasyABC)
+library(gridExtra)
+library(odin)
+library(lubridate)
+library(EasyABC)
+library(gridExtra)
+library(kableExtra)
+library(plyr)
+library(dplyr)
+library(data.table)
+library(scales)
+library(EasyABC)
+library(patchwork)
+
+library(tidyr)
+library(readr)
+library(purrr)
+library(tibble)
+library(stringr)
+library(forcats)
+library(network)
+library(tidygraph)
+library(ggraph)
+library(visNetwork)
+library(networkD3)
+library(ggmosaic)
+library(formattable)
+library(DT)
+library(reshape)
+library(here)
+library(fs)
+
+library(MASS)
+library(plotly)
+
+lang_output <- function(x, lang) {
+  cat(c(sprintf("```%s", lang), x, "```"), sep = "\n")
+}
+r_output <- function(x) lang_output(x, "r")
+
+knitr::opts_chunk$set(
+  fig.width = 9.5,
+  fig.height = 8,
+  echo=FALSE,
+  warning=FALSE,
+  cache=FALSE,
+  message=FALSE)
+
+
+code.dir=here("code/")
+data.dir=here("data/")
+result.dir = here("results/")
+fig.dir = here("figs/")
+```
+
+
+
+```{r calc-risk-probs-initial, include=FALSE}
+###################################################################################################
+## (1) PR(H) PR(Q) PR(D) ESTIMATION (PRIORS)
+###################################################################################################
+
+calc_risk_probs_code <- path(code.dir, "calc_risk_probs_042220.R")
+r_output(readLines(calc_risk_probs_code))
+source(calc_risk_probs_code)
+
+```
+
+
+```{r load.data, include=FALSE}
+# LOAD DATA
+
+### Data from calc_risk_profiles_042220
+
+## import prevalence by profile
+data <- as.data.frame(profile.cnt.SPAs)
+dataH <- as.data.frame(H.profile.share.relative.all.SPAs)
+dataQ <- as.data.frame(Q.profile.share.relative.all.SPAs)
+dataD <- as.data.frame(D.profile.share.relative.all.SPAs)
+
+## import the probability by profile
+Pr.H <- Pr.H #Pr.H.orig
+Pr.Q <- Pr.Q #Pr.Q.orig
+Pr.D <- Pr.D #Pr.D.orig
+
+SPA.data <- risk.probs.SPAs
+
+## DATA FROM ESTIMATED MODEL ##################################################
+#traj.CI.out <- traj.0
+
+## DATA FROM COUNTERFACTUAL ###################################################
+traj.CI.out <- traj.scenario0
+
+# CLEAN AND PROCESS DATA
+## Note: The 5 risk groups are assigned within this code
+##       Currently are grouped according to Pr(D|Q).
+##       To modify the risk grouping cutoffs see the end of this code.
+clean_data_risk_estimates <- path(code.dir, "clean_data_risk_estimates.R")
+r_output(readLines(clean_data_risk_estimates))
+source(clean_data_risk_estimates)
+
+```
+
+```{r setup-print-formattable}
+
+library(htmltools)
+library(webshot)
+
+export_formattable <- function(f, file, width = "100%", height = NULL, 
+                               background = "white", delay = 0.2)
+    {
+      w <- as.htmlwidget(f, width = width, height = height)
+      path <- html_print(w, background = background, viewer = NULL)
+      url <- paste0("file:///", gsub("\\\\", "/", normalizePath(path)))
+      webshot(url,
+              file = file,
+              selector = ".formattable_widget",
+              delay = delay)
+}
+
+```
+
+```{r risk-profile-table, echo=FALSE}
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+data_subset <- subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D, Pr.D.I))
+data_subset <- arrange(data_subset, desc(data_subset$"LA County"))
+
+#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table <- as.datatable(formattable(data_subset, align="r",
+            align = c(rep("c", 9)),
+            list(
+  `age`= color_tile('yellow', 'darkorange'),
+  `BMI`= color_tile('lightblue', 'pink'),
+  `smoking`= color_tile('grey', 'transparent'),
+  `comorbidity`= color_tile('darkgrey', 'transparent'),
+  `riskprofile`= color_tile('red', 'green'),
+  `LA County`= color_bar('cornflowerblue', fun = unit.scale),
+  `Pr.H`= color_bar('violet', fun = unit.scale),
+  `Pr.Q`= color_bar('violet', fun = unit.scale),
+  `Pr.D`= color_bar('violet', fun = unit.scale),
+  `Pr.D.I`= color_bar('violet', fun = unit.scale)
+)), rownames = FALSE, colnames = c('Population Prevalence in L.A.County' = 'LA County', 'Age' = 'age', 'BMI status' = 'BMI', 'Smoking status' = 'smoking', 'Existing comorbidities' = 'comorbidity', 'Risk Group' = 'riskprofile', 'Pr(Hospital|Illness)' = 'Pr.H', 'Pr(ICU|Hospital)' = 'Pr.Q', 'Pr(Death|ICU)' = 'Pr.D', 'Pr(Death|Illness)' = 'Pr.D.I' ), 
+#filter = 'bottom', 
+options = list(pageLength = 10, 
+               autoWidth = TRUE) 
+               # order = list(list(9, 'desc'),list(8,'desc'),list(7,'desc')))
+               #order = list(list(6, 'desc'), list(7, 'desc'), list(8, 'desc')))
+               #order(data2$"LA County",decreasing=TRUE))
+)
+
+```
+
+```{r risk-profile-table-to-print, echo=FALSE}
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+data_subset <- subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D, Pr.D.I))
+data_subset <- arrange(data_subset, desc(data_subset$"Pr.D.I"))
+colnames(data_subset) = c('Risk Group', 'Age', 'BMI status', 'Smoking status', 'Existing comorbidities', 'Prevalence in L.A.County', 'Pr(Hospital|Illness)', 'Pr(ICU|Hospital)', 'Pr(Death|ICU)', 'Pr(Death|Illness)') 
+
+#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table_print <- formattable(data_subset, 
+            align = c(rep("c",5),  rep("r", 5)),
+            list(
+  `Age`= color_tile('yellow', 'darkorange'),
+  `BMI status`= color_tile('lightblue', 'pink'),
+  `Smoking status`= color_tile('grey', 'transparent'),
+  `Existing comorbidities`= color_tile('darkgrey', 'transparent'),
+  `Risk Group`= color_tile('red', 'green'),
+  `Prevalence in L.A.County`= color_bar('cornflowerblue', fun = unit.scale),
+  `Pr(Hospital|Illness)`= color_bar('violet', fun = unit.scale),
+  `Pr(ICU|Hospital)`= color_bar('violet', fun = unit.scale),
+  `Pr(Death|ICU)`= color_bar('violet', fun = unit.scale),
+  `Pr(Death|Illness)`= color_bar('violet', fun = unit.scale)
+))
+risk_table_print
+
+#export_formattable(risk_table_print,path(fig.dir,"risk_table_print2.png"))
+
+
+
+```
+
+
+```{r risk_table_CFR, include=FALSE}
+
+ABC.out.mat <- ABC_out$param
+time.steps = 500
+par.vec.length=500
+iter <- 20
+
+
+########################################################################
+## risk.table.CFR.fn code found in clean_data_risk_estimates.R
+########################################################################
+
+risk_table_CFR <- risk.table.CFR.fn(ABC.out.mat = ABC.out.mat, time.steps = time.steps, par.vec.length = par.vec.length, iter=iter, data.prev = data.prev)
+
+```
+
+```{r risk_table_CFR_original}
+#risk_table_CFR <- filter(risk_table_CFR, "LA County" > 0.0004)
+#risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.median"))
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table_CFR.ft <- as.datatable(formattable(risk_table_CFR, align="r",
+            align = c(rep("c", 9)),
+            list(
+  `age`= color_tile('yellow', 'darkorange'),
+  `BMI`= color_tile('lightblue', 'pink'),
+  `smoking`= color_tile('grey', 'transparent'),
+  `comorbidity`= color_tile('darkgrey', 'transparent'),
+  `riskprofile`= color_tile('red', 'green'),
+  `LA County`= color_bar('cornflowerblue', fun = unit.scale),
+  `CFR.median`= color_bar('violet', fun = unit.scale),
+  `CFR.low_95`= color_bar('violet', fun = unit.scale),
+  `CFR.up_95`= color_bar('violet', fun = unit.scale),
+  `IFR.median`= color_bar('lightpink', fun = unit.scale),
+  `IFR.low_95`= color_bar('lightpink', fun = unit.scale),
+  `IFR.up_95`= color_bar('lightpink', fun = unit.scale)
+)), rownames = FALSE, colnames = c('Population Prevalence in L.A.County' = 'LA County', 'Age' = 'age', 'BMI status' = 'BMI', 'Smoking status' = 'smoking', 'Existing comorbidities' = 'comorbidity', 'Risk Group' = 'riskprofile', 'CFR Median' = 'CFR.median', 'CFR Lower 95%CI'='CFR.low_95', 'CFR Upper 95%CI'='CFR.up_95', 'IFR Median' = 'IFR.median', 'IFR Lower 95%CI' = 'IFR.low_95', 'IFR Upper 95%CI'='IFR.up_95'), 
+#filter = 'bottom', 
+options = list(pageLength = 10, 
+               autoWidth = TRUE) 
+)
+
+```
+
+```{r risk_table_CFR_print}
+
+risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.median"))
+risk_table_CFR$Profile <- NULL
+colnames(risk_table_CFR) <- c('Risk Group', 'Age', 'BMI status', 'Smoking status', 'Existing comorbidities', 'Prevalence in L.A.County', 'CFR Median', 'CFR Low 95%CI', 'CFR Up 95%CI', 'IFR Median', 'IFR Low 95%CI', 'IFR Up 95%CI')
+
+#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table_CFR_print <- formattable(risk_table_CFR,
+            align = c(rep("c",5), rep("r", 7)),
+            list(
+  `Age`= color_tile('yellow', 'darkorange'),
+  `BMI status`= color_tile('lightblue', 'pink'),
+  `Smoking status`= color_tile('grey', 'transparent'),
+  `Existing comorbidities`= color_tile('darkgrey', 'transparent'),
+  `Risk Group`= color_tile('red', 'green'),
+  `Prevalence in L.A.County`= color_bar('cornflowerblue', fun = unit.scale),
+  `CFR Median`= color_bar('violet', fun = unit.scale),
+  `CFR Low 95%CI`= color_bar('violet', fun = unit.scale),
+  `CFR Up 95%CI`= color_bar('violet', fun = unit.scale),
+  `IFR Low 95%CI`= color_bar('lightpink', fun = unit.scale),
+  `IFR Median`= color_bar('lightpink', fun = unit.scale),
+  `IFR Up 95%CI`= color_bar('lightpink', fun = unit.scale)
+))
+risk_table_CFR_print
+
+#export_formattable(risk_table_CFR_print, path(fig.dir,"risk_table_CFR_print.png"))
+
+```
+
+
+```{r plotting-stacked-bars, include=FALSE}
+
+## 0) PROCESS DATA TO PLOT STACKED BAR CHARTS #######################################################################################
+
+data.melted <- melt(data, id = c('Profile', 'age', 'BMI', 'smoking', 'comorbidity', 'Pr.H', 'Pr.Q', 'Pr.D', 'riskprofile'))
+
+data.melted$SPA.Name <- data.melted$variable
+data.melted$variable <- NULL
+
+data.melted$SPA.Name <- factor(data.melted$SPA.Name, levels =  c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County"))
+
+data.melted$prevalence.gen.pop <- data.melted$value
+data.melted$value <- NULL
+
+#merge with everything else
+
+full.data <- merge(data.melted, dataH.melted, by = c('Profile', 'SPA.Name' ) )
+full.data <- merge(full.data, dataQ.melted, by = c('Profile', 'SPA.Name' ) )
+full.data <- merge(full.data, dataD.melted, by = c('Profile', 'SPA.Name' ) )
+
+
+## 1) Risk profile in general population #######################################################################################
+
+p.risk.gen <-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in general population by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+
+p.BMI.gen <- 
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in general population by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.gen<-
+ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in general population by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.gen<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in general population by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.gen<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.gen.pop, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in general population by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+## 2) Risk profile in hospitalized population #######################################################################################
+
+p.risk.h<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in hospitalized by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.BMI.h<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in hospitalized by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.h<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in hospitalized by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.h<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in hospitalized by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.h<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.H, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in hospitalized by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+## 3) Risk profile in ICU population #######################################################################################
+
+p.risk.q<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in ICU by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.BMI.q<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in ICU by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.q<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in ICU by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.q<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in ICU by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.q<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.Q, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in ICU by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+
+## 4) Risk profile in deceased #######################################################################################
+
+p.risk.d<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in deceased by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.BMI.d<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in deceased by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.d<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in deceased by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.d<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in deceased by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.d<-
+  ggplot(data = full.data, aes(x=SPA.Name, y = prevalence.D, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in deceased by SPA", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Antelope Valley", "San Fernando", "San Gabriel", "Metro", "West", "South", "East", "South Bay", "LA County")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+```
+
+```{r include=FALSE}
+
+# RISK PROFILE AT EACH STAGE FOR LA COUNTY
+
+## RESHAPE DATASET #######################################################################################
+
+full.data <- full.data %>% 
+  gather(keys, values, prevalence.gen.pop:prevalence.D )
+full.data$stage <- full.data$keys
+full.data$keys <- NULL 
+full.data$stage <- factor(full.data$stage, levels =  c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D"))
+
+
+## Prevalence of risk profiles at each stage of disease ##############################################################  
+
+labels.SPA <- c(`Antelope Valley` = 'Antelope Valley' , `San Fernando` = 'San Fernando' , `San Gabriel`= 'San Gabriel' , Metro = 'Metro', West = 'West', South = 'South', East = 'East', `South Bay` = 'South Bay' , `LA County` = 'LA County')
+
+p.prev.risk.stage.SPAs<- ggplot(full.data, aes(x = stage, y = values, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    facet_wrap(SPA.Name ~ ., labeller=labeller(SPA.Name = labels.SPA)) +
+    labs(title = "Prevalence of risk profiles at each stage for LA County and SPAs", x = NULL, y = "Prevalence") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+### Risk profiles, comorbidity, age, obesity by stage of disease for LA County ##############################################################  
+
+LA.data <- subset(full.data, SPA.Name == 'LA County')
+
+p.riskprofiles<- 
+  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk Profiles By Stage of Disease", x = NULL, y = "Prevalence") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.BMI<-
+  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    labs(title = "Obesity By Stage of Disease", x = NULL, y = "Prevalence") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age<- 
+  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    labs(title = "Age By Stage of Disease", x = NULL, y = "Age") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb<- 
+  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    labs(title = "Any Comorbidity By Stage of Disease", x = NULL, y = "Prevalence") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoking<-
+  ggplot(subset(full.data, SPA.Name == 'LA County'), aes(x = stage, y = values, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    labs(title = "Smoking Status By Stage of Disease", x = NULL, y = "Smoking") +
+    scale_x_discrete(labels = c("General Pop", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+```
+
+<br><br>
+
+# Projections for At-Risk Groups
+
+## By risk factors {.tabset}
+
+- These figures show the estimated proportion of each *risk group* that will make up the resulting cohorts of COVID patients admitted to hospital, admitted to ICU, or that die within the L.A. County/SPA population, based on the population prevalence of the risk group in L.A. County/SPAs. 
+- The analyses are presented for each risk group, as well as stratified to the individual risk factors (age, comorbidities, obesity status, smoking status).
+
+### By SPA, stage of disease
+```{r, echo=FALSE}
+p.risk.gen + p.risk.h + p.risk.q + p.risk.d + plot_layout(guides = 'collect')
+```
+
+### By stage of disease, SPA
+```{r, echo=FALSE}
+p.prev.risk.stage.SPAs
+```
+
+### Comparing risk factors
+```{r, echo=FALSE}
+p.riskprofiles + (p.comb + p.age) / (p.BMI + p.smoking)
+
+# pdf(file = path(fig.dir, "riskprofiles_popshare.pdf"), width=10, height =10)
+# p.riskprofiles
+# dev.off()
+
+# tiff(file = path(fig.dir, "popshare_riskprofiles.tiff"), units="in", width=5, height=5, res=300, compression = 'lzw')
+# p.riskprofiles
+# dev.off()
+# 
+# tiff(file = path(fig.dir, "popshare_BMI.smoking"), units="in", width=5, height=5, res=300, compression = 'lzw')
+# p.smoking
+# dev.off()
+# 
+# 
+# tiff(file = path(fig.dir, "popshare_all.tiff"), units="in", width=10, height=5, res=300, compression = 'lzw')
+# p.riskprofiles + (p.comb + p.age) / (p.BMI + p.smoking)
+# dev.off()
+
+```
+
+### Age by stage of disease
+```{r, echo=FALSE}
+p.age.gen + p.age.h + p.age.q + p.age.d +
+  plot_layout(guides = 'collect')
+
+```
+
+### Comorbidity by stage of disease
+```{r, echo=FALSE}
+p.comb.gen + p.comb.h + p.comb.q + p.comb.d +
+  plot_layout(guides = 'collect')
+
+```
+
+### BMI by stage of disease
+```{r, echo=FALSE}
+p.BMI.gen + p.BMI.h + p.BMI.q + p.BMI.d +
+  plot_layout(guides = 'collect')
+
+```
+
+### Smoking by stage of disease
+```{r, echo=FALSE}
+p.smoke.gen + p.smoke.h + p.smoke.q + p.smoke.d +
+  plot_layout(guides = 'collect')
+
+```
+
+```{r trajectory-process-clean, include=FALSE}
+
+## PROCESS TRAJ.OUT TO FIND MEAN  ############################################################################
+H.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("Htot"))
+Q.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("Q"))
+D.median <- traj.CI.out %>% select(c(date,state.name,median)) %>% filter(state.name==c("D"))
+
+H.median$H <- H.median$median
+H.median$median <- NULL
+H.median$state.name <- NULL
+Q.median$Q <- Q.median$median
+Q.median$median <- NULL
+D.median$D <- D.median$median
+D.median$median <- NULL
+HQD.median <- cbind(cbind(H.median,Q.median$Q),D.median$D)
+colnames(HQD.median) <- c("date","H","Q","D")
+
+## FIX DATES ##################################################################
+HQD.median$date <- as.Date(HQD.median$date)
+
+## ORGANIZE / CLEAN ##################################################################
+HQD.median2 <- HQD.median
+HQD.median2$Hospitalizations <- HQD.median2$H
+HQD.median2$H <- NULL
+HQD.median2$ICU <- HQD.median2$Q
+HQD.median2$Q <- NULL
+HQD.median2$Deaths <- HQD.median2$D
+HQD.median2$D <- NULL
+HQD.median2 <- melt(HQD.median2,id = 'date')
+HQD.median2$Stage <- HQD.median2$variable
+HQD.median2$variable <- NULL
+
+```
+
+```{r trajectory-groupby.risk, include=FALSE}
+
+## 1A) GROUP BY RISK PROFILES  ############################################################################
+
+str(HQD.median2)
+
+#pull the total for each risk profile by stage
+
+grouped.by.risk <- full.data %>% 
+  dplyr::group_by(stage, riskprofile, SPA.Name) %>% 
+  dplyr::summarise(values = sum(values)) %>%
+  ungroup
+
+#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
+grouped.by.risk$stage <- factor(grouped.by.risk$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+
+#match the daily count naming
+grouped.by.risk$stage[grouped.by.risk$stage == "prevalence.H"] <- "Hospitalizations"
+grouped.by.risk$stage[grouped.by.risk$stage == "prevalence.Q"] <- "ICU"
+grouped.by.risk$stage[grouped.by.risk$stage == "prevalence.D"] <- "Deaths"
+
+
+#break down daily count by risk profile
+
+count.risk <- left_join(
+  HQD.median2 %>% dplyr::rename(count=value), 
+  grouped.by.risk,
+  by = c("Stage" = "stage")
+) %>% 
+  dplyr::rename(prop=values) %>% 
+  mutate(count_risk=round(count*prop,3))
+
+
+```
+
+```{r trajectory-plotby.risk, include=FALSE}
+
+## 1B) PLOT BY RISK PROFILES  ############################################################################
+
+
+#Hospitalizations
+
+p.traj.risk.h<-
+  ggplot(filter(count.risk, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
+       aes(x = date,
+           y = count_risk,
+           fill = riskprofile)) +
+  geom_area() +
+  scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Hospitalizations by Risk Profile for LA County",
+       x = NULL,
+       y = "Number in Hospital") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-07-20")), date_breaks = "2 weeks" , date_labels = "%d-%b-%y") +
+  scale_y_continuous(labels = scales::comma) +
+  theme(legend.title = element_blank(), axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#ICU
+
+p.traj.risk.q<-
+  ggplot(filter(count.risk, SPA.Name == 'LA County' & Stage == "ICU"), 
+       aes(x = date,
+           y = count_risk,
+           fill = riskprofile)) +
+  geom_area() +
+  scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "ICU by Risk Profile for LA County",
+       x = NULL,
+       y = "Number in ICU") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-07-20")), date_breaks = "2 weeks" , date_labels = "%d-%b-%y") +
+  scale_y_continuous(labels = scales::comma) +
+  theme(legend.title = element_blank(), axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#Death
+
+p.traj.risk.d<-
+  ggplot(filter(count.risk, SPA.Name == 'LA County' & Stage == "Deaths"), 
+       aes(x = date,
+           y = count_risk,
+           fill = riskprofile)) +
+  geom_area() +
+  scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Deaths by Risk Profile for LA County",
+       x = NULL,
+       y = "Number deceased")+
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-07-20")), date_breaks = "2 weeks" , date_labels = "%d-%b-%y") +
+  scale_y_continuous(labels = scales::comma) +
+  theme(legend.title = element_blank(), axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+
+##########################################################################################
+###### PRINT THESE TO FILE
+
+# pdf(file = path(fig.dir, "rainbow_HD_COUNTERFACTUAL_v2.pdf"), width=10, height =10)
+# (p.traj.risk.h )/ p.traj.risk.d +
+#   plot_layout(guides = 'collect')
+# dev.off()
+# 
+# pdf(file = path(fig.dir, "rainbow_D_COUNTERFACTUAL_v2.pdf"), width=10, height =10)
+# p.traj.risk.d
+# dev.off()
+
+# pdf(file = path(fig.dir, "rainbow_D_COUNTERFACTUAL"), width=10, height =10)
+# p.traj.risk.d
+# dev.off()
+# 
+# pdf(file = path(fig.dir, "rainbow_HVD_COUNTERFACTUAL"), width=10, height =10)
+# (p.traj.risk.h + p.traj.risk.q) / p.traj.risk.d +
+#   plot_layout(guides = 'collect')
+# dev.off()
+# 
+# pdf(file = path(fig.dir, "rainbow_D_COUNTERFACTUAL"), width=10, height =10)
+# p.traj.risk.d
+# dev.off()
+
+#p.traj.risk.h + p.traj.risk.d
+
+```
+
+```{r trajectory-groupby.comb, include=FALSE}
+
+## 2A) GROUP BY COMORBIDITY  ############################################################################
+
+#pull the total for each risk profile by stage
+
+grouped.by.comb <- full.data %>% 
+  dplyr::group_by(stage, comorbidity, SPA.Name) %>% 
+  dplyr::summarise(values = sum(values)) %>%
+  ungroup
+
+#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
+grouped.by.comb$stage <- factor(grouped.by.comb$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+
+#match the daily count naming
+grouped.by.comb$stage[grouped.by.comb$stage == "prevalence.H"] <- "Hospitalizations"
+grouped.by.comb$stage[grouped.by.comb$stage == "prevalence.Q"] <- "ICU"
+grouped.by.comb$stage[grouped.by.comb$stage == "prevalence.D"] <- "Deaths"
+
+
+#break down daily count by risk profile
+
+count.comb <- left_join(
+  HQD.median2 %>% dplyr::rename(count=value), 
+  grouped.by.comb,
+  by = c("Stage" = "stage")
+) %>% 
+  dplyr::rename(prop=values) %>% 
+  mutate(count_comb=round(count*prop,3))
+
+
+```
+
+```{r trajectory-plotby.comb, include=FALSE}
+
+## 2B) PLOT BY COMORBIDITY  ############################################################################
+
+p.traj.comb.h<-
+  ggplot(filter(count.comb, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
+       aes(x = date,
+           y = count_comb,
+           fill = comorbidity)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Hospitalizations by Comorbidity Status for LA County",
+       x = NULL,
+       y = "Number in Hospital") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#ICU
+
+p.traj.comb.q<-
+  ggplot(filter(count.comb, SPA.Name == 'LA County' & Stage == "ICU"), 
+       aes(x = date,
+           y = count_comb,
+           fill = comorbidity)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "ICU by Comorbidity Status for LA County",
+       x = NULL,
+       y = "Number in ICU") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#Death
+
+p.traj.comb.d<-
+  ggplot(filter(count.comb, SPA.Name == 'LA County' & Stage == "Deaths"), 
+       aes(x = date,
+           y = count_comb,
+           fill = comorbidity)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Deaths by Comorbidity Status for LA County",
+       x = NULL,
+       y = "Number deceased")+
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#p.traj.comb.h + p.traj.comb.q + p.traj.comb.d
+
+```
+
+```{r trajectory-groupby.age, include=FALSE}
+
+## 3A) GROUP BY AGE  ############################################################################
+
+#pull the total for each risk profile by stage
+
+grouped.by.age <- full.data %>% 
+  dplyr::group_by(stage, age, SPA.Name) %>% 
+  dplyr::summarise(values = sum(values)) %>%
+  ungroup
+
+#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
+grouped.by.age$stage <- factor(grouped.by.age$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+
+#match the daily count naming
+grouped.by.age$stage[grouped.by.age$stage == "prevalence.H"] <- "Hospitalizations"
+grouped.by.age$stage[grouped.by.age$stage == "prevalence.Q"] <- "ICU"
+grouped.by.age$stage[grouped.by.age$stage == "prevalence.D"] <- "Deaths"
+
+
+#break down daily count by risk profile
+
+count.age <- left_join(
+  HQD.median2 %>% dplyr::rename(count=value), 
+  grouped.by.age,
+  by = c("Stage" = "stage")
+) %>% 
+  dplyr::rename(prop=values) %>% 
+  mutate(count_age=round(count*prop,3))
+
+
+```
+
+```{r trajectory-plotby.age, include=FALSE}
+
+## 3B) PLOT BY AGE  ############################################################################
+
+p.traj.age.h<-
+  ggplot(filter(count.age, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
+       aes(x = date,
+           y = count_age,
+           fill = age)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Hospitalizations by Age for LA County",
+       x = NULL,
+       y = "Number in Hospital") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#ICU
+
+p.traj.age.q<-
+  ggplot(filter(count.age, SPA.Name == 'LA County' & Stage == "ICU"), 
+       aes(x = date,
+           y = count_age,
+           fill = age)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "ICU by Age for LA County",
+       x = NULL,
+       y = "Number in ICU") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#Death
+
+p.traj.age.d<-
+  ggplot(filter(count.age, SPA.Name == 'LA County' & Stage == "Deaths"), 
+       aes(x = date,
+           y = count_age,
+           fill = age)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Deaths by Age for LA County",
+       x = NULL,
+       y = "Number deceased")+
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#p.traj.age.h + p.traj.age.q + p.traj.age.d
+
+```
+
+```{r trajectory-groupby.BMI, include=FALSE}
+
+## 4A) GROUP BY BMI  ############################################################################
+
+#pull the total for each risk profile by stage
+
+grouped.by.BMI <- full.data %>% 
+  dplyr::group_by(stage, BMI, SPA.Name) %>% 
+  dplyr::summarise(values = sum(values)) %>%
+  ungroup
+
+#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
+grouped.by.BMI$stage <- factor(grouped.by.BMI$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+
+#match the daily count naming
+grouped.by.BMI$stage[grouped.by.BMI$stage == "prevalence.H"] <- "Hospitalizations"
+grouped.by.BMI$stage[grouped.by.BMI$stage == "prevalence.Q"] <- "ICU"
+grouped.by.BMI$stage[grouped.by.BMI$stage == "prevalence.D"] <- "Deaths"
+
+
+#break down daily count by risk profile
+
+count.BMI <- left_join(
+  HQD.median2 %>% dplyr::rename(count=value), 
+  grouped.by.BMI,
+  by = c("Stage" = "stage")
+) %>% 
+  dplyr::rename(prop=values) %>% 
+  mutate(count_BMI=round(count*prop,3))
+
+
+```
+
+```{r trajectory-plotby.BMI, include=FALSE}
+
+## 4B) PLOT BY COMORBIDITY  ############################################################################
+
+p.traj.BMI.h<-
+  ggplot(filter(count.BMI, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
+       aes(x = date,
+           y = count_BMI,
+           fill = BMI)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Hospitalizations by Obesity Status for LA County",
+       x = NULL,
+       y = "Number in Hospital") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#ICU
+
+p.traj.BMI.q<-
+  ggplot(filter(count.BMI, SPA.Name == 'LA County' & Stage == "ICU"), 
+       aes(x = date,
+           y = count_BMI,
+           fill = BMI)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "ICU by Obesity Status for LA County",
+       x = NULL,
+       y = "Number in ICU") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#Death
+
+p.traj.BMI.d<-
+  ggplot(filter(count.BMI, SPA.Name == 'LA County' & Stage == "Deaths"), 
+       aes(x = date,
+           y = count_BMI,
+           fill = BMI)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Deaths by Obesity Status for LA County",
+       x = NULL,
+       y = "Number deceased")+
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+```
+
+```{r trajectory-groupby.smoke, include=FALSE}
+
+## 4A) GROUP BY SMOKING  ############################################################################
+
+#pull the total for each risk profile by stage
+
+grouped.by.smoke <- full.data %>% 
+  dplyr::group_by(stage, smoking, SPA.Name) %>% 
+  dplyr::summarise(values = sum(values)) %>%
+  ungroup
+
+#Add all the factor names to the grouped.by.risk dataframe so we can rename the factors in the dataframe to match the daily count
+grouped.by.smoke$stage <- factor(grouped.by.smoke$stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+#HQD.median2$Stage <- factor(HQD.median2$Stage, levels = c("prevalence.gen.pop", "prevalence.H", "prevalence.Q", "prevalence.D", "Hospitalizations", "ICU", "Deaths"  ))
+
+#match the daily count naming
+grouped.by.smoke$stage[grouped.by.smoke$stage == "prevalence.H"] <- "Hospitalizations"
+grouped.by.smoke$stage[grouped.by.smoke$stage == "prevalence.Q"] <- "ICU"
+grouped.by.smoke$stage[grouped.by.smoke$stage == "prevalence.D"] <- "Deaths"
+
+
+#break down daily count by risk profile
+
+count.smoke <- left_join(
+  HQD.median2 %>% dplyr::rename(count=value), 
+  grouped.by.smoke,
+  by = c("Stage" = "stage")
+) %>% 
+  dplyr::rename(prop=values) %>% 
+  mutate(count_smoke=round(count*prop,3))
+
+
+```
+
+```{r trajectory-plotby.smoking, include=FALSE}
+
+## 4B) PLOT BY COMORBIDITY  ############################################################################
+
+p.traj.smoke.h<-
+  ggplot(filter(count.smoke, SPA.Name == 'LA County' & Stage == "Hospitalizations"), 
+       aes(x = date,
+           y = count_smoke,
+           fill = smoking)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Hospitalizations by Obesity Status for LA County",
+       x = NULL,
+       y = "Number in Hospital") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#ICU
+
+p.traj.smoke.q<-
+  ggplot(filter(count.smoke, SPA.Name == 'LA County' & Stage == "ICU"), 
+       aes(x = date,
+           y = count_smoke,
+           fill = smoking)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "ICU by Obesity Status for LA County",
+       x = NULL,
+       y = "Number in ICU") +
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+#Death
+
+p.traj.smoke.d<-
+  ggplot(filter(count.smoke, SPA.Name == 'LA County' & Stage == "Deaths"), 
+       aes(x = date,
+           y = count_smoke,
+           fill = smoking)) +
+  geom_area() +
+  #scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+  labs(title = "Deaths by Obesity Status for LA County",
+       x = NULL,
+       y = "Number deceased")+
+  scale_x_date(limits = as.Date(c("2020-03-01","2020-09-01")), date_breaks = "1 month" , date_labels = "%d-%b-%y") +
+  theme(axis.text.x = element_text(angle = 90), 
+                 strip.text.x = element_text(size = 12, face = "bold"))
+
+```
+
+## Across risk factors {.tabset}
+
+Fraction of all LA County Cases by risk factor 
+
+### By risk group
+```{r, echo=FALSE, message=FALSE}
+(p.traj.risk.h + p.traj.risk.q) / p.traj.risk.d +
+  plot_layout(guides = 'collect')
+
+```
+
+### By age
+```{r, echo=FALSE, message=FALSE}
+(p.traj.age.h + p.traj.age.q) / p.traj.age.d +
+  plot_layout(guides = 'collect')
+```
+
+### By comorbidity
+```{r, echo=FALSE, message=FALSE}
+(p.traj.comb.h + p.traj.comb.q) / p.traj.comb.d +
+  plot_layout(guides = 'collect')
+```
+
+### By obesity status
+```{r, echo=FALSE, message=FALSE}
+(p.traj.BMI.h + p.traj.BMI.q) / p.traj.BMI.d +
+  plot_layout(guides = 'collect')
+```
+
+### By smoking status
+```{r, echo=FALSE, message=FALSE}
+(p.traj.smoke.h + p.traj.smoke.q) / p.traj.smoke.d +
+  plot_layout(guides = 'collect')
+```

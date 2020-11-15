@@ -1,21 +1,18 @@
-name: "USC Predict COVID19"
-output_dir: "docs"
-exclude: ["code", "data", "results", "n_simul_tot_step1", "output_mcmc"]
+name: "USC COVID19 Modeling"
+output_dir: "."
 navbar:
-  title: '<div><img src="2-Line_KeckSOMofUSC_GrayOnBlack.jpg" height = 50px></img>USC Predict COVID19</div>'
+  title: '<div><img src="2-Line_KeckSOMofUSC_GrayOnBlack.jpg" height = 50px></img>USC COVID19 Modeling</div>'
   left:
-    - text: "Home"
+    - text: "Current Analysis"
       href: index.html
-    - text: "Scenarios"
-      href: scenarios.html
-    - text: "Risk Tables"
-      href: risk_table.html
-    - text: "Findings"
-      href: findings.html
-    - text: "Methods"
-      href: method.html
     - text: "About"
       href: about.html
+  right:
+    - icon: fa-github fa-lg
+      href: https://github.com/USCbiostats/COVID19
+    - text: "Static link to paper"
+      href: https://abigailhorn.github.io/COV2-LA
 output:
   html_document:
+    theme: cosmo
     css: styles.css

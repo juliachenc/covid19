@@ -1,6 +1,16 @@
 ---
-title: "Team"
+title: "About"
 ---
+
+<br>
+
+# Analysis
+
+This website will show updated analyses COVID19 analyses. It is currently updated with data as of Oct 15, 2020. The content currently shown corresponds to the paper [**Risk-stratified COVID-19 policy analysis for Los Angeles County through an integrated risk and stochastic epidemiological model**](https://github.com/AbigailHorn/COV2-LA). The co-authors of this paper and members of this team are shown below.
+
+<br>
+
+# Team
 
 ## USC Department of Preventive Medicine
 
@@ -19,14 +29,20 @@ Professor of Preventive Medicine
 Leader, Translational Epidemiology
 Director, Population-based Tissue Procurement Core
 
+[Kayla de la Haye](https://www.kayladelahaye.net/)
+Assistant Professor of Preventive Medicine
+
 [David Conti, PhD](https://keck.usc.edu/faculty-search/david-v-conti/)
 Professor of Preventive Medicine
 Associate Director for Data Science Integration
 
-## Advisor, Health Disparities
+## USC Sol Price School of Public Policy
 
-[Kayla de la Haye](https://www.kayladelahaye.net/)
-Assistant Professor of Preventive Medicine
+[Neeraj Sood](https://priceschool.usc.edu/people/neeraj-sood/)
+
+Professor, Vice Dean for Faculty Affairs, Vice Dean for Research
+USC Sol Price School of Public Policy
+USC USC Schaeffer Center for Health Policy
 
 ## Los Angeles County Department of Public Health (LACDPH)
 
@@ -39,9 +55,3 @@ Director, Center for Health Impact Evaluation, LACDPH
 
 [Faith Washburn, MPH](http://publichealth.lacounty.gov/chie/who_we_are_2.htm)
 Epidemiology Analyst
-
-## Acknowledgements
-
-Additionally, we would like to acknowledge:
-
-[Claire Jacquillat](https://www.linkedin.com/authwall?trk=gf&trkInfo=AQG3KVF6rpn2PwAAAXI7ea9Q8QpZmycppjxhhVX6cRMO1bNUfKKoeXR-RvAvfaLx1avEcheI5LQls-QVHsgyskdpxkiYEbxOfrC4jNSZJkJ1skKaVDFr7PxhVPqk3xhETPE39vk=&originalReferer=https://www.google.com/&sessionRedirect=https%3A%2F%2Fwww.linkedin.com%2Fin%2Fclairejacquillat%2Fen-us) and Adam Taylor for their contributions related to data cleaning and visualization.

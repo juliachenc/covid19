@@ -1,0 +1,830 @@
+---
+title: "USC Predict COVID Project"
+subtitle: "Predictive Epidemic Model for COVID-19 in Los Angeles County"
+author: "University of Southern California, Department of Preventive Medicine"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+Updated with data available as of `r Sys.Date()`
+
+``` {r setup, include=FALSE}
+
+#rmarkdown::render_site()
+
+### Install necessary packages and get started
+
+library(reshape2)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(ggrepel)
+library(bindata)
+library(odin)
+library(fitR)
+library(knitr)
+library(EasyABC)
+library(gridExtra)
+library(odin)
+library(lubridate)
+library(EasyABC)
+library(gridExtra)
+library(kableExtra)
+library(plyr)
+library(dplyr)
+library(data.table)
+library(scales)
+library(EasyABC)
+library(patchwork)
+
+library(tidyr)
+library(readr)
+library(purrr)
+library(tibble)
+library(stringr)
+library(forcats)
+library(network)
+library(tidygraph)
+library(ggraph)
+library(visNetwork)
+library(networkD3)
+library(ggmosaic)
+library(formattable)
+library(DT)
+library(reshape)
+library(here)
+library(fs)
+
+library(MASS)
+library(plotly)
+
+lang_output <- function(x, lang) {
+  cat(c(sprintf("```%s", lang), x, "```"), sep = "\n")
+}
+r_output <- function(x) lang_output(x, "r")
+
+knitr::opts_chunk$set(
+  fig.width = 9.5,
+  fig.height = 8,
+  echo=FALSE,
+  warning=FALSE,
+  cache=FALSE,
+  message=FALSE)
+
+
+code.dir=here("code/")
+data.dir=here("data/")
+result.dir = here("results/")
+fig.dir = here("figs/")
+```
+
+```{r setup-print-formattable}
+
+library("htmltools")
+library("webshot")    
+
+# FOR PRINTING LONG WITH ALL COLUMNS
+# export_formattable <- function(f, file, width = "100%", height = "70%",#,
+#                                background = "white", delay = 0.2)
+
+# FOR PRINTING CONDENSED (LOOKS BETTER)
+export_formattable <- function(f, file, width = "110%", height = NULL,#, 
+                               background = "white", delay = 0.2)
+    {
+      w <- as.htmlwidget(f, width = width, height = height)
+      path <- html_print(w, background = background, viewer = NULL)
+      url <- paste0("file:///", gsub("\\\\", "/", normalizePath(path)))
+      webshot(url,
+              file = file,
+              selector = ".formattable_widget",
+              delay = delay)
+}
+
+
+
+```
+
+
+
+```{r calc-risk-probs-LAC-OBS, include=FALSE, eval=TRUE}
+###################################################################################################
+## (1) Calculate prevalence of each profile in overall population
+###################################################################################################
+
+calc_profile_prev<- path(code.dir, "integrated/calc_profile_prev.R")
+r_output(readLines(calc_profile_prev))
+source(calc_profile_prev)
+
+```
+
+## Estimate risk probabilities with baseline from epidemic model
+```{r estimate-risk-integrated}
+##################################################
+## INPUTS: RISK MODEL
+
+### Read in JAM produced conditional effect estimates
+psi.mat = read.csv(path(data.dir, "psi.conditional.effect.estimates.2.csv"), sep=",", header=TRUE,row.names = 1)
+rownames(psi.mat) <- colnames(X.mat)
+
+### Profile matrix
+X.mat <- as.matrix(dplyr::select(Pr.H.filter, -1))
+
+### Estimated frequency of each risk profile
+freq.PREV.q <- as.vector(profile.cnt.SPAs[,9])
+
+##################################################
+##### INPUTS: OBSERVED LAC DATA ON ILLNESSES
+
+#Get observed LAC Age prevalence in Illnesses
+n.dates.LAC.obs.age <- 2
+freq.LAC.obs.age <- matrix(nrow=3, ncol=n.dates.LAC.obs.age)
+colnames(freq.LAC.obs.age) <- c("Apr.20","Jul.20")
+rownames(freq.LAC.obs.age) <- c("Age0.19","Age20.64","Age65.")
+
+freq.LAC.obs.age[,1] <- c(0.016, 0.75, 0.233)
+freq.LAC.obs.age[,2] <- c(0.089, 0.794, 0.117)
+
+##################################################
+## INPUTS: EPIDEMIC MODEL
+risk.probs.POSTERIORS.1 <- ABC.par.stats[1,] %>% select(c("Pr(H|I)1", "Pr(Q|H)1", "Pr(D|Q)1" ))
+risk.probs.POSTERIORS.2 <- as.data.frame(ABC.par.stats[1,] %>% select(c("Pr(H|I)2", "Pr(Q|H)2", "Pr(D|Q)2" )))
+risk.probs.POSTERIORS <- rbind(as.list(risk.probs.POSTERIORS.1),as.list(risk.probs.POSTERIORS.2))
+rownames(risk.probs.POSTERIORS) <- c("Apr.20","Jul.20")
+colnames(risk.probs.POSTERIORS) <- c("Alpha","Kappa","Delta")
+risk.probs.POSTERIORS[1,2] <- 0.6
+
+##################################################
+## APPLY CODE TO GET ESTIMATE RISK PROBABILITIES WITH BASELINE FROM EPIDEMIC MODEL
+calc_integrated_risk_model<- path(code.dir, "integrated/integrated_risk_model.R")
+r_output(readLines(calc_integrated_risk_model))
+source(calc_integrated_risk_model)
+
+### OUTPUTS
+Pr.OUT <- Pr.OUT
+freq.OUT <- freq.OUT
+
+```
+
+```{r clean-data-get-CFR}
+
+## INPUTS
+#X.mat
+#Pr.OUT
+#freq.OUT
+
+clean_data_risk_estimates_LAC <- path(code.dir,"integrated/clean_data_integrated_risk.R")
+r_output(readLines(clean_data_risk_estimates_LAC))
+source(clean_data_risk_estimates_LAC)
+
+## OUTPUTS
+#data.prev #used for CFR/IFR calculation
+
+## Note: The 5 risk groups are assigned within this code
+##       Currently are grouped according to Pr(D|Q).
+##       To modify the risk grouping cutoffs see the end of this code.
+
+```
+
+
+## Probs table: Profiles
+```{r risk-profile-table-to-print-ALL, echo=FALSE}
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+#data_subset <- subset(data, select=c(-14:15))
+#data_subset <- subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D, Pr.D.I))
+#data_subset <- arrange(data_subset, desc(data_subset$"Pr.D.I"))
+
+data_subset <- subset(data.FULL, select = -c(11:13,15:17))
+data_subset$"Pop.Prev" <- profile.cnt.SPAs[,9]
+data_subset <- data_subset[,c(1,16,12:15,17,10:11,2,6,3,7,4,8,5,9)] 
+names(data_subset)[names(data_subset) == "freq.I.Apr.20"] <- "Ill.Apr.20"
+names(data_subset)[names(data_subset) == "freq.I.Jul.20"] <- "Ill.Jul.20"
+colnames(data_subset)[2] <- "Group"
+data_subset <- arrange(data_subset, desc(data_subset$"P(D|I).Apr.20"))
+data_subset <- data_subset %>% mutate_if(is.numeric, round, digits=4)
+data_subset <- data_subset %>% filter(Pop.Prev>.011)
+
+#data_subset$"Pop.Prev" <- NULL
+#data_subset$Profile <- NULL
+#data_subset$"Ill.Jul.20" <- NULL
+#data_subset$"Ill.Apr.20" <- NULL
+data_subset$"P(D|I).Apr.20" <- NULL
+data_subset$"P(D|I).Jul.20" <- NULL
+
+#colnames(data_subset) = c('Profile','Risk Group', 'Age', 'BMI', 'Smoking', 'Comorbidity', 'Pop Prev', 'Ill.Apr','Ill.Jul','P(H|I).Apr', 'P(H|I).Jul', 'P(Q|H).Apr','P(Q|H).Jul', 'P(D|Q).Apr','P(D|Q).Jul', 'P(D|I).Apr', 'P(D|I).Jul')                          
+
+#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table_print <- formattable(data_subset, align="c",
+            list(
+             
+              `age`= color_tile('yellow', 'darkorange'),
+              `BMI`= color_tile('lightblue', 'pink'),
+              `smoking`= color_tile('grey', 'transparent'),
+              `comorbidity`= color_tile('darkgrey', 'transparent'),
+              `Group`= color_tile('red', 'green'),
+              `Pop.Prev` = color_bar('cornflowerblue', fun = unit.scale),
+
+              `Ill.Apr.20`= color_bar('violet', fun = unit.scale),
+              `Ill.Jul.20`= color_bar('lightpink', fun = unit.scale),
+              `P(H|I).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(H|I).Jul.20` = color_bar('lightpink', fun = unit.scale),
+              `P(Q|H).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(Q|H).Jul.20` = color_bar('lightpink', fun = unit.scale),
+              `P(D|Q).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(D|Q).Jul.20` = color_bar('lightpink', fun = unit.scale),
+               `P(D|I).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(D|I).Jul.20` = color_bar('lightpink', fun = unit.scale)
+))
+risk_table_print
+
+#export_formattable(risk_table_print, path(code.dir,"integrated/figs/use_in_paper/TESTING/probs_PROFILES.png"))
+#export_formattable(risk_table_print, path(code.dir,"integrated/figs/use_in_paper/HIPREV/HIPREV_probs_PROFILES_blue.png"))
+#export_formattable(risk_table_print, path(code.dir,"integrated/figs/use_in_paper/ALL/HIPREV_probs_PROFILES_blue.png"))
+
+```
+
+
+## Probs table: NO PROFILES
+```{r risk-profile-table-to-print-NOPROFILES, echo=FALSE}
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+#data_subset <- subset(data, select=c(-14:15))
+#data_subset <- subset(data, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D, Pr.D.I))
+#data_subset <- arrange(data_subset, desc(data_subset$"Pr.D.I"))
+
+data_subset <- subset(data.FULL, select = -c(11:13,15:17))
+data_subset$"Pop.Prev" <- profile.cnt.SPAs[,9]
+data_subset <- data_subset[,c(1,16,12:15,17,10:11,2,6,3,7,4,8,5,9)] 
+names(data_subset)[names(data_subset) == "freq.I.Apr.20"] <- "Ill.Apr.20"
+names(data_subset)[names(data_subset) == "freq.I.Jul.20"] <- "Ill.Jul.20"
+colnames(data_subset)[2] <- "Group"
+data_subset <- arrange(data_subset, desc(data_subset$"P(D|I).Apr.20"))
+data_subset <- data_subset %>% mutate_if(is.numeric, round, digits=4)
+#data_subset <- data_subset %>% filter(Pop.Prev>.011)
+
+
+data_subset$"Pop.Prev" <- NULL
+#data_subset$Profile <- NULL
+data_subset$"Ill.Jul.20" <- NULL
+data_subset$"Ill.Apr.20" <- NULL
+#data_subset$"P(D|I).Apr.20" <- NULL
+#data_subset$"P(D|I).Jul.20" <- NULL
+data_subset$smoking <- NULL
+data_subset$BMI <- NULL
+data_subset$comorbidity <- NULL
+data_subset$age <- NULL
+data_subset$Group <- NULL
+
+
+#colnames(data_subset) = c('Profile','Risk Group', 'Age', 'BMI', 'Smoking', 'Comorbidity', 'Pop Prev', 'Ill.Apr','Ill.Jul','P(H|I).Apr', 'P(H|I).Jul', 'P(Q|H).Apr','P(Q|H).Jul', 'P(D|Q).Apr','P(D|Q).Jul', 'P(D|I).Apr', 'P(D|I).Jul')                          
+
+#risk_table <- as.datatable(formattable(subset(data2, select = c(riskprofile,  age, BMI, smoking, comorbidity, `LA County`,  Pr.H, Pr.Q, Pr.D)), 
+risk_table_print <- formattable(data_subset, align="c",
+            list(
+             
+              `age`= color_tile('yellow', 'darkorange'),
+              `BMI`= color_tile('lightblue', 'pink'),
+              `smoking`= color_tile('grey', 'transparent'),
+              `comorbidity`= color_tile('darkgrey', 'transparent'),
+              `Group`= color_tile('red', 'green'),
+              `Pop.Prev` = color_bar('pink', fun = unit.scale),
+
+              `Ill.Apr.20`= color_bar('violet', fun = unit.scale),
+              `Ill.Jul.20`= color_bar('lightpink', fun = unit.scale),
+              `P(H|I).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(H|I).Jul.20` = color_bar('lightpink', fun = unit.scale),
+              `P(Q|H).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(Q|H).Jul.20` = color_bar('lightpink', fun = unit.scale),
+              `P(D|Q).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(D|Q).Jul.20` = color_bar('lightpink', fun = unit.scale),
+               `P(D|I).Apr.20` = color_bar('violet', fun = unit.scale),
+              `P(D|I).Jul.20` = color_bar('lightpink', fun = unit.scale)
+))
+risk_table_print
+
+
+#export_formattable(risk_table_print, path(code.dir,"integrated/figs/use_in_paper/TESTING/probs_NOPROFILES.png"))
+#export_formattable(risk_table_print, path(code.dir,"integrated/figs/use_in_paper/HIPREV/HIPREV_probs_2.png"))
+
+#export_formattable(risk_table_print, path(code.dir,"integrated/figs/use_in_paper/ALL/HIPREV_probsONLY.png"))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## CFR/IFR
+
+```{r risk_table_ALL_COLUMNS_INCLUDED, include=FALSE}
+
+ABC.out.mat <- ABC_out$param
+time.steps = 400
+par.vec.length=100
+iter <- 10
+
+########################################################################
+## risk.table.CFR.fn code found in clean_data_risk_estimates.R
+########################################################################
+
+risk_table_CFR <- risk.table.CFR.IFR.dates(ABC.out.mat = ABC.out.mat, time.steps = time.steps, par.vec.length = par.vec.length, iter=iter, data.prev = data.prev)
+
+#risk_table_CFR <- filter(risk_table_CFR, "LA County" > 0.0004)
+#risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.median"))
+
+risk_table_CFR <- risk_table_CFR %>% select(c(1,10,14,18:22,25:28))   #select(-c(8:15)) 
+risk_table_CFR$"Pop.Prev" <- profile.cnt.SPAs[,9]
+risk_table_CFR <- filter(risk_table_CFR, I.prev.Apr.20 > 0.000000004)  # FILTER PROFILES TO SHOW IN THE TABLE TO ONLY THOSE > 0 PREVALENCE
+risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.Apr.20"))
+risk_table_CFR <- risk_table_CFR %>% mutate_if(is.numeric, round, digits=4)
+#risk_table_CFR <- risk_table_CFR %>% filter(Pop.Prev>.011)
+
+
+risk_table_CFR2 <- risk_table_CFR[,c(1,8,4,5,6,7,13,2,3,9,10,11,12)]
+colnames(risk_table_CFR2)[8] <- "Ill.Apr.20"
+colnames(risk_table_CFR2)[9] <- "Ill.Jul.20"
+colnames(risk_table_CFR2)[2] <- "Group"
+#risk_table_CFR2$Profile = NULL
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+risk_table_CFR.ft <- formattable(risk_table_CFR2, align="c",
+            #align = c(rep("c", 9)),
+            list(
+  `age`= color_tile('yellow', 'darkorange'),
+  `BMI`= color_tile('lightblue', 'pink'),
+  `smoking`= color_tile('grey', 'transparent'),
+  `comorbidity`= color_tile('darkgrey', 'transparent'),
+  `Group`= color_tile('red', 'green'),
+  `Pop.Prev`= color_bar('cornflowerblue', fun = unit.scale),
+  `Ill.Apr.20`= color_bar('violet', fun = unit.scale),
+  `Ill.Jul.20`= color_bar('lightpink', fun = unit.scale),
+  `CFR.Apr.20`= color_bar('violet', fun = unit.scale),
+  `CFR.Jul.20`= color_bar('lightpink', fun = unit.scale),
+  `IFR.Apr.20`= color_bar('violet', fun = unit.scale),
+  `IFR.Jul.20`= color_bar('lightpink', fun = unit.scale)
+  #`CFR.low_95`= color_bar('violet', fun = unit.scale),
+  #`CFR.up_95`= color_bar('violet', fun = unit.scale),
+  #`IFR.median`= color_bar('lightpink', fun = unit.scale),
+  #`IFR.low_95`= color_bar('lightpink', fun = unit.scale),
+  #`IFR.up_95`= color_bar('lightpink', fun = unit.scale)
+))
+risk_table_CFR.ft
+
+#export_formattable(risk_table_CFR.ft, path(code.dir,"integrated/figs/TEST4.PROFILES_risk_table_integrated.png"))
+#export_formattable(risk_table_CFR.ft, path(code.dir,"integrated/figs/use_in_paper/HIPREV/CFR_PROFILES_2.png"))
+
+
+```
+
+
+```{r risk_table_CFR-NO-PROFILES, include=FALSE}
+
+ABC.out.mat <- ABC_out$param
+time.steps = 400
+par.vec.length=100
+iter <- 10
+
+
+########################################################################
+## risk.table.CFR.fn code found in clean_data_risk_estimates.R
+########################################################################
+
+risk_table_CFR <- risk.table.CFR.IFR.dates(ABC.out.mat = ABC.out.mat, time.steps = time.steps, par.vec.length = par.vec.length, iter=iter, data.prev = data.prev)
+
+risk_table_CFR <- risk_table_CFR %>% select(c(1,10,14,18:22,25:28))   #select(-c(8:15)) 
+risk_table_CFR$"Pop.Prev" <- profile.cnt.SPAs[,9]
+risk_table_CFR <- filter(risk_table_CFR, `I.prev.Apr.20` > 0.000000004)  # FILTER PROFILES TO SHOW IN THE TABLE TO ONLY THOSE > 0 PREVALENCE
+risk_table_CFR <- arrange(risk_table_CFR, desc(risk_table_CFR$"CFR.Apr.20"))
+risk_table_CFR <- risk_table_CFR %>% mutate_if(is.numeric, round, digits=4)
+risk_table_CFR <- risk_table_CFR %>% filter(Pop.Prev>.011)
+
+
+#risk_table_CFR3 <- risk_table_CFR[,c(1,8,4,5,6,7,13,2,3,9,10,11,12)]
+risk_table_CFR3 <- risk_table_CFR[,c(1,8,9,10,11,12,8,4,5,6,7)]
+
+#colnames(risk_table_CFR3)[2] <- "Group"
+# risk_table_CFR3$"I.prev.Apr.20" <- NULL
+# risk_table_CFR3$"I.prev.Jul.20" <- NULL
+# risk_table_CFR3$"Pop.Prev" <- NULL
+# risk_table_CFR3$smoking <- NULL
+# risk_table_CFR3$BMI <- NULL
+#risk_table_CFR3$Profile <- NULL
+
+unit.scale = function(x) (x - min(x)) / (max(x) - min(x))
+
+risk_table_CFR.ft <- formattable(risk_table_CFR3, align="c",
+            #align = c(rep("c", 9)),
+            list(
+  `age`= color_tile('yellow', 'darkorange'),
+  `BMI`= color_tile('lightblue', 'pink'),
+  `smoking`= color_tile('grey', 'transparent'),
+  `comorbidity`= color_tile('darkgrey', 'transparent'),
+  `Group`= color_tile('red', 'green'),
+  `Pop.Prev`= color_bar('cornflowerblue', fun = unit.scale),
+  #`Ill.Apr.20`= color_bar('violet', fun = unit.scale),
+  #`Ill.Jul.20`= color_bar('lightpink', fun = unit.scale),
+  `CFR.Apr.20`= color_bar('violet', fun = unit.scale),
+  `CFR.Jul.20`= color_bar('lightpink', fun = unit.scale),
+  `IFR.Apr.20`= color_bar('violet', fun = unit.scale),
+  `IFR.Jul.20`= color_bar('lightpink', fun = unit.scale)
+  #`CFR.low_95`= color_bar('violet', fun = unit.scale),
+  #`CFR.up_95`= color_bar('violet', fun = unit.scale),
+  #`IFR.median`= color_bar('lightpink', fun = unit.scale),
+  #`IFR.low_95`= color_bar('lightpink', fun = unit.scale),
+  #`IFR.up_95`= color_bar('lightpink', fun = unit.scale)
+))
+risk_table_CFR.ft
+
+#export_formattable(risk_table_CFR.ft, path(code.dir,"integrated/figs/NO_PREV_risk_table_integrated.png"))
+#export_formattable(risk_table_CFR.ft, path(code.dir,"integrated/figs/use_in_paper/HIPREV/CFR_noPROFILES_2.png"))
+
+export_formattable(risk_table_CFR.ft, path(code.dir,"integrated/figs/use_in_paper/ALL/CFR_HIPREV_noPROFILES_2.png"))
+
+```
+
+
+```{r plotting-stacked-bars-SETUP, include=FALSE}
+
+## 0) PROCESS DATA TO PLOT STACKED BAR CHARTS #######################################################################################
+
+profile.prev.data <- data.FULL %>% select(-c(2:17))
+profile.prev.data <- cbind(profile.prev.data, profile.cnt.SPAs[,9], profile.cnt.SPAs[,9])
+colnames(profile.prev.data)[7] <- "Apr.20"
+colnames(profile.prev.data)[8] <- "Jul.20"
+
+data.melted <- melt(profile.prev.data, id = c('Profile', 'age', 'BMI', 'smoking', 'comorbidity', 'riskprofile'))
+#data.melted <- melt(data, id = c('Profile', 'age', 'BMI', 'smoking', 'comorbidity', 'Pr.H', 'Pr.Q', 'Pr.D','Pr.D.I', 'riskprofile'))
+
+data.melted$DATE <- data.melted$variable
+data.melted$variable <- NULL
+data.melted$DATE <- factor(data.melted$DATE, levels =  c("Apr.20","Jul.20"))
+
+data.melted$prevalence.gen.pop <- data.melted$value
+data.melted$value <- NULL
+
+## Merge with everything else
+full.data <- merge(data.melted, dataI.melted, by = c('Profile', 'DATE' ) )
+full.data <- merge(full.data, dataH.melted, by = c('Profile', 'DATE' ) )
+full.data <- merge(full.data, dataQ.melted, by = c('Profile', 'DATE' ) )
+full.data <- merge(full.data, dataD.melted, by = c('Profile', 'DATE' ) )
+
+## Save
+full.data.orig <- full.data
+
+
+```
+
+## Probably delete this...
+```{r}
+## 1) Risk profile in illness population #######################################################################################
+
+p.risk.gen <-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.gen.pop, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in infected population by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+
+p.BMI.gen <- 
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.gen.pop, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in infected population by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.gen<-
+ggplot(data = full.data, aes(x=DATE, y = prevalence.gen.pop, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in infected population by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.gen<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.gen.pop, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in infected population by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.gen<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.gen.pop, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in infected population by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+## 2) Risk profile in hospitalized population #######################################################################################
+
+p.risk.h<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.H, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in hospitalized by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.BMI.h<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.H, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in hospitalized by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.h<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.H, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in hospitalized by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.h<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.H, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in hospitalized by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.h<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.H, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in hospitalized by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+## 3) Risk profile in ICU population #######################################################################################
+
+p.risk.q<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.Q, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in ICU by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.BMI.q<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.Q, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in ICU by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.q<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.Q, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in ICU by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.q<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.Q, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in ICU by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.q<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.Q, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in ICU by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+
+## 4) Risk profile in deceased #######################################################################################
+
+p.risk.d<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.D, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') +
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    labs(title = "Risk profiles in deceased by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.BMI.d<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.D, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Obesity in deceased by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.comb.d<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.D, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Comorbidity in deceased by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.age.d<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.D, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Age in deceased by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.smoke.d<-
+  ggplot(data = full.data, aes(x=DATE, y = prevalence.D, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') +
+    labs(title = "Smoking in deceased by date", x = NULL, y = "Prevalence") + 
+    scale_x_discrete(labels = c("Apr.20","Jul.20")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+```
+
+
+```{r plotting-stacked-bars-PLOTS, include=FALSE}
+
+# RISK PROFILE AT EACH STAGE FOR LA COUNTY
+
+## RESHAPE DATASET #######################################################################################
+
+
+full.data <- full.data %>% 
+  gather(keys, values, prevalence.gen.pop:prevalence.D )
+full.data$stage <- full.data$keys
+full.data$keys <- NULL 
+full.data$stage <- factor(full.data$stage, levels =  c("prevalence.gen.pop", "prevalence.I","prevalence.H", "prevalence.Q", "prevalence.D"))
+
+
+## Prevalence of risk profiles at each stage of disease ##############################################################  
+
+labels.DATE <- c(`Apr.20` = "April 20 2020", `Jul.20`="July 20 2020") 
+#c(`Antelope Valley` = 'Antelope Valley' , `San Fernando` = 'San Fernando' , `San Gabriel`= 'San Gabriel' , Metro = 'Metro', West = 'West', South = 'South', East = 'East', `South Bay` = 'South Bay' , `LA County` = 'LA County')
+
+################
+################
+## SAVE THESE ONES !!! 
+################
+################
+p.prev.risk.stage.DATES<- ggplot(full.data, aes(x = stage, y = values, fill = riskprofile)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    scale_fill_manual("legend", values = c("Risk 1" = "#ff0000", "Risk 2" = "#bf4000", "Risk 3" = "#7f7f00", "Risk 4" = "#40bf00", "Risk 5" = "#00ff00")) + 
+    facet_wrap(DATE ~ ., labeller=labeller(DATE = labels.DATE)) +
+    labs(title = "Risk Groups by stage of disease", x = NULL, y = "Frequency") +
+    scale_x_discrete(labels = c("Prevalence", "Infected", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.prev.age.stage.DATES<- ggplot(full.data, aes(x = stage, y = values, fill = age)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    facet_wrap(DATE ~ ., labeller=labeller(DATE = labels.DATE)) +
+    labs(title = "Age by stage of disease", x = NULL, y = "Frequency") +
+    scale_x_discrete(labels = c("Prevalence", "Infected", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.prev.BMI.stage.DATES<- ggplot(full.data, aes(x = stage, y = values, fill = BMI)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    facet_wrap(DATE ~ ., labeller=labeller(DATE = labels.DATE)) +
+    labs(title = "Obesity by stage of disease", x = NULL, y = "Frequency") +
+    scale_x_discrete(labels = c("Prevalence", "Infected", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.prev.comorbidity.stage.DATES<- ggplot(full.data, aes(x = stage, y = values, fill = comorbidity)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    facet_wrap(DATE ~ ., labeller=labeller(DATE = labels.DATE)) +
+    labs(title = "Comorbidity by stage of disease", x = NULL, y = "Frequency") +
+    scale_x_discrete(labels = c("Prevalence", "Infected", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+p.prev.smoking.stage.DATES<- ggplot(full.data, aes(x = stage, y = values, fill = smoking)) +
+    geom_bar(position="stack", stat = 'identity') + 
+    facet_wrap(DATE ~ ., labeller=labeller(DATE = labels.DATE)) +
+    labs(title = "Smoking status by stage of disease", x = NULL, y = "Frequency") +
+    scale_x_discrete(labels = c("Prevalence", "Infected", "Hospitalized", "ICU", "Dead")) +
+    theme(axis.text.x = element_text(angle = 45))
+
+
+
+```
+
+
+
+### Printing figures
+```{r, echo=FALSE}
+
+# (p.prev.risk.stage.DATES + p.prev.age.stage.DATES) / ( p.prev.comorbidity.stage.DATES + p.prev.smoking.stage.DATES)
+# 
+# pdf(file = path(code.dir, "integrated/figs/use_in_paper/risk_bars_integrated.pdf"), width=15, height =10)
+# (p.prev.risk.stage.DATES + p.prev.age.stage.DATES) / ( p.prev.comorbidity.stage.DATES + p.prev.smoking.stage.DATES)
+# dev.off()
+
+# tiff(file = path(code.dir, "integrated/figs/use_in_paper/risk_bars_integrated.tiff"), units="in", width=12, height=8, res=600, compression = 'lzw')
+# (p.prev.risk.stage.DATES + p.prev.age.stage.DATES) / ( p.prev.comorbidity.stage.DATES + p.prev.smoking.stage.DATES)  + plot_annotation(tag_levels = 'A' )
+# dev.off()
+
+
+tiff(file = path(code.dir, "integrated/figs/use_in_paper/risk_bars_integrated_BMI.tiff"), units="in", width=12, height=8, res=600, compression = 'lzw')
+p.prev.risk.stage.DATES + p.prev.age.stage.DATES + p.prev.BMI.stage.DATES +  p.prev.comorbidity.stage.DATES + p.prev.smoking.stage.DATES + plot_annotation(tag_levels = 'A' )
+dev.off()
+
+# p.prev.risk.stage.DATES + (p.prev.age.stage.DATES + p.prev.BMI.stage.DATES) / ( p.prev.comorbidity.stage.DATES + p.prev.smoking.stage.DATES) + plot_annotation(tag_levels = 'A' )
+
+
+```
+
+
+
+```{r printing prior and posterior risk probs}
+
+# risk.probs.PRIORS <-
+#   data.frame(H.risk.all.DATES,Q.risk.all.DATES,D.risk.all.DATES) %>%
+#   mutate(H.risk.all.DATES = round(H.risk.all.DATES,3),
+#          Q.risk.all.DATES = round(Q.risk.all.DATES,3),
+#          D.risk.all.DATES = round(D.risk.all.DATES,3))
+# 
+# rownames(risk.probs.PRIORS) <- colnames(freq.LAC.obs.age)
+# names(risk.probs.PRIORS) <- c("Pr(H|I)","Pr(Q|H)","Pr(D|Q)")
+# 
+# formattable(risk.probs.PRIORS)
+# 
+# #risk.probs.POSTERIORS <- matrix(nrow=2,ncol=3)
+# risk.probs.POSTERIORS.1 <- ABC.par.stats[1,] %>% select(c("Pr(H|I)1", "Pr(Q|H)1", "Pr(D|Q)1" ))
+# risk.probs.POSTERIORS.2 <- as.data.frame(ABC.par.stats[1,] %>% select(c("Pr(H|I)2", "Pr(Q|H)2", "Pr(D|Q)2" )))
+# risk.probs.POSTERIORS <- rbind(as.list(risk.probs.POSTERIORS.1),as.list(risk.probs.POSTERIORS.2))
+# rownames(risk.probs.POSTERIORS) <- c("Apr.20","Jul.20")
+# colnames(risk.probs.POSTERIORS) <- c("Alpha","Kappa","Delta")
+# # risk.probs.POSTERIORS <- as.data.frame(risk.probs.POSTERIORS) %>% 
+# #   mutate("Alpha" = round("Alpha",3) ,
+# #          "Kappa" = round("Kappa",3),
+# #          "Delta" = round("Delta",3))
+# formattable(as.data.frame(risk.probs.POSTERIORS))
+
+
+```
+
+
+
+
+
+
+# SCENARIOS
+
+## Scenarios: Get Alpha, Kappa, Delta with populations protected
+```{r scenarios-get-}
+
+##################################################
+## INPUTS: EPIDEMIC MODEL
+percent.to.remove <- c(1,0.5,0) # Remove 100%
+factor.to.remove <- 4  # Age.65.
+
+##################################################
+## APPLY CODE TO GET ESTIMATE RISK PROBABILITIES WITH BASELINE FROM EPIDEMIC MODEL
+calc_scenarios_integrated <- path(code.dir, "integrated/integrated_scenarios_calc_filter_avg.R")
+#r_output(readLines(calc_scenarios_integrated))
+source(calc_scenarios_integrated)
+
+##################################################
+## OUTPUT
+weighted.avg.scenarios.overall
+
+
+```
+
+## Scenarios: Run scenarios with populations protected and get plots
+```{r scenarios-get-}
+
+##################################################
+## APPLY CODE TO GET SCENARIOS WITH POPULATIONS PROTECTED
+scenarios_run <- path(code.dir, "integrated/scenarios_integrated_subpop_run.R")
+#r_output(readLines(scenarios_run))
+source(scenarios_run)
+
+## OUTPUT
+scenario.list <- list(traj.S1, traj.S2,traj.S3,traj.S4,traj.S5,traj.S6,traj.S7,traj.S8)
+
+##################################################
+## APPLY CODE TO PLOT SCENARIOS
+scenarios_plot <- path(code.dir, "integrated/scenarios_integrated_subpop_plot.R")
+#r_output(readLines(scenarios_plot))
+source(scenarios_plot)
+
+## OUTPUT
+combined.plot <- ggpubr::ggarrange( plot.single.I[[1]], plot.single.I[[2]], plot.single.I[[3]], plot.single.I[[4]], plot.single.I[[5]], plot.single.I[[6]], plot.single.I[[7]], plot.single.I[[8]],
+           plot.single.H[[1]], plot.single.H[[2]], plot.single.H[[3]],   plot.single.H[[4]], plot.single.H[[5]],  plot.single.H[[6]],  plot.single.H[[7]], plot.single.H[[8]],
+           plot.single.D[[1]], plot.single.D[[2]], plot.single.D[[3]],   plot.single.D[[4]], plot.single.D[[5]],  plot.single.D[[6]],  plot.single.D[[7]], plot.single.D[[8]],
+           nrow=3, ncol=8 , common.legend = TRUE, legend = "bottom")
+combined.plot
+
+## PRINT
+#ggpubr::ggexport(combined.plot, filename = path(code.dir, "integrated/figs/use_in_paper/scenarios8_integrated.pdf"), width=20,height=12)
+
+```
