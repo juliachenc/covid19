@@ -18,7 +18,7 @@ latest_covid_data <- function(truncate=0){
   latest_data[1:nvars] <- sapply(latest_data[1:nvars],as.numeric)
   latest_data <- latest_data %>% dplyr::select(-V_new)
   no_obs <- nrow(latest_data)
-  
+
   latest_data <- latest_data[c(1:(no_obs-truncate)),]
 
   ## Change date to number
@@ -143,6 +143,7 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps) {
     Alpha2 <- ABC.out.mat[idx,11]
     Kappa2 <- ABC.out.mat[idx,12]
     r2 <- ABC.out.mat[idx,13]
+    R0_redux3 <- ABC.out.mat[idx,14]
 
     ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS
     fn_t_readin_code <- path(code.paper.dir, "fn_t_readin_code_FULL.R")
@@ -294,6 +295,7 @@ model.1sim.stats.no.R <- function(par){
   Alpha2 <- par[11]
   Kappa2 <- par[12]
   r2 <- par[13]
+  R0_redux3 <- par[14]
 
   ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS
   fn_t_readin_code <- path(code.paper.dir, "fn_t_readin_code_FULL.R")

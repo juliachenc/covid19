@@ -67,7 +67,11 @@ R0_redux_eval = R0_redux_scenarios
 
 scenario = 2
 intervention_date = Sys.Date()
+<<<<<<< HEAD:Archive_July/scenarios.Rmd
 ABC.out.mat <- ABC.out.mat.yesR #!!!
+=======
+ABC.out.mat <- ABC.out.mat.yesR
+>>>>>>> 5433b65d398d6e3952ceba2c5944f5b6aefe8e26:scenarios.Rmd
 # number.pars.to.use = 400
 # iter = 30
 

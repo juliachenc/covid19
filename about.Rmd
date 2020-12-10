@@ -24,6 +24,18 @@ Biostatistics PhD Candidate
 [Emil Hvitfeldt, MS](https://www.hvitfeldt.me/)
 Research Programmer
 
+## USC Department of Preventive Medicine
+
+[Abigail Horn, PhD](http://abigail-horn.com/)
+Postdoctoral Research Fellow, Center for Applied Network Analysis, 
+Department of Preventive Medicine
+
+[Lai Jiang, MS](https://scholar.google.com/citations?user=GhsMHqYAAAAJ&hl=en)
+Biostatistics PhD Candidate
+
+[Emil Hvitfeldt, MS](https://www.hvitfeldt.me/)
+Research Programmer
+
 [Wendy Cozen, DO, MPH](https://keck.usc.edu/faculty-search/wendy-cozen/)
 Professor of Preventive Medicine
 Leader, Translational Epidemiology
@@ -55,3 +67,4 @@ Director, Center for Health Impact Evaluation, LACDPH
 
 [Faith Washburn, MPH](http://publichealth.lacounty.gov/chie/who_we_are_2.htm)
 Epidemiology Analyst
+

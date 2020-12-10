@@ -17,7 +17,7 @@ mu_y_chr <- fn_t_readin$Beta_y
 assign("mu.0",1)
 assign("mu.1", R0_redux1)
 assign("mu.2", R0_redux2)
-assign("mu.3", R0_redux2) #0.31)
+assign("mu.3", R0_redux3) #0.31)
 #assign("mu.3",4*(mu.2 - mu.1))
 #assign("mu.4",(mu.3+mu.2)/2)
 #assign("mu.5",mu.2)
@@ -52,7 +52,10 @@ Beta_y<- c(
   Br.function(R0.in<-R0_y[10], r.in<-r2, Alpha.in<-Alpha2),
   Br.function(R0.in<-R0_y[11], r.in<-r2, Alpha.in<-Alpha2),
   Br.function(R0.in<-R0_y[12], r.in<-r2, Alpha.in<-Alpha2),
-  Br.function(R0.in<-R0_y[13], r.in<-r2, Alpha.in<-Alpha2)
+  Br.function(R0.in<-R0_y[13], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[14], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[15], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[16], r.in<-r2, Alpha.in<-Alpha2)
 )
 
 ##########################################################################################

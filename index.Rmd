@@ -1,5 +1,5 @@
 ---
-title: "USC COVID19 Modeling"
+title: "COVID19 Modeling for Los Angeles County"
 subtitle: "Analysis updated with data as of October 15, 2020"
 author: "University of Southern California, Department of Preventive Medicine"
 output:
@@ -11,8 +11,6 @@ output:
 editor_options: 
   chunk_output_type: console
 ---
-
-<br>
 
 <!--Initialize-->
 
@@ -94,8 +92,8 @@ code.scenarios.dir=here("code/scenarios_code/")
 
 ```{r options, include=FALSE}
 print.output <- FALSE
-days.truncate <- 15
-endDatePlot <- as.Date("2020-12-01")
+days.truncate <- 0
+endDatePlot <- as.Date("2020-12-15")
 ```
 
 
@@ -116,7 +114,7 @@ source(model_functions)
 
 ###################################################################################################
 ## LOAD PLOTTING FUNCTIONS
-plot_code <- path(code.paper.dir, "plotting_fun.R")
+plot_code <- path(code.paper.dir, "plotting_fun_NEW.R")
 source(plot_code)
 
 ###################################################################################################
@@ -199,7 +197,7 @@ traj.0 <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.v
 ## GET MODEL OUTPUT: summary
 
 startDatePlot <- as.Date("2020-03-01")
-#endDatePlot <- as.Date("2020-12-01")
+endDatePlot <- as.Date("2020-12-15")
 all_day_1s <- seq(startDatePlot,endDatePlot,by='month')
 all_day_15s <- all_day_1s+14
 date.in <- sort(c(all_day_1s,all_day_15s))
@@ -243,12 +241,12 @@ Summarizes the epidemic model fit with COVID-19 data for LAC from March 1 throug
 ###################################################################################################
 ## Plot all variables faceted
 
-time.steps.4.plot = as.Date("2020-11-15") - as.Date("2020-03-01") + 1
+time.steps.4.plot = endDatePlot - as.Date("2020-03-01") + 15
 data.in <- latest_data
 vars.to.plot <- vars.plus.R
 
 plot.all.variables <- 
-plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 15, time.steps.4plot=time.steps.4.plot,
+plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 0, time.steps.4plot=time.steps.4.plot,
                     vars.to.plot=vars.plus.R)
 
 if (print.output==TRUE){
@@ -310,12 +308,12 @@ Fig3.plots[[3]]
 ```{r include=FALSE}
 
 startDatePlot <- as.Date("2020-03-01")
-#endDatePlot <- as.Date("2020-12-01")
+endDatePlot <- as.Date("2020-12-31") #as.Date("2021-02-01")
 all_day_1s <- seq(startDatePlot,endDatePlot,by='month')
 all_day_15s <- all_day_1s+14
 date.in <- sort(c(all_day_1s,all_day_15s))
 
-CFR.IFR.plots.out <- CFR.IFR.plots(traj.CI=traj.0, date.in=date.in)
+CFR.IFR.plots.out <- CFR.IFR.plots(traj.CI=traj.0, date.in=date.in, endDatePlot = endDatePlot)
 
 if (print.output==TRUE){
   pdf(file = path(output.dir, "CFR_plot.pdf"), width=10, height =10)
@@ -344,29 +342,43 @@ CFR.IFR.plots.out[[2]]
 
 ```{r include=FALSE}
 
-## Get compartmental variable plots and print/save
-plot.compartments.out <- plot.compartments(traj.CI.in = traj.0)
-curr.infect.variables <- plot.compartments.out[[1]]
-curr.healthcare.variables <- plot.compartments.out[[2]]
+## Get compartmental variable plots TOGETHER and print/save
+plot.out.H.I <- plot.out.compartmental(traj.CI = traj.CI, endDatePlot = endDatePlot)
 
 if (print.output==TRUE){
-  pdf(file = path(output.dir, "curr_infect_var.pdf"), width=10, height =10)
-  curr.infect.variables
+  pdf(file = path(output.dir, "curr_infect_TOGETHER.pdf"), width=10, height =10)
+  plot.out.H.I[[2]]
   dev.off()
   
-  pdf(file = path(output.dir, "curr_healthcare_var.pdf"), width=10, height =10)
-  curr.healthcare.variables
+  pdf(file = path(output.dir, "curr_healthcare_TOGETHER.pdf"), width=10, height =10)
+  plot.out.H.I[[1]]
   dev.off()
 }
+
+## Get compartmental variable plots INDIVIDUALLY and print/save
+# plot.compartments.out <- plot.compartments(traj.CI.in = traj.0)
+# curr.infect.variables <- plot.compartments.out[[1]]
+# curr.healthcare.variables <- plot.compartments.out[[2]]
+# 
+# if (print.output==TRUE){
+#   pdf(file = path(output.dir, "curr_infect_var.pdf"), width=10, height =10)
+#   curr.infect.variables
+#   dev.off()
+#   
+#   pdf(file = path(output.dir, "curr_healthcare_var.pdf"), width=10, height =10)
+#   curr.healthcare.variables
+#   dev.off()
+# }
 
 ## Get plots for individual variables (for ggplotly)
 time.steps.4plot <- as.numeric(endDatePlot - as.Date("2020-03-01"))
 
-var.to.plot <- "I"
-ymax=100000
+var.to.plot <- "I_detect_new"
+ymax=20000
 plot.I <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="2020-03-01", date.offset.4plot=0, 
                            time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL,var.to.plot=var.to.plot,
                            use.title=NULL, scenario=scenario, intervention_date=intervention_date, sd.redux=NULL)
+ggplotly(plot.I)
 
 var.to.plot <- "Itot"
 ymax=200000
@@ -385,6 +397,18 @@ plot.Dnew <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="
                            time.steps.4plot=time.steps.4plot, ymax=ymax, plot.capacity=NULL,var.to.plot=var.to.plot,
                            use.title=NULL, scenario=scenario, intervention_date=intervention_date, sd.redux=NULL)
 
+```
+
+### Current observed and total infections
+
+```{r}
+plot.out.H.I[[2]]
+```
+
+### Current hospitalizations, ventilations, and new deaths
+
+```{r}
+plot.out.H.I[[1]]
 ```
 
 ### Current observed infections
@@ -620,6 +644,29 @@ risk_table_CFR.FT <- formattable(risk_table_CFR, align="c",
 
 #risk_table_CFR.FT
 
+## FILTERED TO ONLY THOSE PROFILES WITH PREVALENCE > 1%
+## FOR PRINTING IN PAPER
+# risk_table_CFR_filtered.FT <- formattable(risk_table_CFR %>% filter(Pop.Prev > 0.01), 
+#                                           align="c",
+#             #align = c(rep("c", 9)),
+#             list(
+#   `age`= color_tile('yellow', 'darkorange'),
+#   `BMI`= color_tile('lightblue', 'pink'),
+#   `smoking`= color_tile('grey', 'transparent'),
+#   `comorbidity`= color_tile('darkgrey', 'transparent'),
+#   `Group`= color_tile('indianred4', 'green'),
+#   `Pop.Prev`= color_bar('cornflowerblue', fun = unit.scale),
+#     `Inf.May.15`= color_bar('orchid', fun = unit.scale),
+#   `Inf.Aug.1`= color_bar('plum', fun = unit.scale),
+#   `Inf.Oct.15`= color_bar('lightpink', fun = unit.scale),
+#   `CFR.May.15`= color_bar('orchid', fun = unit.scale),
+#   `CFR.Aug.1`= color_bar('plum', fun = unit.scale),
+#   `CFR.Oct.15`= color_bar('lightpink', fun = unit.scale),
+#   `IFR.May.15`= color_bar('orchid', fun = unit.scale),
+#   `IFR.Aug.1`= color_bar('plum', fun = unit.scale),
+#   `IFR.Oct.15`= color_bar('lightpink', fun = unit.scale)
+# ))
+
 ```
 
 <!---
@@ -664,6 +711,29 @@ probs_table_FULL.FT <- formattable(probs_table_FULL, align="c",
 ))
 
 #probs_table_FULL.FT
+
+## FILTERED TO ONLY THOSE PROFILES WITH PREVALENCE > 1%
+## FOR PRINTING IN PAPER
+# probs_table_filtered.FT <- formattable(probs_table_FULL %>% filter(Pop.Prev>0.01),
+#                                    align="c",
+#             #align = c(rep("c", 9)),
+#             list(
+#   `age`= color_tile('yellow', 'darkorange'),
+#   `BMI`= color_tile('lightblue', 'pink'),
+#   `smoking`= color_tile('grey', 'transparent'),
+#   `comorbidity`= color_tile('darkgrey', 'transparent'),
+#   `Group`= color_tile('indianred4', 'green'),
+#   `Pop.Prev`= color_bar('cornflowerblue', fun = unit.scale),
+#     `P(H|I).May.15`= color_bar('orchid', fun = unit.scale),
+#   `P(H|I).Aug.1`= color_bar('plum', fun = unit.scale),
+#   `P(H|I).Oct.15`= color_bar('lightpink', fun = unit.scale),
+#   `P(Q|H).May.15`= color_bar('orchid', fun = unit.scale),
+#   `P(Q|H).Aug.1`= color_bar('plum', fun = unit.scale),
+#   `P(Q|H).Oct.15`= color_bar('lightpink', fun = unit.scale),
+#   `P(D|Q).May.15`= color_bar('orchid', fun = unit.scale),
+#   `P(D|Q).Aug.1`= color_bar('plum', fun = unit.scale),
+#   `P(D|Q).Oct.15`= color_bar('lightpink', fun = unit.scale)
+# ))
 
 ```
 
@@ -812,6 +882,25 @@ NPI.scenarios.mat[,"Beta_y_vals"] <- c("Beta_y_nothing", "Beta_y_moderate", "Bet
 NPI.scenarios.mat <- as.data.frame(NPI.scenarios.mat)
 NPI.scenarios.mat
 
+
+##################################################
+## Plot the scenario policies to run
+
+plot.scenarios.in <- plot.SCENARIOS.input(ABC_out=ABC_out, 
+                                          NPI.scenarios.mat=NPI.scenarios.mat,
+                                          protect.scenarios.mat=protect.scenarios.mat, 
+                                          weighted.avg.scenarios=weighted.avg.scenarios.overall, 
+                                          endDatePlot=endDatePlot)
+if (print.output==TRUE){
+  pdf(file = path(output.dir, "plot.scenarios.IN.NPI.pdf"), width=10, height =10)
+  plot.scenarios.in[[1]]
+  dev.off()
+  
+  pdf(file = path(output.dir, "plot.scenarios.IN.Protect.pdf"), width=10, height =10)
+  plot.scenarios.in[[2]]
+  dev.off()
+}
+
 ##################################################
 ## Run the scenarios
 
@@ -840,17 +929,34 @@ filter.scenarios=c(4:9)
 plot.SCENARIOS.filter <-  plot.SCENARIOS(traj.CI=traj.CI, data.in=data.in, endDatePlot=endDatePlot, vars.to.plot = vars.to.plot, filter.scenarios=filter.scenarios)
 
 if (print.output==TRUE){
-  pdf(file = path(output.dir, "plot.SCENARIOS.ALL.pdf"), width=10, height =10)
+  pdf(file = path(output.dir, "plot.scenarios.OUT.ALL.pdf"), width=10, height =10)
   plot.SCENARIOS.ALL
   dev.off()
   
-  pdf(file = path(output.dir, "plot.SCENARIOS.filter.pdf"), width=10, height =10)
+  pdf(file = path(output.dir, "plot.scenarios.OUT.filter.pdf"), width=10, height =10)
   plot.SCENARIOS.filter
   dev.off()
 }
 ```
 
-## Scenarios {.tabset}
+## Scenarios: Policies Run {.tabset}
+
+### NPI scenarios inputs
+
+```{r}
+plot.scenarios.in[[1]]
+```
+
+### Protect scenarios run
+
+```{r}
+plot.scenarios.in[[2]]
+```
+
+
+{-}
+
+## Scenarios: Results
 
 ### All scenarios
 
@@ -864,4 +970,5 @@ plot.SCENARIOS.ALL
 ```{r}
 plot.SCENARIOS.filter
 ```
+
 

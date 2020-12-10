@@ -20,11 +20,14 @@ summary.table.param.CFR.IFR <- function(traj.CI, ABC_out, date.in, use.mean.sele
   out_R0 <- ABC_param[,1]
   out_R0redux1<- ABC_param[,4]
   out_R0redux2<- ABC_param[,9]
+  out_R0redux3<- ABC_param[,14]
   R0_x_redux1 <- out_R0*out_R0redux1
   R0_x_redux2 <- out_R0*out_R0redux2
+  R0_x_redux3 <- out_R0*out_R0redux3
   R0.CI <- ABC.par.CI[[1]]
   R0.redux1.CI <- posterior.CI(R0_x_redux1)
   R0.redux2.CI <- posterior.CI(R0_x_redux2)
+  R0.redux3.CI <- posterior.CI(R0_x_redux3)
 
   # EPI PARAMETERS TABLE
   r1.posterior.CI <- posterior.CI.FORMAT(r1.CI, use.mean=use.mean.select)
@@ -32,8 +35,9 @@ summary.table.param.CFR.IFR <- function(traj.CI, ABC_out, date.in, use.mean.sele
   R0.posterior.CI <- posterior.CI.FORMAT(R0.CI, use.mean=use.mean.select )
   R0redux1.posterior.CI <- posterior.CI.FORMAT(R0.redux1.CI, use.mean=use.mean.select)
   R0redux2.posterior.CI <- posterior.CI.FORMAT(R0.redux2.CI, use.mean=use.mean.select)
-  posterior.epi.vars <- as.data.frame(rbind(R0.posterior.CI, R0redux1.posterior.CI, R0redux2.posterior.CI, r1.posterior.CI, r2.posterior.CI))
-  rownames(posterior.epi.vars) <- c("R0", "R(t) 2020-03-27","R(t) 2020-05-15", "r(t) 2020-04-15","r(t) 2020-08-15")
+  R0redux3.posterior.CI <- posterior.CI.FORMAT(R0.redux3.CI, use.mean=use.mean.select)
+  posterior.epi.vars <- as.data.frame(rbind(R0.posterior.CI, R0redux1.posterior.CI, R0redux2.posterior.CI, R0redux3.posterior.CI, r1.posterior.CI, r2.posterior.CI))
+  rownames(posterior.epi.vars) <- c("R0", "R(t) 2020-03-27","R(t) 2020-05-15", "R(t) 2020-11-26", "r(t) 2020-04-15","r(t) 2020-08-15")
   if (use.mean.select==1){
     colnames(posterior.epi.vars) <- "mean (95% CI)"
   }
@@ -43,7 +47,7 @@ summary.table.param.CFR.IFR <- function(traj.CI, ABC_out, date.in, use.mean.sele
 
   # PROBABILITY OF SEVERE ILLNESS TABLE
   probs.table <- as.data.frame(matrix(data=NA, nrow=2, ncol=3))
-  rownames(probs.table) <- c("2020-05-01", "2020-06-01")
+  rownames(probs.table) <- c("2020-05-01", "2020-08-01")
   colnames(probs.table) <- c("Alpha_t", "Kappa_t", "Delta_t")
   probs.table[1,1] <- posterior.CI.FORMAT(Alpha1.CI,use.mean=use.mean.select)
   probs.table[2,1] <- posterior.CI.FORMAT(Alpha2.CI,use.mean=use.mean.select)

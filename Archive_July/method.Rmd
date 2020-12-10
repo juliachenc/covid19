@@ -581,8 +581,6 @@ Due to the differences in both (i) the prevalence of particularly high-risk prof
 
 p.I + p.H + p.V + p.D + plot_annotation(title = "Skilled Nursing Facility Counts Estimated and Removed", theme = theme(plot.title = element_text(hjust = .5, face="bold")))
 
-
-
 ```
 
 **Data processing: Removing nursing home counts in illnesses and deaths by race**
