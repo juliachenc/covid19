@@ -214,7 +214,6 @@ plot.all.variables.curr.date
 
 ```
 
-# Epidemic model
 
 ```{r include=FALSE}
 time.steps.4plot = as.Date("2020-12-15") - as.Date("2020-03-01")
@@ -229,7 +228,7 @@ plot.percent.OBS <- plot.percent.LAC(traj.CI=traj.0, data.in=data.in, init.date.
 var.to.plot <- "Itot"
 plot.percent.TOT <- plot.percent.LAC(traj.CI=traj.0, data.in=data.in, init.date.data=as.Date("2020-03-01"), time.steps.4plot=time.steps.4plot, ymax=NULL, plot.capacity=NULL, plot.annotations=TRUE, var.to.plot=var.to.plot)
 
-date.selected <- "2020-12-09"
+date.selected <- "2020-12-08"
 var.to.plot <- "Itot"
 percent.12.09 <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
 
@@ -240,27 +239,57 @@ percent.12.20 <- get.current.percent(traj.CI=traj.0, date.selected=date.selected
 
 ```
 
-# Percentage of LAC population currently infected {.tabset}
+## Percentage of LAC population currently infected
 
-The percentage infected on 12-09-2020 is estimated at `r percent.12.09`.
+* **The percentage infected on 12-09-2020 is estimated at `r percent.12.09`.**
 
-The percentage infected on 12-20-2020, under the assumption of the infectious rate as of 12-09-2020, is estimated at `r percent.12.20`.
+* **The percentage infected on 12-20-2020, *under the assumption of the infectious rate as of 12-09-2020*, is estimated at `r percent.12.20`.**
 
-### % LAC population currently infected: total infections
+### % LAC population currently infected: observed + unobserved infections
 
-This plot shows the model-estimated total percentage (%) of the LAC population infected, including observed and estimated unobserved cases.
+This plot shows the model-estimated total percentage (%) of the LAC population infected, accounting for both observed and unobserved cases.
 
 ```{r}
 ggplotly(plot.percent.TOT)
 ```
 
-### Model-estimated total % LAC population currently infected
+## Estimated epidemic parameters {.tabset}
 
-This plot shows the model-estimated percentage (%) of the LAC population infected, including only observed cases.
+```{r include=FALSE}
+
+#endDatePlot <- as.Date("2020-12-01")
+Fig3.plots <- plot.param.t(ABC_out = ABC_out, endDatePlot=endDatePlot)
+
+if (print.output==TRUE){
+  pdf(file = path(output.dir, "plot_Rt.pdf"), width=10, height =10)
+  Fig3.plots[[1]]
+  dev.off()
+  
+  pdf(file = path(output.dir, "plot_r_t.pdf"), width=10, height =10)
+  Fig3.plots[[2]]
+  dev.off()
+  
+  pdf(file = path(output.dir, "plot_AKD_t.pdf"), width=10, height =10)
+  Fig3.plots[[3]]
+  dev.off()
+}
+
+```
+
+### Reproductive Number, $R(t)$
 
 ```{r}
-ggplotly(plot.percent.OBS)
+Fig3.plots[[1]]
 ```
+
+### Fraction of Observed Infections, $r(t)$
+
+```{r}
+Fig3.plots[[2]]
+```
+
+{-}
+
 
 <!---
 Single compartment plots
@@ -321,7 +350,7 @@ plot.Dnew <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="
                                 ymax=ymax, plot.capacity=plot.capacity, plot.annotations=plot.annotations, var.to.plot=var.to.plot)
 ```
 
-## Figures: Infections {.tabset}
+## Numbers infected {.tabset}
 
 * **New = new daily incidence**
 * **Current = current census in compartment** 
@@ -354,44 +383,7 @@ plot.out.H.I[[2]]
 
 {-}
 
-## Figures: Reproductive number and fraction of infections detected {.tabset}
-
-```{r include=FALSE}
-
-#endDatePlot <- as.Date("2020-12-01")
-Fig3.plots <- plot.param.t(ABC_out = ABC_out, endDatePlot=endDatePlot)
-
-if (print.output==TRUE){
-  pdf(file = path(output.dir, "plot_Rt.pdf"), width=10, height =10)
-  Fig3.plots[[1]]
-  dev.off()
-  
-  pdf(file = path(output.dir, "plot_r_t.pdf"), width=10, height =10)
-  Fig3.plots[[2]]
-  dev.off()
-  
-  pdf(file = path(output.dir, "plot_AKD_t.pdf"), width=10, height =10)
-  Fig3.plots[[3]]
-  dev.off()
-}
-
-```
-
-### Reproductive Number, $R(t)$
-
-```{r}
-Fig3.plots[[1]]
-```
-
-### Fraction of Observed Infections, $r(t)$
-
-```{r}
-Fig3.plots[[2]]
-```
-
-{-}
-
-## Figures: Hospitalizations, ICU admissions, deaths {.tabset}
+## Numbers of Hospitalizations, ICU admissions, Deaths {.tabset}
 
 * **New = new daily incidence**
 * **Current = current census in compartment** 
@@ -423,17 +415,19 @@ ggplotly(plot.Dnew)
 plot.out.H.I[[1]]
 ```
 
-### $\alpha(t)$, $\kappa(t)$, $\delta(t)$
+### Probabilities of severe illness
 
-Probability of hospitalization given infection, $\alpha(t)$
-Probability of ICU admission given hospitalization, $\kappa(t)$
-Probability of death given ICU admission, $\delta(t)$
+- Probability of hospitalization given infection, $\alpha(t)$
+
+- Probability of ICU admission given hospitalization, $\kappa(t)$
+
+- Probability of death given ICU admission, $\delta(t)$
 
 ```{r}
 Fig3.plots[[3]]
 ```
 
-## Figures: Model fits {.tabset}
+## Model fits {.tabset}
 
 Summarizes the epidemic model fit with COVID-19 data for LAC from March 1 through `r as.Date("2020-03-01") + no_obs` for all disease states across multiple views: New cases, representing new daily incidence; the current number in a compartment at a specific date, relevant for understanding current prevalence rates and comparing with healthcare capacity limitations; and cumulative counts until a specific date. Observed data for available compartments with cases attributable to nursing home residents removed, are plotted as black dots. The figure demonstrates that good model fits are achieved in all compartments across time.
 
@@ -492,7 +486,9 @@ if (print.output==TRUE){
 plot.all.variables.curr.date
 ```
 
-### Model projections through December 20th
+### Model **projections** through December 20th
+
+Projections **under the assumption of the infectious rate as of 12-09-2020** 
 
 ```{r}
 plot.all.variables.plus.15.days
@@ -520,7 +516,13 @@ formattable(tables.out[[1]])
 if (print.output==TRUE) write.csv(tables.out[[1]], file = path(output.dir, "R.r.mu_table.csv"))
 ```
 
-### $\alpha(t)$, $\kappa(t)$, $\delta(t)$
+### Probabilities of severe illness
+
+- Probability of hospitalization given infection, $\alpha(t)$
+
+- Probability of ICU admission given hospitalization, $\kappa(t)$
+
+- Probability of death given ICU admission, $\delta(t)$
 
 ```{r}
 formattable(tables.out[[2]])
@@ -536,7 +538,7 @@ if (print.output==TRUE) write.csv(tables.out[[3]], file = path(output.dir, "CFR_
 ```
 
 
-<!--CFR and IFR-->
+## Figures: CFR and IFR
 
 ```{r include=FALSE}
 
