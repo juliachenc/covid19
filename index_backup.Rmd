@@ -93,7 +93,7 @@ code.scenarios.dir=here("code/scenarios_code/")
 ```{r options, include=FALSE}
 print.output <- FALSE
 days.truncate <- 0
-endDatePlotGlobal <- as.Date("2020-12-31")
+endDatePlotGlobal <- as.Date("2021-02-01")
 ```
 
 
@@ -194,7 +194,7 @@ traj.0 <- model.output.to.plot.SIM(ABC.out.mat=ABC.out.mat, par.vec.length=par.v
 ###################################################################################################
 ## Plot all variables current date
 
-time.steps.4.plot = endDatePlotGlobal - as.Date("2020-03-01") +1
+time.steps.4.plot = endDatePlotGlobal - as.Date("2020-03-01") +30
 data.in <- latest_data
 vars.to.plot <- vars.plus.R
 

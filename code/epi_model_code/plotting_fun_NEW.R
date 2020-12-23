@@ -756,6 +756,8 @@ plot.param.t <- function(ABC_out=ABC_out, endDatePlot=endDatePlot){
   assign("mu.1", R0.redux1.CI)
   assign("mu.2", R0.redux2.CI)
   assign("mu.3",R0.redux3.CI)
+  assign("mu.4",R0.redux3.CI)
+
 
   # PUT IN FORMAT FOR PLOTTING
   Rt_plot <- format.4.plot(fn_t = Rt.t, fn_y_chr = Rt.chr, fn.posterior.CI=R0.CI, fn.name="Rt" )

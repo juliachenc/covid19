@@ -18,7 +18,7 @@ assign("mu.0",1)
 assign("mu.1", R0_redux1)
 assign("mu.2", R0_redux2)
 assign("mu.3", R0_redux3) #0.31)
-#assign("mu.3",4*(mu.2 - mu.1))
+assign("mu.4",R0_redux3)
 #assign("mu.4",(mu.3+mu.2)/2)
 #assign("mu.5",mu.2)
 
@@ -55,7 +55,14 @@ Beta_y<- c(
   Br.function(R0.in<-R0_y[13], r.in<-r2, Alpha.in<-Alpha2),
   Br.function(R0.in<-R0_y[14], r.in<-r2, Alpha.in<-Alpha2),
   Br.function(R0.in<-R0_y[15], r.in<-r2, Alpha.in<-Alpha2),
-  Br.function(R0.in<-R0_y[16], r.in<-r2, Alpha.in<-Alpha2)
+  Br.function(R0.in<-R0_y[16], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[17], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[18], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[19], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[20], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[21], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[22], r.in<-r2, Alpha.in<-Alpha2),
+  Br.function(R0.in<-R0_y[23], r.in<-r2, Alpha.in<-Alpha2)
 )
 
 ##########################################################################################
