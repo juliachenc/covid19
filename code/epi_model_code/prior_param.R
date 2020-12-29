@@ -38,7 +38,7 @@ prior.Delta2 <- c("normal",Delta2, stdev)#.001)
 prior.Alpha2 <- c("normal",Alpha2, stdev)#.001)
 prior.Kappa2 <- c("normal",Kappa2, stdev)#.002)
 
-p_V <- 0.27 #.28
+p_V <- 0.35 #0.27 #.28
 prior.p_V <- c("normal",p_V, stdev) # c("unif", p_V-0.1, p_V+0.5 ) #c("normal",p_V, 0.08)
 
 prior.par <- list(

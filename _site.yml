@@ -11,7 +11,7 @@ navbar:
     - icon: fa-github fa-lg
       href: https://github.com/USCbiostats/COVID19
     - text: "Static link to paper"
-      href: https://abigailhorn.github.io/COV2-LA
+      href: https://www.medrxiv.org/content/10.1101/2020.12.11.20209627v1
 output:
   html_document:
     theme: cosmo
