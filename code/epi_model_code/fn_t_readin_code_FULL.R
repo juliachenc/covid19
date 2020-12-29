@@ -18,7 +18,7 @@ assign("mu.0",1)
 assign("mu.1", R0_redux1)
 assign("mu.2", R0_redux2)
 assign("mu.3", R0_redux3) #0.31)
-assign("mu.4",R0_redux3*1.2)
+assign("mu.4",R0_redux3*1.15)
 #assign("mu.4",(mu.3+mu.2)/2)
 #assign("mu.5",mu.2)
 
