@@ -93,7 +93,7 @@ code.scenarios.dir=here("code/scenarios_code/")
 ```{r options, include=FALSE}
 print.output <- FALSE
 days.truncate <- 0
-endDatePlotGlobal <- as.Date("2021-01-15")
+endDatePlotGlobal <- as.Date("2021-01-30")
 ```
 
 
@@ -219,36 +219,61 @@ plot.annotations <- TRUE
 plot.capacity <- TRUE
 ymax=NULL
 
+## OBSERVED ONLY
 var.to.plot <- "I"
 plot.percent.OBS <- plot.percent.LAC(traj.CI=traj.0, data.in=data.in, init.date.data=as.Date("2020-03-01"), time.steps.4plot=time.steps.4plot, ymax=NULL, plot.capacity=NULL, plot.annotations=TRUE, var.to.plot=var.to.plot)
 
+date.selected <- Sys.Date()
+var.to.plot <- "I"
+percent.current.OBS <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
+
+date.selected <- Sys.Date()+10
+var.to.plot <- "I"
+percent.in10days.OBS <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
+
+
+## OBSERVED AND UNOBSERVED 
 var.to.plot <- "Itot"
 plot.percent.TOT <- plot.percent.LAC(traj.CI=traj.0, data.in=data.in, init.date.data=as.Date("2020-03-01"), time.steps.4plot=time.steps.4plot, ymax=NULL, plot.capacity=NULL, plot.annotations=TRUE, var.to.plot=var.to.plot)
 
 date.selected <- Sys.Date()
 var.to.plot <- "Itot"
-percent.current <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
+percent.current.TOT <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
 
 date.selected <- Sys.Date()+10
 var.to.plot <- "Itot"
-percent.in10days <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
+percent.in10days.TOT <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
 
 
 ```
 
-## Percentage of LAC population currently infected
+## Percentage of LAC population currently infected 
 
-* **The percentage infected on `r Sys.Date()` is estimated at `r percent.current`.**
+### % LAC population currently infected: observed + estimated unobserved infections
 
-* **The percentage infected on `r date.selected`, *under the assumption of the infectious rate as of `r Sys.Date()`*, is estimated at `r percent.in10days`.**
+* **The percentage infected on `r Sys.Date()` is estimated at `r percent.current.TOT`.**
 
-### % LAC population currently infected: observed + unobserved infections
+* **The percentage infected on `r date.selected`, *under the assumption of the infectious rate as of `r Sys.Date()`*, is estimated at `r percent.in10days.TOT`.**
 
-This plot shows the model-estimated total percentage (%) of the LAC population infected, accounting for both observed and unobserved cases.
+This plot shows the model-estimated total percentage (%) of the LAC population infected, accounting for **both observed and unobserved cases**.
 
 ```{r}
 ggplotly(plot.percent.TOT)
 ```
+
+### % LAC population currently infected: observed infections only
+
+* **The percentage infected on `r Sys.Date()` is estimated at `r percent.current.OBS`.**
+
+* **The percentage infected on `r date.selected`, *under the assumption of the infectious rate as of `r Sys.Date()`*, is estimated at `r percent.in10days.OBS`.**
+
+This plot shows the model-estimated total percentage (%) of the LAC population infected, accounting only for **confirmed observed cases**.
+
+```{r}
+ggplotly(plot.percent.OBS)
+```
+
+
 
 ## Estimated epidemic parameters {.tabset}
 
@@ -276,7 +301,8 @@ if (print.output==TRUE){
 ### Reproductive Number, $R(t)$
 
 ```{r}
-Fig3.plots[[1]]
+R_t_plot <- Fig3.plots[[1]]
+ggplotly(R_t_plot)
 ```
 
 ### Fraction of Observed Infections, $r(t)$
@@ -329,6 +355,12 @@ var.to.plot <- "Itot"
 #ymax=200000
 plot.Itot <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="2020-03-01",time.steps.4plot=time.steps.4plot, 
                                 ymax=ymax, plot.capacity=plot.capacity, plot.annotations=plot.annotations, var.to.plot=var.to.plot)
+
+var.to.plot <- "Itotcum"
+#ymax=200000
+plot.Itotcum <- plot.model.single(traj.CI=traj.0, data.in=data.in, init.date.data="2020-03-01",time.steps.4plot=time.steps.4plot, 
+                                ymax=ymax, plot.capacity=plot.capacity, plot.annotations=plot.annotations, var.to.plot=var.to.plot)
+ggplotly(plot.Itotcum)
 
 var.to.plot <- "Htot"
 #ymax = 3000
@@ -483,12 +515,13 @@ if (print.output==TRUE){
 plot.all.variables.curr.date
 ```
 
-### Model **projections** through `r date.selected`
+<!-- ### Model **projections** through `r date.selected`
 
 Projections **under the assumption of the infectious rate as of `r Sys.Date()`** 
+---> 
 
 ```{r}
-plot.all.variables.plus.15.days
+#plot.all.variables.plus.15.days
 ```
 
 
