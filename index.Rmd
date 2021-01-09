@@ -300,6 +300,8 @@ if (print.output==TRUE){
 
 ### Reproductive Number, $R(t)$
 
+This plot shows the time-varying Effective Reproductive Number R(t). This accounts for the fraction of the population that is assumed to be immune to reinfection through infection-acquired immunity. It does not account for the fraction of the population that has been vaccinated, although this is currently very small and would not make a sizeable impact.
+
 ```{r}
 R_t_plot <- Fig3.plots[[1]]
 ggplotly(R_t_plot)
@@ -515,13 +517,12 @@ if (print.output==TRUE){
 plot.all.variables.curr.date
 ```
 
-<!-- ### Model **projections** through `r date.selected`
+### Model **projections** through `r date.selected`
 
 Projections **under the assumption of the infectious rate as of `r Sys.Date()`** 
----> 
 
 ```{r}
-#plot.all.variables.plus.15.days
+plot.all.variables.plus.15.days
 ```
 
 
