@@ -93,7 +93,7 @@ code.scenarios.dir=here("code/scenarios_code/")
 ```{r options, include=FALSE}
 print.output <- FALSE
 days.truncate <- 0
-endDatePlotGlobal <- as.Date("2021-01-30")
+endDatePlotGlobal <- as.Date("2021-02-16")
 ```
 
 
