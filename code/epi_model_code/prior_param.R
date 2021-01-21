@@ -18,7 +18,7 @@ prior.R0.redux3 <- c("unif", R0_redux3 - 0.05, R0_redux3 + 0.05)
 # prior.r2 <- c("unif",0.1, 0.75) #c("unif",0.12, 0.14) #0.30
 
 prior.r1 <- c("unif",0.03, 0.35)
-prior.r2 <- c("unif",0.1, 0.85)
+prior.r2 <- c("unif", 0.3, 0.65) #c("unif",0.1, 0.85)
 
 
 Alpha1 <- 0.14#.155
