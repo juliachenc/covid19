@@ -7,7 +7,7 @@
 ## Read and process the data
 
 latest_covid_data <- function(truncate=0){
-  cum_file <- sort(dir_ls(data.dir, regexp = "cum_counts21_"), decreasing = TRUE)[1]
+  cum_file <- sort(dir_ls(data.dir, regexp = "cum_counts21_030221.csv"), decreasing = TRUE)[1]
   latest_data = t(read.csv(cum_file, sep=",",stringsAsFactors = FALSE))
   colnames<-c("Htotcum","D","Vcum","Idetectcum","H_new","D_new","I_detect_new","V_new")
   nvars <- ncol(latest_data)
@@ -138,12 +138,8 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps) {
     Alpha1 <- ABC.out.mat[idx,6]
     Kappa1 <- ABC.out.mat[idx,7]
     p_V <- ABC.out.mat[idx,8]
-    R0_redux2 <- ABC.out.mat[idx,9]
-    Delta2 <- ABC.out.mat[idx,10]
-    Alpha2 <- ABC.out.mat[idx,11]
-    Kappa2 <- ABC.out.mat[idx,12]
-    r2 <- ABC.out.mat[idx,13]
-    R0_redux3 <- ABC.out.mat[idx,14]
+
+    
 
     ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS
     fn_t_readin_code <- path(code.paper.dir, "fn_t_readin_code_FULL.R")
@@ -241,19 +237,20 @@ model.output.to.plot.SIM <- function(ABC.out.mat, par.vec.length, iter, time.ste
 ## The cumulative number of cases at all (trusted) time points
 ###################################################################################################
 
-sum.stats.SIMTEST <- function(data,include.R=TRUE){
+sum.stats.SIMTEST <- function(data,last_date_data){
 
   no_obs <- nrow(data)
-
+  last_date <- as.numeric(as.Date(last_date_data) - as.Date("2020-03-01"))
+  
   # Which values of variables to consider
   I.trust.n <- c(10:no_obs)  # The first 9 days of illness cases are unreliable/unavailable
-  H.trust.n <- c(17:no_obs)  # The first 16 days of hospitalizations are unreliable/unavailable
-  V.trust.n <- c(19:no_obs)  # The first 18 days of ventilation are unreliable/unavailable
+  H.trust.n <- c(17:last_date)  # The first 16 days of hospitalizations are unreliable/unavailable
+  V.trust.n <- c(19:last_date)  # The first 18 days of ventilation are unreliable/unavailable
   D.trust.n <- c(18:no_obs)  # The first 17 days of mortality are unreliable/unavailable
-  Hnew.trust.n <- c(19:no_obs) # The first 18 days of new hospitalizations are unreliable/unavailable
+  Hnew.trust.n <- c(19:last_date) # The first 18 days of new hospitalizations are unreliable/unavailable
   Dnew.trust.n <- c(28:no_obs) # The first 28 days of new deaths are unreliable/unavailable
   R.trust.n <- c(0:35)
-
+  
   ss.I <- data$Idetectcum[I.trust.n]
   ss.H <- data$Htotcum[H.trust.n]
   ss.V <- data$Vcum[V.trust.n]
@@ -261,12 +258,11 @@ sum.stats.SIMTEST <- function(data,include.R=TRUE){
   ss.Hnew <- data$H_new[Hnew.trust.n]
   ss.Dnew <- data$D_new[Dnew.trust.n]
   ss.R <- data$R[R.trust.n]
+  
 
   # Which variables to consider
 
-  if (include.R == TRUE){summarystats = c(ss.I, ss.H, ss.V, ss.D, ss.Hnew, ss.Dnew, ss.R) }
-  else if (include.R == FALSE)
-  {summarystats = c(ss.I, ss.H, ss.V, ss.D, ss.Hnew, ss.Dnew) }
+  summarystats = c(ss.I, ss.H, ss.V, ss.D, ss.Hnew, ss.Dnew) 
 
 
   return(summarystats)
@@ -290,12 +286,7 @@ model.1sim.stats.no.R <- function(par){
   Alpha1 <- par[6]
   Kappa1 <- par[7]
   p_V <- par[8]
-  R0_redux2 <- par[9]
-  Delta2 <- par[10]
-  Alpha2 <- par[11]
-  Kappa2 <- par[12]
-  r2 <- par[13]
-  R0_redux3 <- par[14]
+
 
   ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS
   fn_t_readin_code <- path(code.paper.dir, "fn_t_readin_code_FULL.R")
@@ -311,8 +302,8 @@ model.1sim.stats.no.R <- function(par){
   one_sim <- as.data.frame(x$run(0:(st+no_obs))[(st+1):(st+no_obs),])
 
   ### SUMMARY STATISTICS COMPUTED ON MODEL OUTPUT:
-  summarymodel <- sum.stats.SIMTEST(one_sim,include.R=FALSE)
-
+  summarymodel <- sum.stats.SIMTEST(one_sim,last_date_data = "2021-01-18")
+  
   return(summarymodel)
 }
 

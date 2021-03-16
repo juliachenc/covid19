@@ -122,7 +122,7 @@ plot.model.data.all <- function(traj.CI, data.in, init.date.data, date.offset.4p
   }
 
   p <- p + theme_bw() + theme(legend.position = "top", legend.box = "horizontal")
-  p <- p + scale_x_date(limits = as.Date(c(startDatePlot,endDatePlot)), date_breaks = "2 weeks" , date_labels = "%d-%b-%y")
+  p <- p + scale_x_date(limits = as.Date(c(startDatePlot,endDatePlot)), date_breaks = "1 month" , date_labels = "%d-%b-%y")
   p <- p + theme(axis.text.x = element_text(angle = 90),
                  strip.text.x = element_text(size = 12, face = "bold"))
   p <- p + ylab("Numbers in Compartments") + xlab(NULL)

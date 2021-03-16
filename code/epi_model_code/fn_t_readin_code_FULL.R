@@ -18,9 +18,8 @@ assign("mu.0",1)
 assign("mu.1", R0_redux1)
 assign("mu.2", R0_redux2)
 assign("mu.3", R0_redux3) #0.31)
-assign("mu.4", .75*R0_redux3)
-#assign("mu.4",(mu.3+mu.2)/2)
-assign("mu.5",3)
+assign("mu.4", R0_redux4)
+assign("mu.5", R0_redux5)
 
 mu_y <- as.vector(length(Beta_t))
 for (i in 1:length(Beta_t)){
@@ -28,8 +27,6 @@ for (i in 1:length(Beta_t)){
 }
 R0_y <- R0*mu_y
 
-print(Beta_t)
-print(Beta_y)
 
 ## Get Beta_y as a function of R0, R0_redux, r, and Alpha
 
@@ -126,6 +123,7 @@ Delta_t <- Alpha_t
 Delta_y_chr <- alpha_t_readin$Delta_y
 assign("Delta1",Delta1)
 assign("Delta2", Delta2)
+assign("Delta3", Delta3)
 
 Delta_y <- as.vector(length(Alpha_t))
 for (i in 1:length(Alpha_t)){

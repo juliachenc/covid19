@@ -7,11 +7,15 @@ prior.R0 <- c("normal",R0,.03)
 
 R0_redux1 <- .21
 R0_redux2 <- .33
-R0_redux3 <- .575#.6 #65
+R0_redux3 <- .575 #.6 #65
+R0_redux4 <- .43125
+R0_redux5 <- .299
 
 prior.R0.redux1 <- c("unif", R0_redux1 - 0.05, R0_redux1 + 0.05)
 prior.R0.redux2 <- c("unif", R0_redux2 - 0.05, R0_redux2 + 0.05)
 prior.R0.redux3 <- c("unif", R0_redux3 - 0.05, R0_redux3 + 0.05)
+prior.R0.redux4 <- c("unif", R0_redux4 - 0.05, R0_redux4 + 0.05)
+prior.R0.redux5 <- c("unif", R0_redux5 - 0.05, R0_redux5 + 0.05)
 
 
 # prior.r1 <- c("unif",0.1, 0.75) #c("unif", 0.13, 0.16)
@@ -28,6 +32,10 @@ Delta1 <- .56
 Alpha2 <- 0.05 #.06
 Kappa2 <- .55 #.25
 Delta2 <- .52 #.75
+
+# (julia) add Delta3 
+Delta3 <- .56
+prior.Delta3 <- c("normal",Delta3, 0.7)
 
 stdev <- 0.003
 prior.Delta1 <- c("normal",Delta1, stdev)#.001) #0.01)
@@ -49,13 +57,7 @@ prior.par <- list(
   prior.Delta1,
   prior.Alpha1,
   prior.Kappa1,
-  prior.p_V,
-  prior.R0.redux2,
-  prior.Delta2,
-  prior.Alpha2,
-  prior.Kappa2,
-  prior.r2,
-  prior.R0.redux3)
+  prior.p_V)
 
 ## TIME-VARYING FUNCTIONS ARE READ IN VIA:
 ## fn_t_readin_path <- path(data.dir, "fn_t_readin.csv")

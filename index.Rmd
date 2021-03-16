@@ -17,7 +17,6 @@ editor_options:
 ``` {r setup, include=FALSE}
 
 ### Install necessary packages and get started
-
 library(reshape2)
 library(tidyverse)
 library(ggplot2)
@@ -61,6 +60,7 @@ library(fs)
 
 library(MASS)
 library(plotly)
+library(fBasics)
 
 lang_output <- function(x, lang) {
   cat(c(sprintf("```%s", lang), x, "```"), sep = "\n")
@@ -78,14 +78,14 @@ knitr::opts_chunk$set(
   include=TRUE
   )
 
-code.dir=here("code/")
-data.dir=here("data/")
-result.dir = here("results/")
-fig.dir = here("figs/")
-output.dir = here("output/")
-code.paper.dir=here("code/epi_model_code")
-code.risk.dir=here("code/risk_model_code/")
-code.scenarios.dir=here("code/scenarios_code/")
+code.dir=here("/Users/juliachen/Desktop/Julia_COVID19/code/")
+data.dir=here("/Users/juliachen/Desktop/Julia_COVID19/data/")
+result.dir = here("/Users/juliachen/Desktop/Julia_COVID19/results/")
+fig.dir = here("/Users/juliachen/Desktop/Julia_COVID19/figs/")
+output.dir = here("/Users/juliachen/Desktop/Julia_COVID19/output/")
+code.paper.dir=here("/Users/juliachen/Desktop/Julia_COVID19/code/epi_model_code")
+code.risk.dir=here("/Users/juliachen/Desktop/Julia_COVID19/code/risk_model_code/")
+code.scenarios.dir=here("/Users/juliachen/Desktop/Julia_COVID19/code/scenarios_code/")
 ```
 
 <!--Set global options-->
@@ -93,7 +93,7 @@ code.scenarios.dir=here("code/scenarios_code/")
 ```{r options, include=FALSE}
 print.output <- FALSE
 days.truncate <- 0
-endDatePlotGlobal <- as.Date("2021-02-16")
+endDatePlotGlobal <- as.Date("2021-03-16")
 ```
 
 
@@ -128,43 +128,51 @@ source(tables_code)
 # no_obs: number of observation days
 latest_data <- latest_covid_data(truncate=days.truncate)
 no_obs <- nrow(latest_data)
-
 ```
 
 
-<!--Model Fitting-->
-
+<!--Model Fitting--> <!--Week1-->
 ```{r include=FALSE}
-
 ## SOURCE PRIOR PARAMETERS
 ## Provides output in form of a prior.par list
 ## Note: Beta(t), Alpha(t), Kappa(t), Delta(t) are read in from file
 prior_param_input <- path(code.paper.dir, "prior_param.R")
 source(prior_param_input)
-# prior.par
 
 ## SUMMARY STATISTICS COMPUTED ON DATA
-summarydata <- sum.stats.SIMTEST(latest_data,include.R = FALSE)
+summarydata <- sum.stats.SIMTEST(latest_data,last_date_data = "2021-01-18")
 model.R <- model.1sim.stats.no.R  # From supporting_functions
 
 ### NUMBER OF OUTPUTS
-# n_calibration = 10000
-# n_rec = 2000
-
 n_calibration = 1000
 n_rec = 100
+
 
 ## FIT MODEL
 ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
                        summary_stat_target=summarydata, n_calibration=n_calibration,
                        tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
 
-ABC.par.out <- as.data.frame(ABC_out$param)
 ABC.out.mat <- ABC_out$param
-par.vec.length <- nrow(ABC_out$param)
 
+# Week1
+ABC.par.out_week_1 <- as.data.frame(ABC_out$param)
+par.vec.length <- nrow(ABC_out$param)
 ```
 
+```{r}
+week_par_mean = as.data.frame(matrix(0, ncol = 8, nrow = n_rec))
+week_par_sd = as.data.frame(matrix(0, ncol = 8, nrow = n_rec))
+week_par_all <- vector("list", nrow(ABC.out.mat))
+
+week_par_mean[1,] = colMeans(ABC_out$param)
+week_par_sd[1,] = colStdevs(ABC_out$param)
+week_par_all[[1]] <- ABC.par.out_week_1
+```
+
+
+
+convertRowsToList
 
 <!--Simulate model-->
 <!--Get compartment variables over time with CI-->
