@@ -52,7 +52,7 @@ prior.p_V <- c("normal",p_V, stdev) # c("unif", p_V-0.1, p_V+0.5 ) #c("normal",p
 prior.par <- list(
   prior.R0,
   prior.r1,
-  prior.st,
+  # prior.st,
   prior.R0.redux1,
   prior.Delta1,
   prior.Alpha1,

@@ -280,12 +280,12 @@ model.1sim.stats.no.R <- function(par){
 
   R0 <- par[1]
   r1 <- par[2]
-  start_time <- par[3]
-  R0_redux1 <- par[4]
-  Delta1 <- par[5]
-  Alpha1 <- par[6]
-  Kappa1 <- par[7]
-  p_V <- par[8]
+  #start_time <- par[3]
+  R0_redux1 <- par[3]
+  Delta1 <- par[4]
+  Alpha1 <- par[5]
+  Kappa1 <- par[6]
+  p_V <- par[7]
 
 
   ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS

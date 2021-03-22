@@ -237,17 +237,18 @@ model.output.to.plot.SIM <- function(ABC.out.mat, par.vec.length, iter, time.ste
 ## The cumulative number of cases at all (trusted) time points
 ###################################################################################################
 
-sum.stats.SIMTEST <- function(data,last_date_data){
+sum.stats.SIMTEST <- function(data,no_obs){
   
+  #print(paste0("tail_data   ", head(data)))
   no_obs <- nrow(data)
-  last_date <- as.numeric(as.Date(last_date_data) - as.Date("2020-03-01"))
+  #last_date <- as.numeric(as.Date(last_date_data) - as.Date("2020-03-01"))
   
   # Which values of variables to consider
   I.trust.n <- c(10:no_obs)  # The first 9 days of illness cases are unreliable/unavailable
-  H.trust.n <- c(17:last_date)  # The first 16 days of hospitalizations are unreliable/unavailable
-  V.trust.n <- c(19:last_date)  # The first 18 days of ventilation are unreliable/unavailable
+  H.trust.n <- c(17:no_obs)  # The first 16 days of hospitalizations are unreliable/unavailable
+  V.trust.n <- c(19:no_obs)  # The first 18 days of ventilation are unreliable/unavailable
   D.trust.n <- c(18:no_obs)  # The first 17 days of mortality are unreliable/unavailable
-  Hnew.trust.n <- c(19:last_date) # The first 18 days of new hospitalizations are unreliable/unavailable
+  Hnew.trust.n <- c(19:no_obs) # The first 18 days of new hospitalizations are unreliable/unavailable
   Dnew.trust.n <- c(28:no_obs) # The first 28 days of new deaths are unreliable/unavailable
   R.trust.n <- c(0:35)
   
@@ -278,34 +279,35 @@ sum.stats.SIMTEST <- function(data,last_date_data){
 
 model.1sim.stats.no.R <- function(par){
   
+  start_time <- 45 #par[3]
+  
   R0 <- par[1]
   r <- par[2]
-  start_time <- 45 #par[3]
-  R0_redux <- par[4]
-  Delta <- par[5]
-  Alpha <- par[6]
-  Kappa <- par[7]
-  p_V <- par[8]
+  R0_redux <- par[3] #par[4]
+  Delta <- par[4]#par[5]
+  Alpha <- par[5]#par[6]
+  Kappa <-par[6] #par[7]
+  p_V <- par[7]#par[8]
   
   #For week 2
   #Delta_t_dates <- c(Jan16, March1, March8)
   #Delta_t <- c(0, 45, 52)
   #Delta_y <- c(Delta[mean_week_1], Delta[mean_week_1], Delta1)
-  
+  print(paste0("no_obs   ", no_obs))
   ################################### For week 1 #####################################
-  Alpha_t = c(0, 45)
-  Kappa_t = c(0, 45)
-  Beta_t = c(0, 45)
-  Delta_t = c(0, 45)
-  r_t = c(0, 45)
+  Alpha_t = c(0, 45, 52)
+  Kappa_t = c(0, 45, 52)
+  Beta_t = c(0, 45, 52)
+  Delta_t = c(0, 45, 52)
+  r_t = c(0, 45, 52)
   
-  Delta_y = c(Delta, Delta)
-  Kappa_t = c(Kappa, Kappa)
-  Alpha_y = c(Alpha, Alpha)
-  r_y = c(r,r)
-  p_QV = c(p_V,p_V)
+  Delta_y = c(week_par_mean[1,4],week_par_mean[1,4], Delta)
+  Kappa_y = c(week_par_mean[1,6],week_par_mean[1,6], Kappa)
+  Alpha_y = c(week_par_mean[1,5],week_par_mean[1,5], Alpha)
+  r_y = c(week_par_mean[1,2], week_par_mean[1,2], r)
+  p_QV = c(week_par_mean[1,7], week_par_mean[1,7],p_V)
   #For week 1 - R0_t
-  R0_y <- c(R0, R0)
+  R0_y <- c(week_par_mean[1,1],week_par_mean[1,1] ,R0)
   
   #--> apply Br.function to all values in R
   
@@ -318,9 +320,17 @@ model.1sim.stats.no.R <- function(par){
   
   #--> Beta_y
   Beta_y = as.vector(length(Beta_t))
-  Beta_y =  c(Br.function(R0.in<-R0_y[1], r.in<-r, Alpha.in<-Alpha))
+  Beta_y =  c(Br.function(R0.in<-R0_y[1], r.in<-r, Alpha.in<-Alpha),
+              Br.function(R0.in<-R0_y[1], r.in<-r, Alpha.in<-Alpha),
+              Br.function(R0.in<-R0_y[2], r.in<-r, Alpha.in<-Alpha))
   
-  
+  # print(paste0("R0_y :    ", R0_y))
+  # print(paste0("Beta_y :    ", Beta_y))
+  # print(paste0("Beta_t :    ", Beta_t))
+  # print(paste0("Alpha_y :    ", Alpha_y))
+  # print(paste0("Alpha_t :    ", Alpha_t))
+  # print(paste0("r_y :    ", r_y))
+  # print(paste0("r_t :    ", r_t))
   ##################################################################################
   
   ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS
@@ -333,11 +343,20 @@ model.1sim.stats.no.R <- function(par){
   
   ### GENERATE SIMULATION
   x <- seihqdr_generator(Alpha_t=Alpha_t, Alpha_y=Alpha_y, Kappa_t=Kappa_t, Kappa_y=Kappa_y, Delta_t=Delta_t, Delta_y=Delta_y, Beta_t=Beta_t, Beta_y=Beta_y, r_t=r_t, r_y=r_y, S_ini=1e7, E_ini=10, p_QV=p_V)
+
   st <- start_time
-  one_sim <- as.data.frame(x$run(0:(st+no_obs))[(st+1):(st+no_obs),])
+  #print(paste0("start time :    ", st))
+  
+  no_obs
+  
+  #last_run_date <- max(Beta_t)
+  one_sim <- as.data.frame(x$run(0:no_obs)[(st):(no_obs),])
+  
+  print(paste0("one-sim   ", tail(one_sim)))
+  #one_sim <- as.data.frame(x$run(0:(st+no_obs))[(st+1):(st+no_obs),])
   
   ### SUMMARY STATISTICS COMPUTED ON MODEL OUTPUT:
-  summarymodel <- sum.stats.SIMTEST(one_sim,last_date_data = "2021-01-18")
+  summarymodel <- sum.stats.SIMTEST(one_sim,  no_obs=nrow(one_sim) ) #last_date_data = "2021-01-18")
   
   return(summarymodel)
 }

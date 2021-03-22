@@ -109,7 +109,9 @@ seihqdr_generator <- odin::odin(path_seihqdr_model)
 
 ###################################################################################################
 ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
-
+## for week 1
+model_functions_week1 <- path(code.paper.dir, "data_model_fun.R")
+source(model_functions_week1)
 
 ###################################################################################################
 ## LOAD PLOTTING FUNCTIONS
@@ -151,18 +153,17 @@ source(model_functions_week1)
 n_calibration = 1000
 n_rec = 100
 
-### Creat df for mean, sd and list for all parameters
-week_par_mean = as.data.frame(matrix(0, ncol = 8, nrow = n_rec))
-week_par_sd = as.data.frame(matrix(0, ncol = 8, nrow = n_rec))
-week_par_all <- vector("list", nrow(ABC.out.mat))
-
-
 ## Week1 FIT MODEL
 ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
                        summary_stat_target=summarydata, n_calibration=n_calibration,
                        tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
 
 ABC.out.mat <- ABC_out$param
+
+### Creat df for mean, sd and list for all parameters
+week_par_mean = as.data.frame(matrix(0, ncol = 7, nrow = n_rec))
+week_par_sd = as.data.frame(matrix(0, ncol = 7, nrow = n_rec))
+week_par_all <- vector("list", nrow(ABC.out.mat))
 
 ABC.par.out_week_1 <- as.data.frame(ABC_out$param)
 
@@ -174,22 +175,22 @@ week_par_all[[1]] <- ABC.par.out_week_1
 ```
 
 
-
+<!--Week2-->
 ```{r}
 ## Note: Beta(t), Alpha(t), Kappa(t), Delta(t) are read in from file
-prior_param_input_week2 <- path(code.paper.dir, "prior_paramw2.R")
-source(prior_param_input_week1later)
-
-## SUMMARY STATISTICS COMPUTED ON DATA
-summarydata <- sum.stats.SIMTEST(latest_data,last_date_data = "2021-01-18")
-model.R <- model.1sim.stats.no.R  # From supporting_functi
-
-
+prior_param_input_week2 <- path(code.paper.dir, "prior_param_w2.R")
+source(prior_param_input_week2)
 
 ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
 ## for week 1 later
-model_functions_week1later <- path(code.paper.dir, "data_model_fun_w2.R")
-source(model_functions_week1later)
+model_functions_week2<- path(code.paper.dir, "data_model_fun_w2.R")
+source(model_functions_week2)
+
+## SUMMARY STATISTICS COMPUTED ON DATA
+summarydata <- sum.stats.SIMTEST(latest_data, no_obs=52) #,last_date_data = "2021-01-18")
+model.R <- model.1sim.stats.no.R  # From supporting_functi
+
+no_obs = 52
 
 ## Week2 
 ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
@@ -205,6 +206,35 @@ week_par_sd[2,] = colStdevs(ABC_out$param)
 week_par_all[[2]] <- ABC.par.out_week_2
 ```
 
+<!--Week3-->
+```{r}
+## Note: Beta(t), Alpha(t), Kappa(t), Delta(t) are read in from file
+prior_param_input_week3 <- path(code.paper.dir, "prior_param_w3.R")
+source(prior_param_input_week3)
+
+## SUMMARY STATISTICS COMPUTED ON DATA
+summarydata <- sum.stats.SIMTEST(latest_data,last_date_data = "2021-01-18")
+model.R <- model.1sim.stats.no.R  # From supporting_function
+
+
+## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
+## for week 1 later
+model_functions_week3<- path(code.paper.dir, "data_model_fun_w2.R")
+source(model_functions_week3)
+
+## Week2 
+ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
+                       summary_stat_target=summarydata, n_calibration=n_calibration,
+                       tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
+
+ABC.out.mat <- ABC_out$param
+ABC.par.out_week_3 <- as.data.frame(ABC_out$param)
+
+
+week_par_mean[3,] = colMeans(ABC_out$param)
+week_par_sd[3,] = colStdevs(ABC_out$param)
+week_par_all[[3]] <- ABC.par.out_week_3
+```
 
 
 
