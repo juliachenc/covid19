@@ -27,7 +27,6 @@ for (i in 1:length(Beta_t)){
 }
 R0_y <- R0*mu_y
 
-
 ## Get Beta_y as a function of R0, R0_redux, r, and Alpha
 
 Br.function <- function(R0.in, r.in, Alpha.in){
