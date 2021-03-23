@@ -78,14 +78,24 @@ knitr::opts_chunk$set(
   include=TRUE
   )
 
-code.dir=here("/Users/juliachen/Desktop/covid19/code/")
-data.dir=here("/Users/juliachen/Desktop/covid19/data/")
-result.dir = here("/Users/juliachen/Desktop/covid19/results/")
-fig.dir = here("/Users/juliachen/Desktop/covid19/figs/")
-output.dir = here("/Users/juliachen/Desktop/covid19/output/")
-code.paper.dir=here("/Users/juliachen/Desktop/covid19/code/epi_model_code")
-code.risk.dir=here("/Users/juliachen/Desktop/covid19/code/risk_model_code/")
-code.scenarios.dir=here("/Users/juliachen/Desktop/covid19/code/scenarios_code/")
+# code.dir=here("/Users/juliachen/Desktop/covid19/code/")
+# data.dir=here("/Users/juliachen/Desktop/covid19/data/")
+# result.dir = here("/Users/juliachen/Desktop/covid19/results/")
+# fig.dir = here("/Users/juliachen/Desktop/covid19/figs/")
+# output.dir = here("/Users/juliachen/Desktop/covid19/output/")
+# code.paper.dir=here("/Users/juliachen/Desktop/covid19/code/epi_model_code")
+# code.risk.dir=here("/Users/juliachen/Desktop/covid19/code/risk_model_code/")
+# code.scenarios.dir=here("/Users/juliachen/Desktop/covid19/code/scenarios_code/")
+
+code.dir=here("code/")
+data.dir=here("data/")
+result.dir = here("results/")
+fig.dir = here("figs/")
+output.dir = here("output/")
+code.paper.dir=here("code/epi_model_code")
+code.risk.dir=here("code/risk_model_code/")
+code.scenarios.dir=here("code/scenarios_code/")
+
 ```
 
 <!--Set global options-->
@@ -137,17 +147,21 @@ no_obs <- nrow(latest_data)
 ## SOURCE PRIOR PARAMETERS
 ## Provides output in form of a prior.par list
 ## Note: Beta(t), Alpha(t), Kappa(t), Delta(t) are read in from file
-prior_param_input_week1 <- path(code.paper.dir, "prior_param.R")
-source(prior_param_input_week1)
-
-## SUMMARY STATISTICS COMPUTED ON DATA
-summarydata <- sum.stats.SIMTEST(latest_data,last_date_data = "2021-01-18")
-model.R <- model.1sim.stats.no.R  # From supporting_functions
 
 ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
 ## for week 1
-model_functions_week1 <- path(code.paper.dir, "data_model_fun.R")
+model_functions_week1 <- path(code.paper.dir, "data_model_fun_w1.R")
 source(model_functions_week1)
+
+prior_param_input_week1 <- path(code.paper.dir, "prior_param.R")
+source(prior_param_input_week1)
+
+
+## SUMMARY STATISTICS COMPUTED ON DATA
+### Here we extract from the observed data exactly the same number of days of data as we extract from the model in the model.1sim.stats.no.R code
+week.no = 1
+summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*week.no+1)),])  
+model.R <- model.1sim.stats.no.R  # From supporting_functions
 
 ### NUMBER OF OUTPUTS
 n_calibration = 1000
@@ -159,15 +173,13 @@ ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
                        tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
 
 ABC.out.mat <- ABC_out$param
-
+view(ABC.out.mat)
 ### Creat df for mean, sd and list for all parameters
-week_par_mean = as.data.frame(matrix(0, ncol = 7, nrow = n_rec))
-week_par_sd = as.data.frame(matrix(0, ncol = 7, nrow = n_rec))
+week_par_mean = as.data.frame(matrix(0, ncol = 6, nrow = n_rec))
+week_par_sd = as.data.frame(matrix(0, ncol = 6, nrow = n_rec))
 week_par_all <- vector("list", nrow(ABC.out.mat))
 
 ABC.par.out_week_1 <- as.data.frame(ABC_out$param)
-
-
 
 week_par_mean[1,] = colMeans(ABC_out$param)
 week_par_sd[1,] = colStdevs(ABC_out$param)
@@ -187,10 +199,10 @@ model_functions_week2<- path(code.paper.dir, "data_model_fun_w2.R")
 source(model_functions_week2)
 
 ## SUMMARY STATISTICS COMPUTED ON DATA
-summarydata <- sum.stats.SIMTEST(latest_data, no_obs=52) #,last_date_data = "2021-01-18")
-model.R <- model.1sim.stats.no.R  # From supporting_functi
-
-no_obs = 52
+### Here we extract from the observed data exactly the same number of days of data as we extract from the model in the model.1sim.stats.no.R code
+week.no = 2
+summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*week.no+1)),])   
+model.R <- model.1sim.stats.no.R  # From supporting_functions
 
 ## Week2 
 ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
@@ -198,42 +210,51 @@ ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
                        tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
 
 ABC.out.mat <- ABC_out$param
+view(ABC.out.mat)
+
 ABC.par.out_week_2 <- as.data.frame(ABC_out$param)
+## Here I'm ensuring we don't get any negative values for our parameters -- see how I specified in model.1sim.stats.no.R (in data_model_fun_w2.R) the maximum between each parameter and 0.01; in that way the ABC algorithm will implement that value in simulating the model, but the value it stores in ABC_out$param is the original one it chose (before the max(-,0.01) was applied). So we have to do an extra step here to ensure the saved values are the max(-, 0.01) ones. 
+for (i in 1:nrow(ABC.par.out_week_2)){
+  ABC.par.out_week_2$V3[i] <- max(ABC.par.out_week_2$V3[i] , .01)
+  ABC.par.out_week_2$V4[i] <- max(ABC.par.out_week_2$V4[i] , .01)
+  ABC.par.out_week_2$V5[i] <- max(ABC.par.out_week_2$V5[i] , .01)
+  ABC.par.out_week_2$V6[i] <- max(ABC.par.out_week_2$V6[i] , .01)
+}
 
-
-week_par_mean[2,] = colMeans(ABC_out$param)
-week_par_sd[2,] = colStdevs(ABC_out$param)
+week_par_mean[2,] = colMeans(ABC.par.out_week_2)
+week_par_sd[2,] = colStdevs(ABC.par.out_week_2)
 week_par_all[[2]] <- ABC.par.out_week_2
+
 ```
 
 <!--Week3-->
 ```{r}
 ## Note: Beta(t), Alpha(t), Kappa(t), Delta(t) are read in from file
-prior_param_input_week3 <- path(code.paper.dir, "prior_param_w3.R")
-source(prior_param_input_week3)
-
-## SUMMARY STATISTICS COMPUTED ON DATA
-summarydata <- sum.stats.SIMTEST(latest_data,last_date_data = "2021-01-18")
-model.R <- model.1sim.stats.no.R  # From supporting_function
-
-
-## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
-## for week 1 later
-model_functions_week3<- path(code.paper.dir, "data_model_fun_w2.R")
-source(model_functions_week3)
-
-## Week2 
-ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
-                       summary_stat_target=summarydata, n_calibration=n_calibration,
-                       tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
-
-ABC.out.mat <- ABC_out$param
-ABC.par.out_week_3 <- as.data.frame(ABC_out$param)
-
-
-week_par_mean[3,] = colMeans(ABC_out$param)
-week_par_sd[3,] = colStdevs(ABC_out$param)
-week_par_all[[3]] <- ABC.par.out_week_3
+# prior_param_input_week3 <- path(code.paper.dir, "prior_param_w3.R")
+# source(prior_param_input_week3)
+# 
+# ## SUMMARY STATISTICS COMPUTED ON DATA
+# summarydata <- sum.stats.SIMTEST(latest_data,last_date_data = "2021-01-18")
+# model.R <- model.1sim.stats.no.R  # From supporting_function
+# 
+# 
+# ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
+# ## for week 1 later
+# model_functions_week3<- path(code.paper.dir, "data_model_fun_w2.R")
+# source(model_functions_week3)
+# 
+# ## Week2 
+# ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
+#                        summary_stat_target=summarydata, n_calibration=n_calibration,
+#                        tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
+# 
+# ABC.out.mat <- ABC_out$param
+# ABC.par.out_week_3 <- as.data.frame(ABC_out$param)
+# 
+# 
+# week_par_mean[3,] = colMeans(ABC_out$param)
+# week_par_sd[3,] = colStdevs(ABC_out$param)
+# week_par_all[[3]] <- ABC.par.out_week_3
 ```
 
 

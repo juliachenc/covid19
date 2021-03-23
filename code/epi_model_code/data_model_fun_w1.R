@@ -133,10 +133,10 @@ correlated.param.SIM <- function(ABC.out.mat,iter,time.steps) {
     R0 <- ABC.out.mat[idx,1]
     r1 <- ABC.out.mat[idx,2]
     start_time <- round(ABC.out.mat[idx,3])
-    R0_redux <- ABC.out.mat[idx,4]
-    Delta <- ABC.out.mat[idx,5]
-    Alpha <- ABC.out.mat[idx,6]
-    Kappa <- ABC.out.mat[idx,7]
+    R0_redux1 <- ABC.out.mat[idx,4]
+    Delta1 <- ABC.out.mat[idx,5]
+    Alpha1 <- ABC.out.mat[idx,6]
+    Kappa1 <- ABC.out.mat[idx,7]
     p_V <- ABC.out.mat[idx,8]
 
 
@@ -270,7 +270,6 @@ sum.stats.SIMTEST <- function(data){
 }
 
 
-
 ###################################################################################################
 ## SIMULATION MODEL FUNCTION TO COMPUTE FOR ABC ALGORITHM
 ## A function implementing the model to be simulated
@@ -282,19 +281,13 @@ model.1sim.stats.no.R <- function(par){
 
   start_time <- 45 #par[3]
 
-  ### Here I'm getting the maximum between the value chosen by the ABC algorithm and 0.01. I do this because when we use the mean and stdev of the
-  ### previous week's parameter values, we can get a stdev that ranges more widely than makes sense for the parameter. So we fix that by just
-  ### ensuring that the minimum value the parameter can take is 0.01.
-  R0 <- max(par[1],2.5)
-  r <- max(par[2],.01)
+  R0 <- par[1]
+  r <- par[2]
   #R0_redux <- par[3] #par[4]
-  Delta <- max(par[3],.01)#par[5]
-  Alpha <- max(par[4],.01)#par[6]
-  Kappa <- max(par[5],.01) #par[7]
-  p_V <- max(par[6],.01)#par[8]
-
-  print("p_V")
-  print(p_V)
+  Delta <- par[3]#par[5]
+  Alpha <- par[4]#par[6]
+  Kappa <-par[5] #par[7]
+  p_V <- par[6]#par[8]
 
   #For week 2
   #Delta_t_dates <- c(Jan16, March1, March8)
@@ -302,23 +295,21 @@ model.1sim.stats.no.R <- function(par){
   #Delta_y <- c(Delta[mean_week_1], Delta[mean_week_1], Delta1)
   #print(paste0("no_obs   ", no_obs))
 
-  ################################### For week 2 #####################################
-  Alpha_t = c(0, 45, 52, 59)
-  Kappa_t = c(0, 45, 52, 59)
-  Beta_t = c(0, 45, 52, 59)
-  Delta_t = c(0, 45, 52, 59)
-  r_t = c(0, 45, 52, 59)
+  ################################### For week 1 #####################################
+  ### Here I updated "week 1" to represent everything after 1 week of data, so starting on day 52
+  Alpha_t = c(0, 45, 52)
+  Kappa_t = c(0, 45, 52)
+  Beta_t = c(0, 45, 52)
+  Delta_t = c(0, 45, 52)
+  r_t = c(0, 45, 52)
 
-  Delta_y = c(week_par_mean[1,3],week_par_mean[1,3], week_par_mean[1,3], Delta)
-  Kappa_y = c(week_par_mean[1,5],week_par_mean[1,5],week_par_mean[1,5], Kappa)
-  Alpha_y = c(week_par_mean[1,4],week_par_mean[1,4],week_par_mean[1,4], Alpha)
-  r_y = c(week_par_mean[1,2], week_par_mean[1,2], week_par_mean[1,2], r)
-  p_QV = c(week_par_mean[1,6], week_par_mean[1,6],week_par_mean[1,6], p_V)
+  Delta_y = c(Delta, Delta, Delta)
+  Kappa_y = c(Kappa, Kappa, Kappa)
+  Alpha_y = c(Alpha, Alpha, Alpha)
+  r_y = c(r, r, r)
+  p_QV = c(p_V,p_V,p_V)
   #For week 1 - R0_t
-  R0_y <- c(week_par_mean[1,1],week_par_mean[1,1],week_par_mean[1,1], R0)
-
-  print("p_QV")
-  print(p_QV)
+  R0_y <- c(R0, R0, R0)
 
   #--> apply Br.function to all values in R
 
@@ -333,10 +324,7 @@ model.1sim.stats.no.R <- function(par){
   Beta_y = as.vector(length(Beta_t))
   Beta_y =  c(Br.function(R0.in<-R0_y[1], r.in<-r, Alpha.in<-Alpha),
               Br.function(R0.in<-R0_y[2], r.in<-r, Alpha.in<-Alpha),
-              Br.function(R0.in<-R0_y[3], r.in<-r, Alpha.in<-Alpha),
-              Br.function(R0.in<-R0_y[4], r.in<-r, Alpha.in<-Alpha))
-
-
+              Br.function(R0.in<-R0_y[3], r.in<-r, Alpha.in<-Alpha))
   # print(paste0("R0_y :    ", R0_y))
   # print(paste0("Beta_y :    ", Beta_y))
   # print(paste0("Beta_t :    ", Beta_t))
@@ -358,8 +346,14 @@ model.1sim.stats.no.R <- function(par){
   x <- seihqdr_generator(Alpha_t=Alpha_t, Alpha_y=Alpha_y, Kappa_t=Kappa_t, Kappa_y=Kappa_y, Delta_t=Delta_t, Delta_y=Delta_y, Beta_t=Beta_t, Beta_y=Beta_y, r_t=r_t, r_y=r_y, S_ini=1e7, E_ini=10, p_QV=p_V)
 
   st <- start_time
+  #print(paste0("start time :    ", st))
+
   last_date <- max(Beta_t)
+
+  #last_run_date <- max(Beta_t)
   one_sim <- as.data.frame(x$run(1:last_date)[(st):(last_date),])
+
+  #print(paste0("one-sim   ", tail(one_sim)))
   #one_sim <- as.data.frame(x$run(0:(st+no_obs))[(st+1):(st+no_obs),])
 
   ### SUMMARY STATISTICS COMPUTED ON MODEL OUTPUT:
@@ -367,3 +361,5 @@ model.1sim.stats.no.R <- function(par){
 
   return(summarymodel)
 }
+
+
