@@ -293,8 +293,8 @@ model.1sim.stats.no.R <- function(par){
   Kappa <- max(par[5],.01) #par[7]
   p_V <- max(par[6],.01)#par[8]
 
-  print("p_V")
-  print(p_V)
+  # print("p_V")
+  # print(p_V)
 
   #For week 2
   #Delta_t_dates <- c(Jan16, March1, March8)
@@ -309,16 +309,27 @@ model.1sim.stats.no.R <- function(par){
   Delta_t = c(0, 45, 52, 59)
   r_t = c(0, 45, 52, 59)
 
-  Delta_y = c(week_par_mean[1,3],week_par_mean[1,3], week_par_mean[2,3], Delta)
-  Kappa_y = c(week_par_mean[1,5],week_par_mean[1,5],week_par_mean[2,5], Kappa)
-  Alpha_y = c(week_par_mean[1,4],week_par_mean[1,4],week_par_mean[2,4], Alpha)
-  r_y = c(week_par_mean[1,2], week_par_mean[1,2], week_par_mean[2,2], r)
-  p_QV = c(week_par_mean[1,6], week_par_mean[1,6],week_par_mean[2,6], p_V)
-  #For week 1 - R0_t
-  R0_y <- c(week_par_mean[1,1],week_par_mean[1,1],week_par_mean[2,1], R0)
 
-  print("p_QV")
-  print(p_QV)
+  ## @JULIA FOUND AN ERROR 4.5.21: You're taking week_par_mean[2,3] but that is equal to 0! So you're setting a 0 value in the Parameter_y distributions!
+  ## I fixed by setting days 0 - 52 equal to the values estimated for week 1, the only entry in week_par_mean
+  # Delta_y = c(week_par_mean[1,3],week_par_mean[1,3], week_par_mean[2,3], Delta)
+  # Kappa_y = c(week_par_mean[1,5],week_par_mean[1,5],week_par_mean[2,5], Kappa)
+  # Alpha_y = c(week_par_mean[1,4],week_par_mean[1,4],week_par_mean[2,4], Alpha)
+  # r_y = c(week_par_mean[1,2], week_par_mean[1,2], week_par_mean[2,2], r)
+  # p_QV = c(week_par_mean[1,6], week_par_mean[1,6],week_par_mean[2,6], p_V)
+  # #For week 1 - R0_t
+  # R0_y <- c(week_par_mean[1,1],week_par_mean[1,1],week_par_mean[2,1], R0)
+
+  Delta_y = c(week_par_mean[1,3],week_par_mean[1,3], week_par_mean[1,3], Delta)
+  Kappa_y = c(week_par_mean[1,5],week_par_mean[1,5],week_par_mean[1,5], Kappa)
+  Alpha_y = c(week_par_mean[1,4],week_par_mean[1,4],week_par_mean[1,4], Alpha)
+  r_y = c(week_par_mean[1,2], week_par_mean[1,2], week_par_mean[1,2], r)
+  p_QV = c(week_par_mean[1,6], week_par_mean[1,6],week_par_mean[1,6], p_V)
+  #For week 1 - R0_t
+  R0_y <- c(week_par_mean[1,1],week_par_mean[1,1],week_par_mean[1,1], R0)
+
+  # print("p_QV")
+  # print(p_QV)
 
   #--> apply Br.function to all values in R
 

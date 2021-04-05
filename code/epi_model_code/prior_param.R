@@ -21,41 +21,30 @@ prior.R0 <- c("normal",R0,.1)  #.03)
 # prior.r1 <- c("unif",0.1, 0.75) #c("unif", 0.13, 0.16)
 # prior.r2 <- c("unif",0.1, 0.75) #c("unif",0.12, 0.14) #0.30
 
-prior.r1 <- c("unif",0.03, 0.35)
-prior.r2 <- c("unif", 0.3, 0.65) #c("unif",0.1, 0.85)
+prior.r <- c("unif",0.03, 0.75)
 
 
-Alpha <- .05 #.1 #0.14#.155
-Kappa <- .05 #.1 #0.6 #.65
-Delta <- .05 #.1 #.56
-p_V <- .05 #.1 # 0.27 #.28
+## @JULIA FOUND AN ERROR 4.5.21: These had been reduced down to very low values -- I returned them to their previous values
+Alpha <- 0.14#.155
+Kappa <- 0.6 #.65
+Delta <- .56
+p_V <- 0.27
 
-stdev <- 0.05
+stdev <- 0.01
 
-prior.Delta <- c("unif", Delta - stdev, Delta + stdev)
-prior.Alpha <- c("unif", Alpha - stdev, Alpha + stdev)
-prior.Kappa <- c("unif", Kappa - stdev, Kappa + stdev)
-prior.p_V <- c("unif", p_V - stdev, p_V + stdev)
+# prior.Delta <- c("unif", Delta - stdev, Delta + stdev)
+# prior.Alpha <- c("unif", Alpha - stdev, Alpha + stdev)
+# prior.Kappa <- c("unif", Kappa - stdev, Kappa + stdev)
+# prior.p_V <- c("unif", p_V - stdev, p_V + stdev)
 
-# prior.Delta1 <- c("normal",Delta1, stdev)#.001) #0.01)
-# prior.Alpha1 <- c("normal",Alpha1, stdev)#.002) #0.003)
-# prior.Kappa1 <- c("normal",Kappa1, stdev)#.002) # 0.03)
-# prior.p_V <- c("normal",p_V, stdev) # c("unif", p_V-0.1, p_V+0.5 ) #c("normal",p_V, 0.08)
-
-# Alpha2 <- 0.05 #.06
-# Kappa2 <- .55 #.25
-# Delta2 <- .52 #.75
-#
-# # (julia) add Delta3
-# Delta3 <- .56
-# prior.Delta3 <- c("normal",Delta3, 0.7)
-# prior.Delta2 <- c("normal",Delta2, stdev)#.001)
-# prior.Alpha2 <- c("normal",Alpha2, stdev)#.001)
-# prior.Kappa2 <- c("normal",Kappa2, stdev)#.002)
+prior.Delta <- c("normal",Delta, stdev)#.001) #0.01)
+prior.Alpha <- c("normal",Alpha, stdev)#.002) #0.003)
+prior.Kappa <- c("normal",Kappa, stdev)#.002) # 0.03)
+prior.p_V <- c("normal",p_V, stdev) # c("unif", p_V-0.1, p_V+0.5 ) #c("normal",p_V, 0.08)
 
 prior.par <- list(
   prior.R0,
-  prior.r1,
+  prior.r,
   # prior.st,
   # prior.R0.redux1,
   prior.Delta,
