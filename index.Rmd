@@ -213,14 +213,15 @@ ABC.out.mat <- ABC_out$param
 view(ABC.out.mat)
 
 ABC.par.out_week_2 <- as.data.frame(ABC_out$param)
-## Here I'm ensuring we don't get any negative values for our parameters -- see how I specified in model.1sim.stats.no.R (in data_model_fun_w2.R) the maximum between each parameter and 0.01; in that way the ABC algorithm will implement that value in simulating the model, but the value it stores in ABC_out$param is the original one it chose (before the max(-,0.01) was applied). So we have to do an extra step here to ensure the saved values are the max(-, 0.01) ones. 
-for (i in 1:nrow(ABC.par.out_week_2)){
-  ABC.par.out_week_3$V2[i] <- max(ABC.par.out_week_3$V2[i] , .01)
-  ABC.par.out_week_2$V3[i] <- max(ABC.par.out_week_2$V3[i] , .01)
-  ABC.par.out_week_2$V4[i] <- max(ABC.par.out_week_2$V4[i] , .01)
-  ABC.par.out_week_2$V5[i] <- max(ABC.par.out_week_2$V5[i] , .01)
-  ABC.par.out_week_2$V6[i] <- max(ABC.par.out_week_2$V6[i] , .01)
-}
+
+# ## Here I'm ensuring we don't get any negative values for our parameters -- see how I specified in model.1sim.stats.no.R (in data_model_fun_w2.R) the maximum between each parameter and 0.01; in that way the ABC algorithm will implement that value in simulating the model, but the value it stores in ABC_out$param is the original one it chose (before the max(-,0.01) was applied). So we have to do an extra step here to ensure the saved values are the max(-, 0.01) ones. 
+# for (i in 1:nrow(ABC.par.out_week_2)){
+#   ABC.par.out_week_2$V2[i] <- max(ABC.par.out_week_3$V2[i] , .01)
+#   ABC.par.out_week_2$V3[i] <- max(ABC.par.out_week_2$V3[i] , .01)
+#   ABC.par.out_week_2$V4[i] <- max(ABC.par.out_week_2$V4[i] , .01)
+#   ABC.par.out_week_2$V5[i] <- max(ABC.par.out_week_2$V5[i] , .01)
+#   ABC.par.out_week_2$V6[i] <- max(ABC.par.out_week_2$V6[i] , .01)
+# }
 
 week_par_mean[2,] = colMeans(ABC.par.out_week_2)
 week_par_sd[2,] = colStdevs(ABC.par.out_week_2)
@@ -239,22 +240,22 @@ week_par_all[[2]] <- ABC.par.out_week_2
 #source(model_functions_week3later)
 
 ## SUMMARY STATISTICS COMPUTED ON DATA
-week.no = c(5:10) #c(3:52)
+week.no = c(3:12) #c(3:52)
 week.no=Vectorize(week.no)
 
 for (i in week.no){
   
   prior.R0 = c("normal", week_par_mean[i-1,1], week_par_sd[i-1,1])
   # r
-  prior.r = c("normal", week_par_mean[i-1,2], week_par_sd[i-1,2])
+  prior.r = c("normal", week_par_mean[i-1,2], .5*week_par_sd[i-1,2])
   # Delta
-  prior.Delta = c("normal", week_par_mean[i-1,3], week_par_sd[i-1,3])
+  prior.Delta = c("normal", week_par_mean[i-1,3], .5*week_par_sd[i-1,3])
   # Alpha 
-  prior.Alpha = c("normal", week_par_mean[i-1,4], week_par_sd[i-1,4])
+  prior.Alpha = c("normal", week_par_mean[i-1,4], .5*week_par_sd[i-1,4])
   # Kappa
-  prior.Kappa = c("normal", week_par_mean[i-1,5], week_par_sd[i-1,5])
+  prior.Kappa = c("normal", week_par_mean[i-1,5], .5*week_par_sd[i-1,5])
   # p_V
-  prior.p_V = c("normal", week_par_mean[i-1,6], week_par_sd[i-1,6]) 
+  prior.p_V = c("normal", week_par_mean[i-1,6], .5*week_par_sd[i-1,6]) 
   
   prior.par <- list(
   prior.R0,
