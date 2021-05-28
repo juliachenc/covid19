@@ -121,66 +121,57 @@ var.format <- function(var.CI,use.mean.select){
 ########################################################################################
 ## SPECIFYING EPIDEMIC MODEL TO BE SIMULATED AND SCENARIOS
 ########################################################################################
-correlated.param.SIM <- function(week_par_sim,iter,time.steps) {
-  
-  #TEST.out <- vector("list",length(week_par_sim))
-  
-  num.iter.id = length(unique(week_par_sim$iter.id))
-  
-  TEST.out <- vector("list",length(week_par_sim))
-  
-  for (idx in 1:num.iter.id) {
-    
-    week_par_sim_idx <- week_par_sim %>% dplyr::filter(iter.id==idx)
-    
-    week_idx = length(unique(week_par_sim$week.id))-2
-    
-    Alpha_t <- c(0, 45, seq(52,  week_idx*7+45, by = 7))
-    Kappa_t <- c(0, 45, seq(52,  week_idx*7+45, by = 7))
-    Delta_t <- c(0, 45, seq(52,  week_idx*7+45, by = 7))
-    Beta_t <-c(0, 45, seq(52,  week_idx*7+45, by = 7))
-    r_t <- c(0, 45, seq(52,  week_idx*7+45, by = 7))
+
+correlated.param.SIM <- function(ABC.out.mat,iter,time.steps) {
+
+  TEST.out <- vector("list", nrow(ABC.out.mat))
+
+  for (idx in 1:nrow(ABC.out.mat)) {
+
+    ### PARAMETER ESTIMATES FROM ABC
+
+    R0 <- ABC.out.mat[idx,1]
+    r1 <- ABC.out.mat[idx,2]
+    start_time <- round(ABC.out.mat[idx,3])
+    R0_redux1 <- ABC.out.mat[idx,4]
+    Delta1 <- ABC.out.mat[idx,5]
+    Alpha1 <- ABC.out.mat[idx,6]
+    Kappa1 <- ABC.out.mat[idx,7]
+    p_V <- ABC.out.mat[idx,8]
+
     
 
-    Alpha_y <- week_par_sim_idx$V4
-    Kappa_y <- week_par_sim_idx$V5
-    Delta_y <-week_par_sim_idx$V3
-    r_y = week_par_sim_idx$V2
-    p_V =   0.27 # week_par_sim_idx$V6
-    R0_y = week_par_sim_idx$V1
-    
+    ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS
+    fn_t_readin_code <- path(code.paper.dir, "fn_t_readin_code_FULL.R")
+    source(fn_t_readin_code, local=TRUE)
 
-    Br.function <- function(R0.in, r.in, Alpha.in){
-      d_IH <- 10   #days between illness onset and hospitalization
-      d_IR <- 7    #days between illness onset and recovery (hospitalization not required)
-      Br <- R0.in * ( 1 / ( (r.in/ ((Alpha.in/d_IH) + ((1-Alpha.in)/d_IR)))  + (1-r.in)*d_IR ))
-      return(Br)
-    }
-    
-    Beta_y = as.vector(length(Beta_t))
-    
-    for (j in 1:length(R0_y)){
-      Beta_y[j] = c(Br.function(R0.in<-R0_y[j], r.in<-r_y[j], Alpha_y[j]<-Alpha_y[j]))
-    }
-    
-     
+    # print("Beta_t_dates")
+    # print(Beta_t_dates)
+    # print("R0_y")
+    # print(R0_y)
+    # print("r_t_dates")
+    # print(r_t_dates)
+    # print(r_y)
+    # print("Alpha_t_dates")
+    # print(Alpha_t_dates)
+
     ## COMPILE
-    x <- seihqdr_generator(Alpha_t=Alpha_t, Alpha_y=Alpha_y, Kappa_t=Kappa_t, Kappa_y=Kappa_y, Delta_t=Delta_t, Delta_y=Delta_y, Beta_t=Beta_t, Beta_y, r_t=r_t, r_y=r_y, S_ini=1e7, E_ini=10, p_QV=p_V)
-    
+    x <- seihqdr_generator(Alpha_t=Alpha_t, Alpha_y=Alpha_y, Kappa_t=Kappa_t, Kappa_y=Kappa_y, Delta_t=Delta_t, Delta_y=Delta_y, Beta_t=Beta_t, Beta_y=Beta_y, r_t=r_t, r_y=r_y, S_ini=1e7, E_ini=10, p_QV=p_V)
+
     ## SIMULATE
     TEST<-as.data.frame(plyr::rdply(iter, x$run(0:time.steps),.id="iter"))
-    
+
     ## BIND INCLUDING OFFSETING OBSERVED DATA BY START DATE
-    start_time = 45
     TEST.out[[idx]] <- cbind(data.frame(par.id = idx, date = -start_time+TEST$step), TEST)
   }
-  
+
   ## ADD TO DATAFRAME OVER ALL PARAMETER VALUES
   TEST.out <- do.call(rbind, TEST.out)
-  
+
   return(TEST.out)
-  
+
 }
+
 
 ########################################################################################
 ## GETTING MODEL OUTPUT + SUMMARY STATISTICS FUNCTION
@@ -192,14 +183,13 @@ correlated.param.SIM <- function(week_par_sim,iter,time.steps) {
 # time.steps <- 300
 # vars.to.plot <- vars.plus.R
 
-model.output.to.plot.SIM <- function(week_par_sim, iter, time.steps, vars.to.plot) {
+model.output.to.plot.SIM <- function(ABC.out.mat, par.vec.length, iter, time.steps, vars.to.plot) {
 
   library(data.table)
-  
   init.date.data="2020-03-01"
 
   ## MODEL OUTPUT TO PLOT
-  TEST.out <- correlated.param.SIM(week_par_sim,iter=iter,time.steps=time.steps)
+  TEST.out <- correlated.param.SIM(ABC.out.mat[1:par.vec.length,],iter=iter,time.steps=time.steps)
 
   ### Add CFR and IFR to the list (EXTRA STEP NOW THAT THIS IS BEING USED ALSO FOR summary_table)
   traj <- dplyr::mutate(TEST.out, Itot=I+A, CFRobs=(D/Idetectcum), CFRactual=(D/(Itotcum)) )
@@ -247,26 +237,36 @@ model.output.to.plot.SIM <- function(week_par_sim, iter, time.steps, vars.to.plo
 ## The cumulative number of cases at all (trusted) time points
 ###################################################################################################
 
-sum.stats.SIMTEST <- function(data){
+sum.stats.SIMTEST <- function(data,last_date_data){
 
-  ### For now let's take all values, instead of removing the first 10 to 28...we need these first 10 to 28 to fit the estimate parameters after 7 to 14 days!
-  ss.I <- data$Idetectcum #[I.trust.n]
-  ss.H <- data$Htotcum #[H.trust.n]
-  ss.V <- data$Vcum #[V.trust.n]
-  ss.D <- data$D #[D.trust.n]
-  ss.Hnew <- data$H_new #[Hnew.trust.n]
-  ss.Dnew <- data$D_new #[Dnew.trust.n]
-  # ss.R <- data$R #[R.trust.n]
-
+  no_obs <- nrow(data)
+  last_date <- as.numeric(as.Date(last_date_data) - as.Date("2020-03-01"))
+  
+  # Which values of variables to consider
+  I.trust.n <- c(10:no_obs)  # The first 9 days of illness cases are unreliable/unavailable
+  H.trust.n <- c(17:last_date)  # The first 16 days of hospitalizations are unreliable/unavailable
+  V.trust.n <- c(19:last_date)  # The first 18 days of ventilation are unreliable/unavailable
+  D.trust.n <- c(18:no_obs)  # The first 17 days of mortality are unreliable/unavailable
+  Hnew.trust.n <- c(19:last_date) # The first 18 days of new hospitalizations are unreliable/unavailable
+  Dnew.trust.n <- c(28:no_obs) # The first 28 days of new deaths are unreliable/unavailable
+  R.trust.n <- c(0:35)
+  
+  ss.I <- data$Idetectcum[I.trust.n]
+  ss.H <- data$Htotcum[H.trust.n]
+  ss.V <- data$Vcum[V.trust.n]
+  ss.D <- data$D[D.trust.n]
+  ss.Hnew <- data$H_new[Hnew.trust.n]
+  ss.Dnew <- data$D_new[Dnew.trust.n]
+  ss.R <- data$R[R.trust.n]
+  
 
   # Which variables to consider
 
-  summarystats = c(ss.I, ss.H, ss.V, ss.D, ss.Hnew, ss.Dnew)
+  summarystats = c(ss.I, ss.H, ss.V, ss.D, ss.Hnew, ss.Dnew) 
 
 
   return(summarystats)
 }
-
 
 
 ###################################################################################################
@@ -278,93 +278,33 @@ sum.stats.SIMTEST <- function(data){
 
 model.1sim.stats.no.R <- function(par){
 
-  start_time <- 45 #par[3]
-  R0 <- max(par[1],2.5)
-  r <- max(par[2],.01)
-  #R0_redux <- par[3] #par[4]
-  Delta <- max(par[3],.01)#par[5]
-  Alpha <- max(par[4],.01)#par[6]
-  Kappa <- max(par[5],.01) #par[7]
-  p_V <- max(par[6],.01)#par[8]
-
-  ################################### For week 3 later #####################################
-
-  #if (i == week.no){
-    # week 0, week0, week1 week 2...
-    Alpha_t = c(0, 45, seq(52,  i*7+45, by = 7))
-    Kappa_t = c(0, 45, seq(52,  i*7+45, by = 7))
-    Beta_t = c(0, 45, seq(52,  i*7+45, by = 7))
-    Delta_t = c(0, 45, seq(52,  i*7+45, by = 7))
-    r_t = c(0, 45, seq(52,  i*7+45, by = 7))
-
-    #week.seq = seq(3, i, 1)
-
-    ## 4.5.21: I changed the 3rd entry of the sequences below from week_par_mean[2,3] to week_par_mean[1,3]
-    Delta_y = c(week_par_mean[1,3],week_par_mean[1,3], week_par_mean[1,3]) # Delta
-    Kappa_y = c(week_par_mean[1,5],week_par_mean[1,5],week_par_mean[1,5]) #Kappa
-    Alpha_y = c(week_par_mean[1,4],week_par_mean[1,4],week_par_mean[1,4]) #Alpha
-    r_y = c(week_par_mean[1,2], week_par_mean[1,2], week_par_mean[1,2]) #r
-    p_QV = c(week_par_mean[1,6], week_par_mean[1,6],week_par_mean[1,6]) #p_V
-    R0_y <- c(week_par_mean[1,1],week_par_mean[1,1],week_par_mean[1,1]) #  R0
-
-    ## 4.5.21: THIS WAS INCORRECT, I CORRECTED BELOW
-    # for (j in week.seq ){
-    #   Delta_y = append(Delta_y, week_par_mean[j,3])
-    #   Kappa_y = append(Kappa_y, week_par_mean[j,3])
-    #   Alpha_y = append(Alpha_y, week_par_mean[j,3])
-    #   r_y = append(r_y, week_par_mean[j,3])
-    #   p_QV = append(p_QV, week_par_mean[j,3])
-    #   R0_y = append(R0_y, week_par_mean[j,3])
-    # }
-
-    for (j in 2:(i-1) ){
-      Delta_y = append(Delta_y, week_par_mean[j,3])
-      Kappa_y = append(Kappa_y, week_par_mean[j,5])
-      Alpha_y = append(Alpha_y, week_par_mean[j,4])
-      r_y = append(r_y, week_par_mean[j,2])
-      p_QV = append(p_QV, week_par_mean[j,6])
-      R0_y = append(R0_y, week_par_mean[j,1])
-    }
-
-    Delta_y = append(Delta_y, Delta)
-    Kappa_y = append(Kappa_y, Kappa)
-    Alpha_y = append(Alpha_y, Alpha)
-    r_y = append(r_y, r)
-    p_QV = append(p_QV, p_V)
-    R0_y = append(R0_y, R0)
+  R0 <- par[1]
+  r1 <- par[2]
+  #start_time <- par[3]
+  R0_redux1 <- par[3]
+  Delta1 <- par[4]
+  Alpha1 <- par[5]
+  Kappa1 <- par[6]
+  p_V <- par[7]
 
 
-    # print("R0_y")
-    # print(R0_y)
+  ### BRING IN BETA_T ALPHA_T KAPPA_T DELTA_T FUNCTIONS
+  fn_t_readin_code <- path(code.paper.dir, "fn_t_readin_code_FULL.R")
+  source(fn_t_readin_code, local=TRUE)
 
-    Br.function <- function(R0.in, r.in, Alpha.in){
-      d_IH <- 10   #days between illness onset and hospitalization
-      d_IR <- 7    #days between illness onset and recovery (hospitalization not required)
-      Br <- R0.in * ( 1 / ( (r.in/ ((Alpha.in/d_IH) + ((1-Alpha.in)/d_IR)))  + (1-r.in)*d_IR ))
-      return(Br)
-    }
+  # length.B <- length(Beta_y)
+  # Beta_y[length.B] <- Beta_y[length.B]*0.9
+  # Beta_y[length.B] <- Beta_y[length.B-1]*0.9
 
-    Beta_y = as.vector(length(Beta_t))
+  ### GENERATE SIMULATION
+  x <- seihqdr_generator(Alpha_t=Alpha_t, Alpha_y=Alpha_y, Kappa_t=Kappa_t, Kappa_y=Kappa_y, Delta_t=Delta_t, Delta_y=Delta_y, Beta_t=Beta_t, Beta_y=Beta_y, r_t=r_t, r_y=r_y, S_ini=1e7, E_ini=10, p_QV=p_V)
+  st <- start_time
+  one_sim <- as.data.frame(x$run(0:(st+no_obs))[(st+1):(st+no_obs),])
 
-    for (j in 1:length(R0_y)){
-          Beta_y[j] = c(Br.function(R0.in<-R0_y[j], r.in<-r_y[j], Alpha_y[j]<-Alpha))
-    }
-
-    #print(Beta_t)
-    #print(Beta_y)
-    #print(R0_y)
-
-    ### GENERATE SIMULATION
-    x <- seihqdr_generator(Alpha_t=Alpha_t, Alpha_y=Alpha_y, Kappa_t=Kappa_t, Kappa_y=Kappa_y, Delta_t=Delta_t, Delta_y=Delta_y, Beta_t=Beta_t, Beta_y=Beta_y, r_t=r_t, r_y=r_y, S_ini=1e7, E_ini=10, p_QV=p_V)
-
-    st <- start_time
-    last_date <- max(Beta_t)
-    one_sim <- as.data.frame(x$run(1:last_date)[(st):(last_date),])
-    #one_sim <- as.data.frame(x$run(0:(st+no_obs))[(st+1):(st+no_obs),])
-
-    ### SUMMARY STATISTICS COMPUTED ON MODEL OUTPUT:
-    summarymodel <- sum.stats.SIMTEST(one_sim) #last_date_data = "2021-01-18")
-
-    return(summarymodel)
-  #}
+  ### SUMMARY STATISTICS COMPUTED ON MODEL OUTPUT:
+  summarymodel <- sum.stats.SIMTEST(one_sim,last_date_data = "2021-01-18")
+  
+  return(summarymodel)
 }
+
+

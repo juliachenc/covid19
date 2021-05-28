@@ -103,7 +103,8 @@ code.scenarios.dir=here("/Users/juliachen/Desktop/covid19/code/scenarios_code/")
 ```{r options, include=FALSE}
 print.output <- FALSE
 days.truncate <- 0
-endDatePlotGlobal <- as.Date("2021-03-16")
+#endDatePlotGlobal <- as.Date("2021-03-16")
+endDatePlotGlobal <- as.Date("2021-05-16")
 ```
 
 
@@ -119,7 +120,6 @@ seihqdr_generator <- odin::odin(path_seihqdr_model)
 
 ###################################################################################################
 ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
-## for week 1
 model_functions_week1 <- path(code.paper.dir, "data_model_fun_w1.R")
 source(model_functions_week1)
 
@@ -149,12 +149,28 @@ no_obs <- nrow(latest_data)
 ## Note: Beta(t), Alpha(t), Kappa(t), Delta(t) are read in from file
 
 ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
+## prior readin
+readin_path <- path(data.dir, "prior_readin_weekly.csv")
+prior_readin = as.data.frame(read.csv(readin_path, sep=","))
+
+prior.R0 = c("normal", prior_readin[1,3], 0.1*prior_readin[1,3])
+prior.r = c("normal", prior_readin[1,4], .25*prior_readin[1,4])
+prior.Delta = c("normal", prior_readin[1,5], .1*prior_readin[1,5])
+prior.Alpha = c("normal", prior_readin[1,6], .1*prior_readin[1,6])
+prior.Kappa = c("normal", prior_readin[1,7], .1*prior_readin[1,7])
+prior.p_V = c("normal", prior_readin[1,8], .1*prior_readin[1,8])
+  
+  prior.par <- list(
+  prior.R0,
+  prior.r,
+  prior.Delta,
+  prior.Alpha,
+  prior.Kappa,
+  prior.p_V)
+  
 ## for week 1
 model_functions_week1 <- path(code.paper.dir, "data_model_fun_w1.R")
 source(model_functions_week1)
-
-prior_param_input_week1 <- path(code.paper.dir, "prior_param.R")
-source(prior_param_input_week1)
 
 
 ## SUMMARY STATISTICS COMPUTED ON DATA
@@ -173,7 +189,6 @@ ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
                        tolerance_quantile=0.1,verbose=FALSE,progress=TRUE, n_rec=n_rec)
 
 ABC.out.mat <- ABC_out$param
-view(ABC.out.mat)
 ### Creat df for mean, sd and list for all parameters
 week_par_mean = as.data.frame(matrix(0, ncol = 6, nrow = n_rec))
 week_par_sd = as.data.frame(matrix(0, ncol = 6, nrow = n_rec))
@@ -184,7 +199,6 @@ ABC.par.out_week_1 <- as.data.frame(ABC_out$param)
 week_par_mean[1,] = colMeans(ABC_out$param)
 week_par_sd[1,] = colStdevs(ABC_out$param)
 week_par_all[[1]] <- cbind(data.frame(week.id = 1, iter.id = 1:nrow(ABC.par.out_week_1)), ABC.par.out_week_1)
-
 ```
 
 
@@ -194,12 +208,12 @@ week_par_all[[1]] <- cbind(data.frame(week.id = 1, iter.id = 1:nrow(ABC.par.out_
 # prior_param_input_week2 <- path(code.paper.dir, "prior_param_w2.R")
 # source(prior_param_input_week2)
 
-prior.R0 = c("normal", prior_readin[2,3], 0.1*prior_readin[2,3])
+prior.R0 = c("normal", prior_readin[2,3], 0.001*prior_readin[2,3])
 prior.r = c("normal", prior_readin[2,4], .25*prior_readin[2,4])
-prior.Delta = c("normal", prior_readin[2,5], .1*prior_readin[2,5])
-prior.Alpha = c("normal", prior_readin[2,6], .1*prior_readin[2,6])
-prior.Kappa = c("normal", prior_readin[2,7], .1*prior_readin[2,7])
-prior.p_V = c("normal", prior_readin[2,8], .1*prior_readin[2,8])
+prior.Delta = c("normal", prior_readin[2,5], 0.001*prior_readin[2,5])
+prior.Alpha = c("normal", prior_readin[2,6], 0.001*prior_readin[2,6])
+prior.Kappa = c("normal", prior_readin[2,7], 0.001*prior_readin[2,7])
+prior.p_V = c("normal", prior_readin[2,8], 0.001*prior_readin[2,8])
   
   prior.par <- list(
   prior.R0,
@@ -211,13 +225,14 @@ prior.p_V = c("normal", prior_readin[2,8], .1*prior_readin[2,8])
 
 
 ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
-model_functions_week2<- path(code.paper.dir, "data_model_fun_w2.R")
+model_functions_week2<- path(code.paper.dir, "data_model_fun.R")
 source(model_functions_week2)
 
 ## SUMMARY STATISTICS COMPUTED ON DATA
 ### Here we extract from the observed data exactly the same number of days of data as we extract from the model in the model.1sim.stats.no.R code
-week.no = 2
-summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*week.no+1)),])   
+
+i = 2 # week number 
+summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*i+1)),])   
 model.R <- model.1sim.stats.no.R  # From supporting_functions
 
 ## Week2 
@@ -244,22 +259,16 @@ readin_path <- path(data.dir, "prior_readin_weekly.csv")
 prior_readin = as.data.frame(read.csv(readin_path, sep=","))
 
 ## SUMMARY STATISTICS COMPUTED ON DATA
-week.no = c(3:5) #c(3:52)
-week.no=Vectorize(week.no)
+week.no = c(2:86) #c(3:52)
+#week.no=Vectorize(week.no)
 
 for (i in week.no){
-  
-  prior.R0 = c("normal", prior_readin[i,3], 0.1*prior_readin[i,3])
-  # r
-  prior.r = c("normal", prior_readin[i,4], .25*prior_readin[i,4])
-  # Delta
-  prior.Delta = c("normal", prior_readin[i,5], .1*prior_readin[i,5])
-  # Alpha
-  prior.Alpha = c("normal", prior_readin[i,6], .1*prior_readin[i,6])
-  # Kappa
-  prior.Kappa = c("normal", prior_readin[i,7], .1*prior_readin[i,7])
-  # p_V
-  prior.p_V = c("normal", prior_readin[i,8], .1*prior_readin[i,8])
+  prior.R0 = c("normal", prior_readin[i,3], 0.001*prior_readin[i,3])
+  prior.r = c("normal", prior_readin[i,4], .01*prior_readin[i,4])
+  prior.Delta = c("normal", prior_readin[i,5], 0.001*prior_readin[i,5])
+  prior.Alpha = c("normal", prior_readin[i,6], 0.001*prior_readin[i,6])
+  prior.Kappa = c("normal", prior_readin[i,7], 0.001*prior_readin[i,7])
+  prior.p_V = c("normal", prior_readin[i,8], 0.001*prior_readin[i,8])
   
   prior.par <- list(
   prior.R0,
@@ -269,7 +278,7 @@ for (i in week.no){
   prior.Kappa,
   prior.p_V)
   
-  model_functions_week3later<- path(code.paper.dir, "data_model_fun_w3later.R")
+  model_functions_week3later<- path(code.paper.dir, "data_model_fun.R")
   source(model_functions_week3later)
   
     summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*i+1)),])   
@@ -282,16 +291,15 @@ for (i in week.no){
     ABC.par.out_week <- as.data.frame(ABC_out$param)
     
     for (j in 1:nrow(ABC.par.out_week)){
-        ABC.par.out_week$V1[j] <- max(ABC.par.out_week$V1[j] , .01)
-        ABC.par.out_week$V2[j] <- max(ABC.par.out_week$V2[j] , .01)
-        ABC.par.out_week$V3[j] <- max(ABC.par.out_week$V3[j] , .01)
-        ABC.par.out_week$V4[j] <- max(ABC.par.out_week$V4[j] , .01)
-        ABC.par.out_week$V5[j] <- max(ABC.par.out_week$V5[j] , .01)
-        ABC.par.out_week$V6[j] <- max(ABC.par.out_week$V6[j] , .01)
+        ABC.par.out_week$V1[j] <- max(ABC.par.out_week$V1[j] , .0075)
+        ABC.par.out_week$V2[j] <- max(ABC.par.out_week$V2[j] , .0075)
+        ABC.par.out_week$V3[j] <- max(ABC.par.out_week$V3[j] , .0075)
+        ABC.par.out_week$V4[j] <- max(ABC.par.out_week$V4[j] , .0075)
+        ABC.par.out_week$V5[j] <- max(ABC.par.out_week$V5[j] , .0075)
+        ABC.par.out_week$V6[j] <- max(ABC.par.out_week$V6[j] , .0075)
     }
     week_par_mean[i,] = colMeans(ABC.par.out_week)
     week_par_sd[i,] = colStdevs(ABC.par.out_week)
-    #week_par_all[[i]] <- ABC.par.out_week
     week_par_all[[i]] <- cbind(data.frame(week.id = i, iter.id = 1:nrow(ABC.par.out_week)), ABC.par.out_week)
 }
 ```
@@ -305,13 +313,11 @@ for (i in week.no){
 ```{r include=FALSE}
 ###################################################################################################
 ## GET MODEL OUTPUT: traj.0
-
 model_functions_week3later<- path(code.paper.dir, "data_model_fun_w3later.R")
 source(model_functions_week3later)
 
 week_par_sim <- do.call(rbind, week_par_all)
 max_week = max(week_par_sim$week.id)-2
-
 
 #ABC.out.mat <- ABC_out$param
 #par.vec.length <- length(week_par_sim)
@@ -324,7 +330,6 @@ vars.to.plot <- vars.plus.R
 ## Uses correlated.param.SIM
 ## Reads in Beta, Alpha, Kappa, Delta from file
 traj.0 <- model.output.to.plot.SIM(week_par_sim=week_par_sim, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot)
-
 ```
 
 
@@ -332,14 +337,12 @@ traj.0 <- model.output.to.plot.SIM(week_par_sim=week_par_sim, iter=iter, time.st
 
 ###################################################################################################
 ## Plot all variables current date
-
+#time.steps.4.plot = as.Date("2021-01-17") - as.Date("2020-03-01") 
 time.steps.4.plot = endDatePlotGlobal - as.Date("2020-03-01")
 data.in <- latest_data
 vars.to.plot <- vars.plus.R
 
-plot.all.variables.curr.date <- 
-plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 0, time.steps.4plot=time.steps.4.plot,
-                    vars.to.plot=vars.plus.R)
+plot.all.variables.curr.date <- plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 0, time.steps.4plot=time.steps.4.plot, vars.to.plot=vars.plus.R)
 
 if (print.output==TRUE){
   pdf(file = path(output.dir, "plot.all.variables.pdf"), width=10, height =10)
@@ -347,7 +350,6 @@ if (print.output==TRUE){
   dev.off()
 }
 plot.all.variables.curr.date
-
 ```
 
 
