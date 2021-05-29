@@ -118,8 +118,6 @@ var.format <- function(var.CI,use.mean.select){
 ########################################################################################
 ## SPECIFYING EPIDEMIC MODEL TO BE SIMULATED AND SCENARIOS
 ########################################################################################
-
-
 correlated.param.SIM <- function(week_par_sim,iter,time.steps) {
   
   #TEST.out <- vector("list",length(week_par_sim))
@@ -129,7 +127,7 @@ correlated.param.SIM <- function(week_par_sim,iter,time.steps) {
   
   for (idx in 1:num.iter.id) {
     week_par_sim_idx <- week_par_sim %>% dplyr::filter(iter.id==idx)
-    week_idx = length(unique(week_par_sim$week.id))-1
+    week_idx = length(unique(week_par_sim$week.id))-2
     
     Alpha_t <- c(0, seq(45,  week_idx*7+45, by = 7))
     Kappa_t <- c(0, seq(45,  week_idx*7+45, by = 7))
@@ -184,13 +182,13 @@ correlated.param.SIM <- function(week_par_sim,iter,time.steps) {
 # time.steps <- 300
 # vars.to.plot <- vars.plus.R
 
-model.output.to.plot.SIM <- function(ABC.out.mat, par.vec.length, iter, time.steps, vars.to.plot) {
+model.output.to.plot.SIM <- function(week_par_sim, iter, time.steps, vars.to.plot) {
   
   library(data.table)
   init.date.data="2020-03-01"
   
   ## MODEL OUTPUT TO PLOT
-  TEST.out <- correlated.param.SIM(ABC.out.mat[1:par.vec.length,],iter=iter,time.steps=time.steps)
+  TEST.out <- correlated.param.SIM(week_par_sim,iter=iter,time.steps=time.steps)
   
   ### Add CFR and IFR to the list (EXTRA STEP NOW THAT THIS IS BEING USED ALSO FOR summary_table)
   traj <- dplyr::mutate(TEST.out, Itot=I+A, CFRobs=(D/Idetectcum), CFRactual=(D/(Itotcum)) )
@@ -285,14 +283,14 @@ model.1sim.stats.no.R <- function(par){
   #week.seq = seq(3, i, 1)
   
   ## 4.5.21: I changed the 3rd entry of the sequences below from week_par_mean[2,3] to week_par_mean[1,3]
-  Delta_y = c(week_par_mean[1,3],week_par_mean[1,3]) # Delta
-  Kappa_y = c(week_par_mean[1,5],week_par_mean[1,5]) #Kappa
-  Alpha_y = c(week_par_mean[1,4],week_par_mean[1,4]) #Alpha
-  r_y = c(week_par_mean[1,2], week_par_mean[1,2]) #r
-  p_QV = c(week_par_mean[1,6], week_par_mean[1,6]) #p_V
-  R0_y <- c(week_par_mean[1,1],week_par_mean[1,1]) #  R0
+  Delta_y = c(week_par_mean[1,3]) # Delta
+  Kappa_y = c(week_par_mean[1,5]) #Kappa
+  Alpha_y = c(week_par_mean[1,4]) #Alpha
+  r_y = c(week_par_mean[1,2]) #r
+  p_QV = c(week_par_mean[1,6]) #p_V
+  R0_y <- c(week_par_mean[1,1]) #  R0
 
-  for (j in 2:i){
+  for (j in 1:i){
     Delta_y = append(Delta_y, week_par_mean[j,3])
     Kappa_y = append(Kappa_y, week_par_mean[j,5])
     Alpha_y = append(Alpha_y, week_par_mean[j,4])

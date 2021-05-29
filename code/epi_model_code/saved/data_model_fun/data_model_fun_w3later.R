@@ -133,7 +133,7 @@ correlated.param.SIM <- function(week_par_sim,iter,time.steps) {
     
     week_par_sim_idx <- week_par_sim %>% dplyr::filter(iter.id==idx)
     
-    week_idx = length(unique(week_par_sim$week.id))-2
+    week_idx = length(unique(week_par_sim$week.id))
     
     Alpha_t <- c(0, 45, seq(52,  week_idx*7+45, by = 7))
     Kappa_t <- c(0, 45, seq(52,  week_idx*7+45, by = 7))
