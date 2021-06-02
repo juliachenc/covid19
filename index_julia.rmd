@@ -120,8 +120,8 @@ seihqdr_generator <- odin::odin(path_seihqdr_model)
 
 ###################################################################################################
 ## LOAD DATA PROCESSING AND MODEL ESTIMATING FUNCTIONS
-model_functions_week1 <- path(code.paper.dir, "data_model_fun.R")
-source(model_functions_week1)
+model_functions <- path(code.paper.dir, "data_model_fun.R")
+source(model_functions)
 
 ###################################################################################################
 ## LOAD PLOTTING FUNCTIONS
@@ -139,6 +139,8 @@ source(tables_code)
 # no_obs: number of observation days
 latest_data <- latest_covid_data(truncate=days.truncate)
 no_obs <- nrow(latest_data)
+#la_data <- latimes_readin()
+
 ```
 
 
@@ -180,8 +182,8 @@ for (i in week.no){
   prior.Kappa,
   prior.p_V)
   
-  model_functions_week3later<- path(code.paper.dir, "data_model_fun.R")
-  source(model_functions_week3later)
+  model_functions<- path(code.paper.dir, "data_model_fun.R")
+  source(model_functions)
   
     summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*i+1)),])   
     model.R <- model.1sim.stats.no.R  # From supporting_functions
@@ -215,8 +217,8 @@ for (i in week.no){
 ```{r include=FALSE}
 ###################################################################################################
 ## GET MODEL OUTPUT: traj.0
-model_functions_week3later<- path(code.paper.dir, "data_model_fun.R")
-source(model_functions_week3later)
+model_functions<- path(code.paper.dir, "data_model_fun.R")
+source(model_functions)
 
 week_par_sim <- do.call(rbind, week_par_all)
 max_week = max(week_par_sim$week.id)-2
@@ -286,8 +288,6 @@ percent.current.TOT <- get.current.percent(traj.CI=traj.0, date.selected=date.se
 date.selected <- Sys.Date()+10
 var.to.plot <- "Itot"
 percent.in10days.TOT <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
-
-
 ```
 
 ## Percentage of LAC population currently infected 
