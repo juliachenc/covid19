@@ -53,6 +53,7 @@ latimes_readin <- function(){
   # la_data$D_new = zoo::rollmean(la_data$D_new, k = 7, fill = NA, align = 'right') %>% round(digits=0)
   
   return(la_data)
+  
 }
 
 #la_data <- latimes_readin()

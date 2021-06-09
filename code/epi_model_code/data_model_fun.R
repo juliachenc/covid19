@@ -140,8 +140,8 @@ get.CFR.IFR.by.date <- function(traj.CI, CFR.or.IFR, date.in, round.by=4){
   if (CFR.or.IFR=="IFR"){
     state.name.in="CFRactual"
   }
-  posterior.CI.out <- traj.CI %>% filter(date %in% as.Date(date.in))
-  posterior.CI.out <- posterior.CI.out %>% filter(state.name==state.name.in) %>% select(-c(state.name,N)) %>% mutate_if(is.numeric, round, digits=round.by)
+  posterior.CI.out <- traj.CI %>% dplyr::filter(date %in% as.Date(date.in))
+  posterior.CI.out <- posterior.CI.out %>% dplyr::filter(state.name==state.name.in) %>% dplyr::select(-c(state.name,N)) %>% dplyr::mutate_if(is.numeric, round, digits=round.by)
   return(posterior.CI.out)
 }
 
@@ -290,24 +290,41 @@ model.output.to.plot.SIM <- function(week_par_sim, iter, time.steps, vars.to.plo
 ## "SUMMARY STATISTICS":
 ## The cumulative number of cases at all (trusted) time points
 ###################################################################################################
+# 
+# sum.stats.SIMTEST <- function(data){
+#   
+#   ss.I <- data$Idetectcum #[I.trust.n]
+#   ss.H <- data$Htotcum #[H.trust.n]
+#   ss.V <- data$Vcum #[V.trust.n]
+#   ss.D <- data$D #[D.trust.n]
+#   ss.Hnew <- data$H_new #[Hnew.trust.n]
+#   ss.Dnew <- data$D_new #[Dnew.trust.n]
+#   # ss.R <- data$R #[R.trust.n]
+#   
+#   
+#   # Which variables to consider
+#   summarystats = c(ss.I, ss.H, ss.V, ss.D, ss.Hnew, ss.Dnew)
+#   return(summarystats)
+# }
 
 sum.stats.SIMTEST <- function(data){
   
-  ss.I <- data$Idetectcum #[I.trust.n]
-  ss.H <- data$Htotcum #[H.trust.n]
-  ss.V <- data$Vcum #[V.trust.n]
-  ss.D <- data$D #[D.trust.n]
-  ss.Hnew <- data$H_new #[Hnew.trust.n]
-  ss.Dnew <- data$D_new #[Dnew.trust.n]
-  # ss.R <- data$R #[R.trust.n]
+  # I.trust.n <- c(10:no_obs)  # The first 9 days of illness cases are unreliable/unavailable
+  # D.trust.n <- c(18:no_obs)  # The first 17 days of mortality are unreliable/unavailable
+  # Dnew.trust.n <- c(28:no_obs) # The first 28 days of new deaths are unreliable/unavailable
+  # HQ.trust.n <- c(29:no_obs)
   
+  ss.Icum <- data$Idetectcum#[I.trust.n]
+  ss.I <- data$I_detect_new#[I.trust.n]
+  ss.D <- data$D#[D.trust.n]
+  ss.Dnew <- data$D_new#[Dnew.trust.n]
+  ss.Htot <- data$Htot#[HQ.trust.n]
+  ss.Q <- data$Q#[HQ.trust.n]
   
-  # Which variables to consider
-  summarystats = c(ss.I, ss.H, ss.V, ss.D, ss.Hnew, ss.Dnew)
+  summarystats = c(ss.I, ss.Icum, ss.Htot, ss.Q, ss.Dnew, ss.D)
+  
   return(summarystats)
 }
-
-
 ###################################################################################################
 ## SIMULATION MODEL FUNCTION TO COMPUTE FOR ABC ALGORITHM
 ## A function implementing the model to be simulated
@@ -367,6 +384,7 @@ model.1sim.stats.no.R <- function(par){
   #print("R0_y")
   #print(R0_y)
   
+  
   Br.function <- function(R0.in, r.in, Alpha.in){
     d_IH <- 10   #days between illness onset and hospitalization
     d_IR <- 7    #days between illness onset and recovery (hospitalization not required)
@@ -383,10 +401,15 @@ model.1sim.stats.no.R <- function(par){
   #print(Beta_t)
   #print(Beta_y)
   #print(R0_y)
+  # print(paste0("Beta_y:",(Beta_y)))
+  # print(paste0("Beta_t:",(Beta_t)))
+  # print(paste0("r_y:",(r_y)))
+  # print(paste0("no_obs:",(no_obs)))
+  # print(max(Beta_t))
   
   ### GENERATE SIMULATION
   x <- seihqdr_generator(Alpha_t=Alpha_t, Alpha_y=Alpha_y, Kappa_t=Kappa_t, Kappa_y=Kappa_y, Delta_t=Delta_t, Delta_y=Delta_y, Beta_t=Beta_t, Beta_y=Beta_y, r_t=r_t, r_y=r_y, S_ini=1e7, E_ini=10, p_QV=p_V)
-  
+
   st <- start_time
   last_date <- max(Beta_t)
   one_sim <- as.data.frame(x$run(1:last_date)[(st):(last_date),])

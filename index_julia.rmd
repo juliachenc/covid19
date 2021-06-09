@@ -15,7 +15,6 @@ editor_options:
 <!--Initialize-->
 
 ``` {r setup, include=FALSE}
-
 ### Install necessary packages and get started
 library(reshape2)
 library(tidyverse)
@@ -137,10 +136,13 @@ source(tables_code)
 ## COVID INPUT DATA
 # latest_data: cumulative and daily counts for "Htotcum","D","Vcum","Idetectcum","H_new","D_new"
 # no_obs: number of observation days
-latest_data <- latest_covid_data(truncate=days.truncate)
-no_obs <- nrow(latest_data)
-#la_data <- latimes_readin()
 
+#latest_data <- latest_covid_data(truncate=days.truncate)
+#no_obs <- nrow(latest_data)
+
+latimes_path <- path(code.paper.dir, "LAtimes.R")
+source(latimes_path)
+la_data <- latimes_readin()
 ```
 
 
@@ -162,7 +164,7 @@ readin_path <- path(data.dir, "prior_readin_weekly.csv")
 prior_readin = as.data.frame(read.csv(readin_path, sep=","))
 
 ## SUMMARY STATISTICS COMPUTED ON DATA
-week.no = c(1:60) #c(3:52)
+week.no = c(1:66) #c(1:52)
 #week.no=Vectorize(week.no)
 
 
@@ -182,10 +184,12 @@ for (i in week.no){
   prior.Kappa,
   prior.p_V)
   
+  la_data[1:28,6:7]=0
   model_functions<- path(code.paper.dir, "data_model_fun.R")
   source(model_functions)
   
-    summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*i+1)),])   
+    # summarydata <- sum.stats.SIMTEST(latest_data[c(1:(7*i+1)),])
+    summarydata <- sum.stats.SIMTEST(la_data[c(1:(7*i+1)),])
     model.R <- model.1sim.stats.no.R  # From supporting_functions
 
     ABC_out<-ABC_mcmc(method="Marjoram",model=model.R,prior=prior.par,
