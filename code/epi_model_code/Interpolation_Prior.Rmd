@@ -1,0 +1,212 @@
+---
+title: "read_in_csv"
+author: "Jianing Chen"
+date: "4/6/2021"
+output: html_document
+---
+```{r}
+x = c("week","day",  "prior.R0", "prior.r", "prior.Delta", 
+       "prior.Alpha", "prior.Kappa", "prior.p_V")
+
+read_in_prior=data.frame(matrix(0, ncol =8 , nrow = 100))
+colnames(read_in_prior) = x
+```
+
+
+```{r}
+week = c(seq(0, 99, by = 1))
+day = c(0, seq(45, 734, by = 7))
+# read_in_prior$new.col <- c(new.col, rep(NA, nrow(df)-length(new.col))) 
+read_in_prior[1] = week
+read_in_prior[2] = day
+
+# write in the first week data
+read_in_prior[1,3:8] = c(3.65,	0.19 ,	0.56,	0.14,	0.6,	0.27)
+read_in_prior[2,3:8] = c(3.65,	0.19 ,	0.56,	0.14,	0.6,	0.27)
+
+
+# set all p_V as 0.27
+read_in_prior[,8] = c(0.27)
+
+read_in_prior
+```
+
+
+```{r}
+library(here)
+library(fs)
+data.dir=here("/Users/juliachen/Desktop/covid19/data/")
+readin_path <- path(data.dir, "prior_readin.csv")
+readin = as.data.frame(read.csv(readin_path, sep=","))
+readin
+```
+
+```{r}
+start_time <- 45
+Beta_t_dates <- as.Date(readin$Beta_t)
+Beta_t_dates[1] <- Beta_t_dates[1]-start_time
+Beta_t <- round(as.numeric(Beta_t_dates - as.Date("2020-03-01")) + start_time)
+
+Alpha_t_dates = as.Date(readin$Alpha_t)
+Alpha_t_dates[1] = Alpha_t_dates[1]-start_time
+Alpha_t = round(as.numeric(Alpha_t_dates - as.Date("2020-03-01")) + start_time)
+
+r_t_dates = as.Date(readin$r_t)
+r_t = round(as.numeric(r_t_dates - as.Date("2020-03-01")) + start_time)
+
+
+Beta_t
+Alpha_t
+r_t
+```
+
+```{r}
+# R0
+x.vals = Beta_t[2:24]
+y.vals = readin$R0[2:24]
+
+interpolate <- approx(x=x.vals, y=y.vals, method="linear",n=max(x.vals)-min(x.vals)+1)
+
+
+temp=0
+for (i in 1:length(interpolate$y)){
+  temp=temp+interpolate$y[i]
+  if(i%%7==0){
+    read_in_prior[i/7+1,3] = temp/7
+    #print(c(i/7,temp/7))
+    temp=0
+    }
+}
+```
+
+```{r}
+# r
+
+r1 <- .19 # c("unif",0.03, 0.35) # midpoint: .19
+r2 <- .475 # c("unif",0.1, 0.85) # midpoint: .475
+r_y = c(r1,r1,r2,r2,r2)
+
+x.vals = r_t[1:5]
+y.vals = r_y[1:5]
+
+
+
+interpolate <- approx(x=x.vals, y=y.vals, method="linear",n=max(x.vals)-min(x.vals)+1)
+# temp=0
+# for (i in 1:length(interpolate$y)){
+#   temp=temp+interpolate$y[i]
+#   if(i%%7==0){
+#   print(c(i/7,temp/7))
+#     temp=0
+#     }
+# }
+
+
+temp=0
+for (i in 1:length(interpolate$y)){
+  temp=temp+interpolate$y[i]
+  if(i%%7==0){
+    read_in_prior[i/7+2,4] = temp/7
+    #print(c(i/7,temp/7))
+    temp=0
+    }
+}
+```
+
+
+
+```{r}
+# Kappa 
+x.vals = Alpha_t[2:9]
+y.vals = readin$Kappa_y[2:9]
+interpolate <- approx(x=x.vals, y=y.vals, method="linear",n=max(x.vals)-min(x.vals)+1)
+
+
+temp=0
+for (i in 1:length(interpolate$y)){
+  temp=temp+interpolate$y[i]
+  if(i%%7==0){
+    read_in_prior[i/7+1,7] = temp/7
+    #print(c(i/7,temp/7))
+    temp=0
+    }
+}
+```
+
+```{r}
+# Alpha
+x.vals = Alpha_t[2:9]
+y.vals = readin$Alpha_y[2:9]
+interpolate <- approx(x=x.vals, y=y.vals, method="linear",n=max(x.vals)-min(x.vals)+1)
+
+
+
+temp=0
+for (i in 1:length(interpolate$y)){
+  temp=temp+interpolate$y[i]
+  if(i%%7==0){
+    read_in_prior[i/7+1,6] = temp/7
+    #print(c(i/7,temp/7))
+    temp=0
+    }
+}
+
+
+```
+
+
+```{r}
+# Delta 
+x.vals = Alpha_t[2:9]
+y.vals = readin$Delta_y[2:9]
+
+interpolate <- approx(x=x.vals, y=y.vals, method="linear",n=max(x.vals)-min(x.vals)+1)
+
+# temp=0
+# for (i in 1:length(interpolate$y)){
+#   temp=temp+interpolate$y[i]
+#   if(i%%7==0){
+#   print(c(i/7,temp/7))
+#     temp=0
+#     }
+# }
+temp=0
+
+for (i in 1:length(interpolate$y)){
+  temp=temp+interpolate$y[i]
+  if(i%%7==0){
+    read_in_prior[i/7+1,5] = temp/7
+    #print(c(i/7,temp/7))
+    temp=0
+    }
+}
+```
+
+# Based on the interpolation code, I fill this dataframe
+
+```{r}
+read_in_prior
+#read_in_prior[7:80,3]=read_in_prior[7:80,3]*1.2
+#read_in_prior[80:92,3]=read_in_prior[80:92,3]*0.7
+
+read_in_prior[7:44,3]=read_in_prior[7:44,3]
+read_in_prior[44:82,3]=read_in_prior[44:82,3]*0.5
+read_in_prior[82:98,3]=read_in_prior[82:98,3]
+
+#read_in_prior[50:98,4]=read_in_prior[50:98,4]*0.01
+#read_in_prior[50:98,5]=read_in_prior[50:98,5]*0.01
+#read_in_prior[50:98,6]=read_in_prior[50:98,6]*0.01
+#read_in_prior[50:98,7]=read_in_prior[50:98,7]*0.01
+#read_in_prior[50:98,8]=read_in_prior[50:98,8]*0.01
+
+
+
+
+write.csv(read_in_prior,"/Users/juliachen/Desktop/covid19/data/prior_readin_weekly.csv", row.names = FALSE)
+```
+
+```{r}
+readin_path <- path(data.dir, "prior_readin_weekly.csv")
+prior_readin = as.data.frame(read.csv(readin_path, sep=","))
+prior_readin
+```

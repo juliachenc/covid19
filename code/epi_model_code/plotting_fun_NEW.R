@@ -19,8 +19,9 @@ plot.model.data.all <- function(traj.CI, data.in, init.date.data, date.offset.4p
     ## ALIGN DATES: DATA
     no_obs <- nrow(data.in)
     step <- 0:(no_obs-1)
-    date <- init.date + step
-    data.date <- cbind(date,data.in)
+    #date <- init.date + step
+    #data.date <- cbind(date,data.in)
+    data.date = data.in
     rownames(data.date) <- step
 
     ## Select only more recent dates

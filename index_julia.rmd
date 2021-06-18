@@ -137,12 +137,15 @@ source(tables_code)
 # latest_data: cumulative and daily counts for "Htotcum","D","Vcum","Idetectcum","H_new","D_new"
 # no_obs: number of observation days
 
-#latest_data <- latest_covid_data(truncate=days.truncate)
+latest_data <- latest_covid_data(truncate=days.truncate)
 #no_obs <- nrow(latest_data)
 
 latimes_path <- path(code.paper.dir, "LAtimes.R")
 source(latimes_path)
 la_data <- latimes_readin()
+
+##CITY DATA
+city_data <- city_data("Boyle Heights")
 ```
 
 
@@ -199,7 +202,7 @@ for (i in week.no){
     ABC.par.out_week <- as.data.frame(ABC_out$param)
     
     for (j in 1:nrow(ABC.par.out_week)){
-        ABC.par.out_week$V1[j] <- max(ABC.par.out_week$V1[j] , .0075)
+        ABC.par.out_week$V1[j] <- max(ABC.par.out_week$V1[j] , .007)
         ABC.par.out_week$V2[j] <- max(ABC.par.out_week$V2[j] , .0075)
         ABC.par.out_week$V3[j] <- max(ABC.par.out_week$V3[j] , .0075)
         ABC.par.out_week$V4[j] <- max(ABC.par.out_week$V4[j] , .0075)
@@ -238,6 +241,9 @@ vars.to.plot <- vars.plus.R
 ## Uses correlated.param.SIM
 ## Reads in Beta, Alpha, Kappa, Delta from file
 traj.0 <- model.output.to.plot.SIM(week_par_sim=week_par_sim, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot)
+
+# traj.city <- model.output.to.plot.SIM(week_par_sim=week_par_sim, iter=iter, time.steps=time.steps, vars.to.plot = vars.to.plot)
+
 ```
 
 
@@ -247,7 +253,7 @@ traj.0 <- model.output.to.plot.SIM(week_par_sim=week_par_sim, iter=iter, time.st
 ## Plot all variables current date
 #time.steps.4.plot = as.Date("2021-01-17") - as.Date("2020-03-01") 
 time.steps.4.plot = endDatePlotGlobal - as.Date("2020-03-01")
-data.in <- latest_data
+data.in <- la_data #latest_data
 vars.to.plot <- vars.plus.R
 
 plot.all.variables.curr.date <- plot.model.data.all(traj.CI = traj.0, data.in = data.in, init.date.data = "2020-03-01", date.offset.4plot = 0, time.steps.4plot=time.steps.4.plot, vars.to.plot=vars.plus.R)
@@ -257,13 +263,14 @@ if (print.output==TRUE){
   plot.all.variables.curr.date
   dev.off()
 }
+
 plot.all.variables.curr.date
 ```
 
 
 ```{r include=FALSE}
 time.steps.4plot = endDatePlotGlobal - as.Date("2020-03-01")
-data.in <- latest_data
+data.in <- la_data#latest_data
 plot.annotations <- TRUE
 plot.capacity <- TRUE
 ymax=NULL
@@ -293,8 +300,8 @@ date.selected <- Sys.Date()+10
 var.to.plot <- "Itot"
 percent.in10days.TOT <- get.current.percent(traj.CI=traj.0, date.selected=date.selected,var.to.plot = var.to.plot)
 ```
-
-## Percentage of LAC population currently infected 
+; 
+## Percentage of LAC population currently  infected 
 
 ### % LAC population currently infected: observed + estimated unobserved infections
 
@@ -370,7 +377,7 @@ Single compartment plots
 ```{r include=FALSE}
 
 time.steps.4.plot = endDatePlotGlobal - as.Date("2020-03-01") + 1
-data.in <- latest_data
+data.in <- la_data#latest_data
 plot.annotations <- TRUE
 plot.capacity <- TRUE
 ymax=NULL
@@ -521,7 +528,7 @@ Summarizes the epidemic model fit with COVID-19 data for LAC from March 1 throug
 ## Plot all variables current date
 
 time.steps.4.plot = Sys.Date() - as.Date("2020-03-01") +1
-data.in <- latest_data
+data.in <- la_data#latest_data
 vars.to.plot <- vars.plus.R
 
 plot.all.variables.curr.date <- 
@@ -543,7 +550,7 @@ if (print.output==TRUE){
 ## Plot all variables plus 15 days
 
 time.steps.4.plot = endDatePlotGlobal - as.Date("2020-03-01") + 15
-data.in <- latest_data
+data.in <- la_data#latest_data
 vars.to.plot <- vars.plus.R
 
 plot.all.variables.plus.15.days <- 
