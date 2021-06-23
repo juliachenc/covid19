@@ -5,4 +5,3 @@
 <!-- badges: end -->
 
 [website](https://uscbiostats.github.io/COVID19/)
-# covid_city
